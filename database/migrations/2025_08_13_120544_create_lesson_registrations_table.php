@@ -14,9 +14,16 @@ return new class extends Migration
             $table->unsignedBigInteger('lesson_id');
 
             $table->enum('registration_status', [
-                'active',    // Successfully registered and active
-                'cancelled'  // User cancelled their registration
+                'active',
+                'completed',
+                'cancelled'
             ])->default('active');
+
+            // 完成进度追踪
+            $table->integer('exercises_completed')->default(0);
+            $table->integer('tests_passed')->default(0);
+            $table->boolean('completion_points_awarded')->default(false);
+            $table->datetime('completed_at')->nullable();
 
             $table->timestamps();
 
@@ -31,11 +38,13 @@ return new class extends Migration
                 ->on('lessons')
                 ->onDelete('cascade');
 
-            // Unique constraint to prevent duplicate registrations
+            // Unique constraint
             $table->unique(['student_id', 'lesson_id'], 'unique_student_lesson');
 
-            // Index for performance
-            $table->index('registration_status', 'idx_registration_status');
+            // Indexes
+            $table->index('registration_status');
+            $table->index(['student_id', 'completion_points_awarded']);
+            $table->index('completed_at');
         });
     }
 

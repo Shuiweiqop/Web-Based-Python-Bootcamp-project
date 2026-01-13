@@ -34,5 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'judge0' => [
+        'url' => env('JUDGE0_API_URL', 'https://judge0-ce.p.rapidapi.com'),
+        'key' => env('JUDGE0_API_KEY'),
+    ],
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
 ];

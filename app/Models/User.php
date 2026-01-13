@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -22,6 +23,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone_number',
         'profile_picture',
         'role',
+        'last_login_at',
+        'last_login_ip',
+        'failed_login_attempts',
+        'locked_until',
     ];
 
     protected $hidden = [
@@ -36,6 +41,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'locked_until' => 'datetime',
         ];
     }
 
@@ -50,11 +57,51 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === 'student';
     }
 
+    // Account security methods
+    public function isLocked(): bool
+    {
+        return $this->locked_until && $this->locked_until->isFuture();
+    }
+
+    public function incrementFailedAttempts(): void
+    {
+        $this->increment('failed_login_attempts');
+
+        // Lock account for 30 minutes (after 5 failed attempts)
+        if ($this->failed_login_attempts >= 5) {
+            $this->update([
+                'locked_until' => now()->addMinutes(30)
+            ]);
+        }
+    }
+
+    public function resetFailedAttempts(): void
+    {
+        $this->update([
+            'failed_login_attempts' => 0,
+            'locked_until' => null
+        ]);
+    }
+
+    public function recordLogin(string $ip): void
+    {
+        $this->update([
+            'last_login_at' => now(),
+            'last_login_ip' => $ip,
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+        ]);
+    }
+
     // Profile picture attribute
     protected function profilePicture(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ? (filter_var($value, FILTER_VALIDATE_URL) ? $value : asset('storage/' . $value)) : null,
+            get: fn($value) => $value
+                ? (filter_var($value, FILTER_VALIDATE_URL)
+                    ? $value
+                    : asset('storage/' . $value))
+                : null,
         );
     }
 
@@ -96,13 +143,6 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(StudentProfile::class, 'user_Id', 'user_Id');
     }
-
-    /**
-     * REMOVED: The problematic accessor method
-     * Instead, access the relationship directly:
-     * - $user->studentProfile (loads the relationship)
-     * - $user->studentProfile() (returns the relationship query builder)
-     */
 
     /**
      * Safely get or create student profile (only for students)
@@ -147,6 +187,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $query->whereNotNull('email_verified_at');
     }
 
+    public function scopeNotLocked($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('locked_until')
+                ->orWhere('locked_until', '<', now());
+        });
+    }
+
     /**
      * Boot method
      */
@@ -154,12 +202,14 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         parent::boot();
 
+        // Before creating user: set default role
         static::creating(function ($user) {
             if (empty($user->role)) {
                 $user->role = 'student';
             }
         });
 
+        // After creating user: automatically create student profile
         static::created(function ($user) {
             if ($user->role === 'student') {
                 $user->studentProfile()->create([
@@ -169,6 +219,12 @@ class User extends Authenticatable implements MustVerifyEmail
                     'average_score' => 0.00,
                     'streak_days' => 0,
                     'last_activity_date' => now()->toDateString(),
+                    'equipped_snapshot' => [
+                        'avatar_frame' => null,
+                        'background' => null,
+                        'title' => null,
+                        'badges' => [],
+                    ],
                 ]);
             }
         });
@@ -178,10 +234,12 @@ class User extends Authenticatable implements MustVerifyEmail
                 $originalRole = $user->getOriginal('role');
                 $newRole = $user->role;
 
+                // Student → Administrator: delete student profile
                 if ($originalRole === 'student' && $newRole === 'administrator') {
                     $user->studentProfile()->delete();
                 }
 
+                // Administrator → Student: create student profile
                 if ($originalRole === 'administrator' && $newRole === 'student') {
                     $user->studentProfile()->create([
                         'current_points' => 0,
@@ -190,9 +248,32 @@ class User extends Authenticatable implements MustVerifyEmail
                         'average_score' => 0.00,
                         'streak_days' => 0,
                         'last_activity_date' => now()->toDateString(),
+                        'equipped_snapshot' => [
+                            'avatar_frame' => null,
+                            'background' => null,
+                            'title' => null,
+                            'badges' => [],
+                        ],
                     ]);
                 }
             }
         });
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class, 'user_Id', 'user_Id');
+    }
+
+    // Unread notifications
+    public function unreadNotifications(): HasMany
+    {
+        return $this->notifications()->where('is_read', false);
+    }
+
+    // Unread notification count (accessor)
+    public function getUnreadNotificationCountAttribute(): int
+    {
+        return $this->unreadNotifications()->count();
     }
 }

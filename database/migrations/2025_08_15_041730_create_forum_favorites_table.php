@@ -13,23 +13,29 @@ return new class extends Migration
     {
         Schema::create('forum_favorites', function (Blueprint $table) {
             $table->id('favorite_id');
-            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('user_id'); // ✅ 改用 user_id
             $table->unsignedBigInteger('post_id');
-            $table->timestamp('favorited_at')->useCurrent();
+            $table->timestamp('favorited_at')->nullable();
             $table->timestamps();
 
             // Foreign key constraints
-            $table->foreign('student_id')->references('student_id')->on('student_profiles')->onDelete('cascade');
-            $table->foreign('post_id')->references('post_id')->on('forum_posts')->onDelete('cascade');
+            $table->foreign('user_id')
+                ->references('user_Id') // ⚠️ 根据你的 users 表主键调整大小写
+                ->on('users')
+                ->onDelete('cascade');
 
-            // Unique constraint to prevent duplicate favorites
-            $table->unique(['student_id', 'post_id']);
+            $table->foreign('post_id')
+                ->references('post_id')
+                ->on('forum_posts')
+                ->onDelete('cascade');
+
+            // Unique constraint - one user can only favorite a post once
+            $table->unique(['user_id', 'post_id'], 'unique_user_post_favorite');
 
             // Indexes for better performance
-            $table->index('student_id');
+            $table->index('user_id');
             $table->index('post_id');
             $table->index('favorited_at');
-            $table->index(['student_id', 'favorited_at']);
         });
     }
 

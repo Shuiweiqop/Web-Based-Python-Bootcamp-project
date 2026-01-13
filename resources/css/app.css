@@ -1,3 +1,17 @@
+/* resources/css/app.css */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ✅ 防止水平滚动 */
+@layer base {
+  html, body {
+    @apply overflow-x-hidden;
+    max-width: 100vw;
+  }
+  
+  * {
+    min-width: 0; /* 允许所有 flex/grid 子元素收缩 */
+  }
+}

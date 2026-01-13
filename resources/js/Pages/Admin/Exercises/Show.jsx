@@ -1,30 +1,48 @@
 // resources/js/Pages/Admin/Exercises/Show.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ChevronLeftIcon,
-    PencilIcon,
-    TrashIcon,
-    DocumentTextIcon,
-    ClockIcon,
-    CodeBracketIcon,
-    AcademicCapIcon,
-    PlayIcon,
-    CheckCircleIcon,
-    XCircleIcon
-} from '@heroicons/react/24/outline';
+    ArrowLeft,
+    Pencil,
+    Trash2,
+    FileText,
+    Clock,
+    Code,
+    GraduationCap,
+    Play,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    Info,
+    Calendar,
+    Award,
+    Eye,
+    Sparkles
+} from 'lucide-react';
+import { cn } from '@/utils/cn';
 
 export default function Show({ auth, exercise, lesson }) {
     const { props: pageProps } = usePage();
     const flash = pageProps?.flash ?? {};
+    const [isDark, setIsDark] = useState(true);
+
+    // 监听主题变化
+    useEffect(() => {
+        const updateTheme = () => {
+            setIsDark(document.documentElement.classList.contains('dark'));
+        };
+        
+        updateTheme();
+        window.addEventListener('theme-changed', updateTheme);
+        return () => window.removeEventListener('theme-changed', updateTheme);
+    }, []);
 
     // Safe route resolver
     const safeRoute = (name, params) => {
         try {
             return route(name, params);
         } catch (err) {
-            // Fallback patterns for nested routes
             if (name === 'admin.lessons.exercises.edit' && Array.isArray(params)) {
                 return `/admin/lessons/${params[0]}/exercises/${params[1]}/edit`;
             }
@@ -57,7 +75,6 @@ export default function Show({ auth, exercise, lesson }) {
             return;
         }
 
-        // Determine route based on whether it's nested under a lesson or standalone
         const routeName = lesson ? 'admin.lessons.exercises.destroy' : 'admin.exercises.destroy';
         const routeParams = lesson 
             ? [lesson.lesson_id, exercise.exercise_id]
@@ -71,7 +88,6 @@ export default function Show({ auth, exercise, lesson }) {
             onStart: () => console.debug('Deleting exercise', exercise.exercise_id),
             onSuccess: () => {
                 console.debug('Delete success');
-                // Redirect to appropriate index page
                 if (lesson) {
                     router.visit(safeRoute('admin.lessons.show', lesson.lesson_id));
                 } else {
@@ -87,19 +103,24 @@ export default function Show({ auth, exercise, lesson }) {
 
     const getStatusBadge = (isActive) => {
         return (
-            <span className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full ${
+            <span className={cn(
+                "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-full border-2",
                 isActive 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-800'
-            }`}>
+                    ? isDark 
+                        ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+                        : 'bg-green-100 text-green-800 border-green-300'
+                    : isDark 
+                        ? 'bg-gray-500/20 text-gray-300 border-gray-500/30' 
+                        : 'bg-gray-100 text-gray-800 border-gray-300'
+            )}>
                 {isActive ? (
                     <>
-                        <CheckCircleIcon className="w-4 h-4 mr-1" />
+                        <CheckCircle className="w-3.5 h-3.5" />
                         Active
                     </>
                 ) : (
                     <>
-                        <XCircleIcon className="w-4 h-4 mr-1" />
+                        <XCircle className="w-3.5 h-3.5" />
                         Inactive
                     </>
                 )}
@@ -108,19 +129,41 @@ export default function Show({ auth, exercise, lesson }) {
     };
 
     const getDifficultyBadge = (difficulty) => {
-        const classes = {
-            beginner: 'bg-blue-100 text-blue-800',
-            intermediate: 'bg-orange-100 text-orange-800',
-            advanced: 'bg-red-100 text-red-800',
-            easy: 'bg-blue-100 text-blue-800',
-            medium: 'bg-orange-100 text-orange-800',
-            hard: 'bg-red-100 text-red-800',
+        const configs = {
+            beginner: { 
+                color: isDark ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-blue-100 text-blue-800 border-blue-300',
+                icon: '🌱'
+            },
+            intermediate: { 
+                color: isDark ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' : 'bg-orange-100 text-orange-800 border-orange-300',
+                icon: '⚡'
+            },
+            advanced: { 
+                color: isDark ? 'bg-red-500/20 text-red-300 border-red-500/30' : 'bg-red-100 text-red-800 border-red-300',
+                icon: '🔥'
+            },
+            easy: { 
+                color: isDark ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-blue-100 text-blue-800 border-blue-300',
+                icon: '🌱'
+            },
+            medium: { 
+                color: isDark ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' : 'bg-orange-100 text-orange-800 border-orange-300',
+                icon: '⚡'
+            },
+            hard: { 
+                color: isDark ? 'bg-red-500/20 text-red-300 border-red-500/30' : 'bg-red-100 text-red-800 border-red-300',
+                icon: '🔥'
+            },
+        };
+
+        const config = configs[difficulty] || { 
+            color: isDark ? 'bg-gray-500/20 text-gray-300 border-gray-500/30' : 'bg-gray-100 text-gray-800 border-gray-300',
+            icon: '❓'
         };
 
         return (
-            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                classes[difficulty] || 'bg-gray-100 text-gray-800'
-            }`}>
+            <span className={cn("inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-full border-2", config.color)}>
+                <span>{config.icon}</span>
                 {difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : 'Unknown'}
             </span>
         );
@@ -129,30 +172,44 @@ export default function Show({ auth, exercise, lesson }) {
     const getTypeIcon = (type) => {
         switch (type) {
             case 'coding':
-                return <CodeBracketIcon className="w-5 h-5 text-gray-500" />;
+                return <Code className="w-4 h-4" />;
             case 'multiple_choice':
-                return <AcademicCapIcon className="w-5 h-5 text-gray-500" />;
+                return <GraduationCap className="w-4 h-4" />;
             default:
-                return <DocumentTextIcon className="w-5 h-5 text-gray-500" />;
+                return <FileText className="w-4 h-4" />;
         }
     };
 
     if (!exercise) {
         return (
-            <AuthenticatedLayout 
-                user={auth?.user} 
-                header={<h2 className="font-semibold text-xl">Exercise</h2>}
-            >
+            <AuthenticatedLayout user={auth?.user}>
                 <Head title="Exercise not found" />
-                <div className="p-6">
-                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded">
-                        Exercise data not found. It may have been deleted or failed to load.
+                <div className="max-w-4xl mx-auto px-6 py-12">
+                    <div className={cn(
+                        "rounded-xl p-6 border-2 animate-shake",
+                        isDark 
+                            ? "bg-red-500/10 border-red-500/30 text-red-300" 
+                            : "bg-red-50 border-red-200 text-red-700"
+                    )}>
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <h3 className="font-semibold mb-1">Exercise Not Found</h3>
+                                <p className="text-sm">Exercise data not found. It may have been deleted or failed to load.</p>
+                            </div>
+                        </div>
                     </div>
                     <div className="mt-4">
                         <Link 
                             href={lesson ? safeRoute('admin.lessons.show', lesson.lesson_id) : safeRoute('admin.exercises.index')} 
-                            className="px-4 py-2 border rounded"
+                            className={cn(
+                                "inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all ripple-effect hover-lift",
+                                isDark
+                                    ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                            )}
                         >
+                            <ArrowLeft className="w-4 h-4" />
                             {lesson ? 'Back to Lesson' : 'Back to Exercises'}
                         </Link>
                     </div>
@@ -162,50 +219,70 @@ export default function Show({ auth, exercise, lesson }) {
     }
 
     return (
-        <AuthenticatedLayout 
-            user={auth?.user} 
-            header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                    {exercise?.title ?? 'Exercise Details'}
-                </h2>
-            }
-        >
+        <AuthenticatedLayout user={auth?.user}>
             <Head title={exercise?.title ?? 'Exercise Details'} />
 
-            <div className="py-12">
-                <div className="max-w-6xl mx-auto sm:px-6 lg:px-8">
+            <div className="py-12 min-h-screen">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Flash Messages */}
                     {flash?.success && (
-                        <div className="mb-4 rounded bg-green-100 border border-green-300 text-green-800 px-4 py-2">
-                            {flash.success}
+                        <div className={cn(
+                            "mb-6 rounded-xl p-4 border-2 animate-slideDown",
+                            isDark
+                                ? "bg-green-500/10 border-green-500/30 text-green-300"
+                                : "bg-green-100 border-green-300 text-green-800"
+                        )}>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle className="w-5 h-5" />
+                                {flash.success}
+                            </div>
                         </div>
                     )}
 
                     {/* Header */}
-                    <div className="mb-6">
-                        <div className="flex items-center mb-4">
-                            <Link 
-                                href={lesson 
-                                    ? safeRoute('admin.lessons.show', lesson.lesson_id) 
-                                    : safeRoute('admin.exercises.index')
-                                } 
-                                className="flex items-center text-gray-500 hover:text-gray-700 mr-4"
-                            >
-                                <ChevronLeftIcon className="w-5 h-5 mr-1" />
-                                {lesson ? `Back to ${lesson.title}` : 'Back to Exercises'}
-                            </Link>
-                        </div>
+                    <div className="mb-8 animate-fadeIn">
+                        <Link 
+                            href={lesson 
+                                ? safeRoute('admin.lessons.show', lesson.lesson_id) 
+                                : safeRoute('admin.exercises.index')
+                            } 
+                            className={cn(
+                                "inline-flex items-center gap-2 font-medium mb-6 transition-all hover-lift ripple-effect px-4 py-2 rounded-lg",
+                                isDark 
+                                    ? "text-cyan-400 hover:text-cyan-300 hover:bg-white/10" 
+                                    : "text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            )}
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            {lesson ? `Back to ${lesson.title}` : 'Back to Exercises'}
+                        </Link>
 
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                             <div className="flex-1">
-                                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                                    {exercise?.title ?? 'Untitled Exercise'}
-                                </h1>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg shadow-purple-500/30 animate-glowPulse">
+                                        <Eye className="h-7 w-7 text-white" />
+                                    </div>
+                                    <h1 className={cn(
+                                        "text-4xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+                                        isDark 
+                                            ? "from-purple-400 to-pink-400" 
+                                            : "from-purple-600 to-pink-600"
+                                    )}>
+                                        {exercise?.title ?? 'Untitled Exercise'}
+                                    </h1>
+                                </div>
+
                                 <div className="flex flex-wrap gap-2 mb-4">
                                     {getStatusBadge(exercise?.is_active)}
                                     {exercise?.difficulty && getDifficultyBadge(exercise.difficulty)}
                                     {exercise?.exercise_type && (
-                                        <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full">
+                                        <span className={cn(
+                                            "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-full border-2",
+                                            isDark
+                                                ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30"
+                                                : "bg-indigo-100 text-indigo-800 border-indigo-300"
+                                        )}>
                                             {getTypeIcon(exercise.exercise_type)}
                                             <span className="ml-1">
                                                 {exercise.exercise_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -213,41 +290,63 @@ export default function Show({ auth, exercise, lesson }) {
                                         </span>
                                     )}
                                     {exercise?.time_limit_sec && (
-                                        <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                                            <ClockIcon className="w-4 h-4 mr-1" />
+                                        <span className={cn(
+                                            "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-full border-2",
+                                            isDark
+                                                ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+                                                : "bg-yellow-100 text-yellow-800 border-yellow-300"
+                                        )}>
+                                            <Clock className="w-3.5 h-3.5" />
                                             {exercise.time_limit_sec}s
                                         </span>
                                     )}
                                 </div>
+
                                 {lesson && (
-                                    <p className="text-gray-600 mb-4">
-                                        Part of: <Link 
-                                            href={safeRoute('admin.lessons.show', lesson.lesson_id)} 
-                                            className="text-blue-600 hover:text-blue-800"
-                                        >
-                                            {lesson.title}
-                                        </Link>
-                                    </p>
+                                    <div className={cn(
+                                        "inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2",
+                                        isDark
+                                            ? "bg-blue-500/10 border-blue-500/30 text-blue-300"
+                                            : "bg-blue-50 border-blue-200 text-blue-800"
+                                    )}>
+                                        <Info className="w-4 h-4" />
+                                        <span className="text-sm">
+                                            Part of: <Link 
+                                                href={safeRoute('admin.lessons.show', lesson.lesson_id)} 
+                                                className="font-bold hover:underline"
+                                            >
+                                                {lesson.title}
+                                            </Link>
+                                        </span>
+                                    </div>
                                 )}
                             </div>
 
-                            <div className="flex space-x-3 ml-4">
+                            <div className="flex gap-3">
                                 <Link 
                                     href={lesson 
                                         ? safeRoute('admin.lessons.exercises.edit', [lesson.lesson_id, exercise.exercise_id]) 
                                         : safeRoute('admin.exercises.edit', exercise.exercise_id)
                                     } 
-                                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center"
+                                    className={cn(
+                                        "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl ripple-effect hover-lift",
+                                        isDark
+                                            ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                                            : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                                    )}
                                 >
-                                    <PencilIcon className="w-4 h-4 mr-2" />
+                                    <Pencil className="w-4 h-4" />
                                     Edit
                                 </Link>
 
                                 <button 
                                     onClick={handleDelete} 
-                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center"
+                                    className={cn(
+                                        "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl ripple-effect hover-lift",
+                                        "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white"
+                                    )}
                                 >
-                                    <TrashIcon className="w-4 h-4 mr-2" />
+                                    <Trash2 className="w-4 h-4" />
                                     Delete
                                 </button>
                             </div>
@@ -259,24 +358,63 @@ export default function Show({ auth, exercise, lesson }) {
                         <div className="lg:col-span-2 space-y-6">
                             {/* Description */}
                             {exercise?.description && (
-                                <div className="bg-white rounded-lg shadow p-6">
-                                    <div className="flex items-center mb-3">
-                                        <DocumentTextIcon className="w-5 h-5 text-gray-500 mr-2" />
-                                        <h3 className="text-lg font-semibold text-gray-900">Description</h3>
+                                <div className={cn(
+                                    "rounded-2xl border-2 p-6 card-hover-effect animate-fadeIn",
+                                    isDark 
+                                        ? "glassmorphism-enhanced border-purple-500/20" 
+                                        : "bg-white border-purple-200 shadow-lg"
+                                )}>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <FileText className={cn(
+                                            "w-5 h-5",
+                                            isDark ? "text-cyan-400" : "text-purple-600"
+                                        )} />
+                                        <h3 className={cn(
+                                            "text-xl font-bold",
+                                            isDark ? "text-white" : "text-gray-900"
+                                        )}>
+                                            Description
+                                        </h3>
                                     </div>
-                                    <p className="text-gray-700 whitespace-pre-wrap">{exercise.description}</p>
+                                    <p className={cn(
+                                        "whitespace-pre-wrap leading-relaxed",
+                                        isDark ? "text-gray-300" : "text-gray-700"
+                                    )}>
+                                        {exercise.description}
+                                    </p>
                                 </div>
                             )}
 
                             {/* Starter Code */}
                             {exercise?.starter_code && (
-                                <div className="bg-white rounded-lg shadow p-6">
-                                    <div className="flex items-center mb-3">
-                                        <CodeBracketIcon className="w-5 h-5 text-gray-500 mr-2" />
-                                        <h3 className="text-lg font-semibold text-gray-900">Starter Code</h3>
+                                <div className={cn(
+                                    "rounded-2xl border-2 p-6 card-hover-effect animate-fadeIn animation-delay-200",
+                                    isDark 
+                                        ? "glassmorphism-enhanced border-purple-500/20" 
+                                        : "bg-white border-purple-200 shadow-lg"
+                                )}>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Code className={cn(
+                                            "w-5 h-5",
+                                            isDark ? "text-green-400" : "text-green-600"
+                                        )} />
+                                        <h3 className={cn(
+                                            "text-xl font-bold",
+                                            isDark ? "text-white" : "text-gray-900"
+                                        )}>
+                                            Starter Code
+                                        </h3>
                                     </div>
-                                    <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-                                        <code className="text-sm text-gray-800">
+                                    <pre className={cn(
+                                        "p-4 rounded-xl overflow-x-auto border-2",
+                                        isDark
+                                            ? "bg-slate-900/50 border-green-500/30"
+                                            : "bg-gray-50 border-gray-300"
+                                    )}>
+                                        <code className={cn(
+                                            "text-sm font-mono",
+                                            isDark ? "text-green-300" : "text-gray-800"
+                                        )}>
                                             {exercise.starter_code}
                                         </code>
                                     </pre>
@@ -285,13 +423,34 @@ export default function Show({ auth, exercise, lesson }) {
 
                             {/* Solution */}
                             {exercise?.solution && (
-                                <div className="bg-white rounded-lg shadow p-6">
-                                    <div className="flex items-center mb-3">
-                                        <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                                        <h3 className="text-lg font-semibold text-gray-900">Solution / Expected Output</h3>
+                                <div className={cn(
+                                    "rounded-2xl border-2 p-6 card-hover-effect animate-fadeIn animation-delay-400",
+                                    isDark 
+                                        ? "glassmorphism-enhanced border-purple-500/20" 
+                                        : "bg-white border-purple-200 shadow-lg"
+                                )}>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <CheckCircle className={cn(
+                                            "w-5 h-5",
+                                            isDark ? "text-emerald-400" : "text-emerald-600"
+                                        )} />
+                                        <h3 className={cn(
+                                            "text-xl font-bold",
+                                            isDark ? "text-white" : "text-gray-900"
+                                        )}>
+                                            Solution / Expected Output
+                                        </h3>
                                     </div>
-                                    <pre className="bg-green-50 p-4 rounded-md overflow-x-auto border border-green-200">
-                                        <code className="text-sm text-gray-800">
+                                    <pre className={cn(
+                                        "p-4 rounded-xl overflow-x-auto border-2",
+                                        isDark
+                                            ? "bg-emerald-500/10 border-emerald-500/30"
+                                            : "bg-green-50 border-green-300"
+                                    )}>
+                                        <code className={cn(
+                                            "text-sm font-mono",
+                                            isDark ? "text-emerald-300" : "text-gray-800"
+                                        )}>
                                             {exercise.solution}
                                         </code>
                                     </pre>
@@ -300,18 +459,36 @@ export default function Show({ auth, exercise, lesson }) {
 
                             {/* Asset */}
                             {exercise?.asset_url && (
-                                <div className="bg-white rounded-lg shadow p-6">
-                                    <div className="flex items-center mb-3">
-                                        <DocumentTextIcon className="w-5 h-5 text-gray-500 mr-2" />
-                                        <h3 className="text-lg font-semibold text-gray-900">Additional Resources</h3>
+                                <div className={cn(
+                                    "rounded-2xl border-2 p-6 card-hover-effect animate-fadeIn animation-delay-600",
+                                    isDark 
+                                        ? "glassmorphism-enhanced border-purple-500/20" 
+                                        : "bg-white border-purple-200 shadow-lg"
+                                )}>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <FileText className={cn(
+                                            "w-5 h-5",
+                                            isDark ? "text-blue-400" : "text-blue-600"
+                                        )} />
+                                        <h3 className={cn(
+                                            "text-xl font-bold",
+                                            isDark ? "text-white" : "text-gray-900"
+                                        )}>
+                                            Additional Resources
+                                        </h3>
                                     </div>
                                     <a 
                                         href={exercise.asset_url} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                                        className={cn(
+                                            "inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ripple-effect hover-lift",
+                                            isDark
+                                                ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
+                                                : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                        )}
                                     >
-                                        <PlayIcon className="w-4 h-4 mr-1" />
+                                        <Play className="w-4 h-4" />
                                         View Resource
                                     </a>
                                 </div>
@@ -320,47 +497,132 @@ export default function Show({ auth, exercise, lesson }) {
 
                         {/* Sidebar */}
                         <div className="space-y-6">
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Exercise Information</h3>
+                            {/* Exercise Information */}
+                            <div className={cn(
+                                "rounded-2xl border-2 p-6 card-hover-effect animate-fadeIn animation-delay-200",
+                                isDark 
+                                    ? "glassmorphism-enhanced border-purple-500/20" 
+                                    : "bg-white border-purple-200 shadow-lg"
+                            )}>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Info className={cn(
+                                        "w-5 h-5",
+                                        isDark ? "text-purple-400" : "text-purple-600"
+                                    )} />
+                                    <h3 className={cn(
+                                        "text-lg font-bold",
+                                        isDark ? "text-white" : "text-gray-900"
+                                    )}>
+                                        Exercise Information
+                                    </h3>
+                                </div>
                                 <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Type:</span>
-                                        <span className="text-sm font-medium text-gray-900">
+                                    <div className={cn(
+                                        "flex justify-between items-center p-3 rounded-lg",
+                                        isDark ? "bg-white/5" : "bg-gray-50"
+                                    )}>
+                                        <span className={cn(
+                                            "text-sm font-medium",
+                                            isDark ? "text-gray-400" : "text-gray-600"
+                                        )}>Type:</span>
+                                        <span className={cn(
+                                            "text-sm font-bold",
+                                            isDark ? "text-white" : "text-gray-900"
+                                        )}>
                                             {exercise?.exercise_type?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown'}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Max Score:</span>
-                                        <span className="text-sm font-medium text-gray-900">
+                                    <div className={cn(
+                                        "flex justify-between items-center p-3 rounded-lg",
+                                        isDark ? "bg-white/5" : "bg-gray-50"
+                                    )}>
+                                        <span className={cn(
+                                            "text-sm font-medium flex items-center gap-1",
+                                            isDark ? "text-gray-400" : "text-gray-600"
+                                        )}>
+                                            <Award className="w-4 h-4" />
+                                            Max Score:
+                                        </span>
+                                        <span className={cn(
+                                            "text-sm font-bold",
+                                            isDark ? "text-yellow-400" : "text-yellow-600"
+                                        )}>
                                             {exercise?.max_score ?? 0} pts
                                         </span>
                                     </div>
                                     {exercise?.time_limit_sec && (
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-600">Time Limit:</span>
-                                            <span className="text-sm font-medium text-gray-900">
+                                        <div className={cn(
+                                            "flex justify-between items-center p-3 rounded-lg",
+                                            isDark ? "bg-white/5" : "bg-gray-50"
+                                        )}>
+                                            <span className={cn(
+                                                "text-sm font-medium flex items-center gap-1",
+                                                isDark ? "text-gray-400" : "text-gray-600"
+                                            )}>
+                                                <Clock className="w-4 h-4" />
+                                                Time Limit:
+                                            </span>
+                                            <span className={cn(
+                                                "text-sm font-bold",
+                                                isDark ? "text-white" : "text-gray-900"
+                                            )}>
                                                 {exercise.time_limit_sec}s
                                             </span>
                                         </div>
                                     )}
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Status:</span>
-                                        <span className="text-sm font-medium text-gray-900">
-                                            {exercise?.is_active ? 'Active' : 'Inactive'}
+                                    <div className={cn(
+                                        "flex justify-between items-center p-3 rounded-lg",
+                                        isDark ? "bg-white/5" : "bg-gray-50"
+                                    )}>
+                                        <span className={cn(
+                                            "text-sm font-medium",
+                                            isDark ? "text-gray-400" : "text-gray-600"
+                                        )}>Status:</span>
+                                        <span className={cn(
+                                            "text-sm font-bold",
+                                            exercise?.is_active 
+                                                ? isDark ? "text-green-400" : "text-green-600"
+                                                : isDark ? "text-gray-400" : "text-gray-600"
+                                        )}>
+                                            {exercise?.is_active ? '✅ Active' : '❌ Inactive'}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Created:</span>
-                                        <span className="text-sm font-medium text-gray-900">
+                                    <div className={cn(
+                                        "flex justify-between items-center p-3 rounded-lg",
+                                        isDark ? "bg-white/5" : "bg-gray-50"
+                                    )}>
+                                        <span className={cn(
+                                            "text-sm font-medium flex items-center gap-1",
+                                            isDark ? "text-gray-400" : "text-gray-600"
+                                        )}>
+                                            <Calendar className="w-4 h-4" />
+                                            Created:
+                                        </span>
+                                        <span className={cn(
+                                            "text-sm font-bold",
+                                            isDark ? "text-white" : "text-gray-900"
+                                        )}>
                                             {exercise?.created_at 
                                                 ? new Date(exercise.created_at).toLocaleDateString() 
                                                 : 'Unknown'
                                             }
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Updated:</span>
-                                        <span className="text-sm font-medium text-gray-900">
+                                    <div className={cn(
+                                        "flex justify-between items-center p-3 rounded-lg",
+                                        isDark ? "bg-white/5" : "bg-gray-50"
+                                    )}>
+                                        <span className={cn(
+                                            "text-sm font-medium flex items-center gap-1",
+                                            isDark ? "text-gray-400" : "text-gray-600"
+                                        )}>
+                                            <Calendar className="w-4 h-4" />
+                                            Updated:
+                                        </span>
+                                        <span className={cn(
+                                            "text-sm font-bold",
+                                            isDark ? "text-white" : "text-gray-900"
+                                        )}>
                                             {exercise?.updated_at 
                                                 ? new Date(exercise.updated_at).toLocaleDateString() 
                                                 : 'Unknown'
@@ -370,23 +632,52 @@ export default function Show({ auth, exercise, lesson }) {
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                                <div className="space-y-2">
+                            {/* Quick Actions */}
+                            <div className={cn(
+                                "rounded-2xl border-2 p-6 card-hover-effect animate-fadeIn animation-delay-400",
+                                isDark 
+                                    ? "glassmorphism-enhanced border-purple-500/20" 
+                                    : "bg-white border-purple-200 shadow-lg"
+                            )}>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Sparkles className={cn(
+                                        "w-5 h-5",
+                                        isDark ? "text-yellow-400" : "text-yellow-600"
+                                    )} />
+                                    <h3 className={cn(
+                                        "text-lg font-bold",
+                                        isDark ? "text-white" : "text-gray-900"
+                                    )}>
+                                        Quick Actions
+                                    </h3>
+                                </div>
+                                <div className="space-y-3">
                                     <Link 
                                         href={lesson 
                                             ? safeRoute('admin.lessons.exercises.edit', [lesson.lesson_id, exercise.exercise_id]) 
                                             : safeRoute('admin.exercises.edit', exercise.exercise_id)
                                         } 
-                                        className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-center block"
+                                        className={cn(
+                                            "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg ripple-effect",
+                                            isDark
+                                                ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                                                : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                                        )}
                                     >
+                                        <Pencil className="w-4 h-4" />
                                         Edit Exercise
                                     </Link>
                                     {lesson && (
                                         <Link 
                                             href={safeRoute('admin.lessons.show', lesson.lesson_id)} 
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-center block"
+                                            className={cn(
+                                                "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg ripple-effect",
+                                                isDark
+                                                    ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
+                                                    : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                                            )}
                                         >
+                                            <Eye className="w-4 h-4" />
                                             View Lesson
                                         </Link>
                                     )}
@@ -395,8 +686,14 @@ export default function Show({ auth, exercise, lesson }) {
                                             ? safeRoute('admin.lessons.exercises.index', lesson.lesson_id) 
                                             : safeRoute('admin.exercises.index')
                                         } 
-                                        className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-center block"
+                                        className={cn(
+                                            "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg ripple-effect",
+                                            isDark
+                                                ? "bg-white/10 hover:bg-white/20 text-gray-300 border-2 border-white/20"
+                                                : "bg-gray-100 hover:bg-gray-200 text-gray-800 border-2 border-gray-300"
+                                        )}
                                     >
+                                        <ArrowLeft className="w-4 h-4" />
                                         {lesson ? 'All Lesson Exercises' : 'All Exercises'}
                                     </Link>
                                 </div>
@@ -405,6 +702,124 @@ export default function Show({ auth, exercise, lesson }) {
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                .animation-delay-200 {
+                    animation-delay: 0.2s;
+                }
+                .animation-delay-400 {
+                    animation-delay: 0.4s;
+                }
+                .animation-delay-600 {
+                    animation-delay: 0.6s;
+                }
+                
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes glowPulse {
+                    0%, 100% {
+                        box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+                    }
+                    50% {
+                        box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+                    }
+                }
+                
+                @keyframes shake {
+                    0%, 100% {
+                        transform: translateX(0);
+                    }
+                    25% {
+                        transform: translateX(-5px);
+                    }
+                    75% {
+                        transform: translateX(5px);
+                    }
+                }
+                
+                .animate-fadeIn {
+                    animation: fadeIn 0.6s ease-out forwards;
+                }
+                
+                .animate-slideDown {
+                    animation: slideDown 0.4s ease-out;
+                }
+                
+                .animate-glowPulse {
+                    animation: glowPulse 2s ease-in-out infinite;
+                }
+                
+                .animate-shake {
+                    animation: shake 0.5s ease-in-out;
+                }
+                
+                .glassmorphism-enhanced {
+                    background: rgba(15, 23, 42, 0.7);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                }
+                
+                .hover-lift {
+                    transition: transform 0.2s ease;
+                }
+                
+                .hover-lift:hover {
+                    transform: translateY(-2px);
+                }
+                
+                .card-hover-effect {
+                    transition: all 0.3s ease;
+                }
+                
+                .card-hover-effect:hover {
+                    transform: translateY(-2px);
+                }
+                
+                .ripple-effect {
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .ripple-effect:active::after {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 100px;
+                    height: 100px;
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 50%;
+                    transform: translate(-50%, -50%) scale(0);
+                    animation: ripple 0.6s ease-out;
+                }
+                
+                @keyframes ripple {
+                    to {
+                        transform: translate(-50%, -50%) scale(2);
+                        opacity: 0;
+                    }
+                }
+            `}</style>
         </AuthenticatedLayout>
     );
 }

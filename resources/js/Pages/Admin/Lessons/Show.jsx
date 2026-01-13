@@ -1,53 +1,146 @@
-// resources/js/Pages/Admin/Lessons/Show.jsx
-import React from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import React, { useState, useEffect } from "react";
+import { Head, Link, router } from "@inertiajs/react";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { safeRoute, resourceRoutes } from "@/utils/routeHelpers";
 import {
-  ChevronLeftIcon,
-  PencilIcon,
-  TrashIcon,
-  PlusIcon,
-  AcademicCapIcon,
-  DocumentTextIcon,
-  ClockIcon,
-  PlayIcon
-} from '@heroicons/react/24/outline';
+  ArrowLeft,
+  AlertCircle,
+  Sparkles,
+  BookOpen,
+  ChevronDown,
+  ChevronUp
+} from "lucide-react";
+import { cn } from "@/utils/cn";
 
-export default function Show(props) {
-  // Props from Inertia
-  const { auth = null } = props || {};
-  // lesson may be passed as model or plain object
-  const lesson = props.lesson ?? null;
-  const exercises = Array.isArray(props.exercises) ? props.exercises : (props.exercises?.data ?? []);
-  const tests = Array.isArray(props.tests) ? props.tests : (props.tests?.data ?? []);
+// 导入现有组件
+import LessonHeader from './components/LessonHeader';
+import LessonContent from './components/LessonContent';
+import LessonVideo from './components/LessonVideo';
+import TestList from './components/TestList';
+import ExerciseList from './components/ExerciseList';
+import LessonSidebar from './components/LessonSidebar';
 
-  // from usePage to show flash messages if any
-  const { props: pageProps } = usePage();
-  const flash = pageProps?.flash ?? {};
+export default function Show({ lesson: propLesson, sections: propSections = [], exercises = [], tests = [], statistics = {} }) {
+  const [expandedSections, setExpandedSections] = useState({});
+  
+  // 从 localStorage 读取主题设置
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      return saved ? saved === 'dark' : true;
+    }
+    return true;
+  });
+  
+  // 监听主题变化
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem('theme');
+      setIsDark(saved === 'dark');
+    };
 
-  // resolve id (lesson_id or id)
+    // 监听 storage 事件（跨标签页）
+    window.addEventListener('storage', handleStorageChange);
+    
+    // 监听自定义事件（同一页面内）
+    window.addEventListener('theme-changed', handleStorageChange);
+    
+    // 定期检查主题变化（作为备份方案）
+    const interval = setInterval(() => {
+      const saved = localStorage.getItem('theme');
+      const currentTheme = saved === 'dark';
+      if (currentTheme !== isDark) {
+        setIsDark(currentTheme);
+      }
+    }, 100);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('theme-changed', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [isDark]);
+  
+  // 确保 lesson 和 sections 正确更新
+  const lesson = propLesson ?? null;
+  const sections = propSections || [];
+
+  // 当 sections 变化时，打印调试信息
+  useEffect(() => {
+    console.log('📚 Sections updated:', sections);
+    console.log('📖 Lesson data:', lesson);
+  }, [sections, lesson]);
+
+  // 当 sections 变化时，重置展开状态
+  useEffect(() => {
+    // 自动展开第一个 section
+    if (sections.length > 0) {
+      setExpandedSections({ 0: true });
+    }
+  }, [sections.length]);
+
+  const toggleSection = (index) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  if (!lesson) {
+    return (
+      <AuthenticatedLayout
+        header={
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-xl leading-tight">
+              Lesson Not Found
+            </h2>
+          </div>
+        }
+      >
+        <Head title="Lesson Not Found" />
+        
+        <div className="max-w-4xl mx-auto">
+          <div className={cn(
+            "rounded-xl p-6 border animate-fadeIn",
+            isDark ? "bg-red-500/10 border-red-500/30 text-red-300" : "bg-red-50 border-red-200 text-red-700"
+          )}>
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 mt-0.5" />
+              <div>
+                <h3 className="font-semibold mb-1">Lesson Not Found</h3>
+                <p className="text-sm">The lesson data could not be loaded.</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link
+              href={safeRoute('admin.lessons.index')}
+              className={cn(
+                "inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
+                isDark ? "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10" : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+              )}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Lessons
+            </Link>
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
   const lessonId = lesson?.lesson_id ?? lesson?.id ?? null;
 
-  // safe route resolver (fallback to manual URL when route() throws)
-  const safeRoute = (name, params) => {
-    try {
-      return route(name, params);
-    } catch (err) {
-      // fallback patterns used in your routes
-      if (name === 'admin.lessons.edit') return `/admin/lessons/${params}`;
-      if (name === 'admin.lessons.show') return `/admin/lessons/${params}`;
-      if (name === 'admin.lessons.tests.create') return `/admin/lessons/${params}/tests/create`;
-      if (name === 'admin.lessons.tests.show' && Array.isArray(params)) return `/admin/lessons/${params[0]}/tests/${params[1]}`;
-      if (name === 'admin.lessons.exercises.create') return `/admin/lessons/${params}/exercises/create`;
-      if (name === 'admin.lessons.exercises.show' && Array.isArray(params)) return `/admin/lessons/${params[0]}/exercises/${params[1]}`;
-      if (name === 'admin.lessons.destroy') return `/admin/lessons/${params}`;
-      return null;
-    }
-  };
+  // Generate resource routes
+  const routes = lessonId ? {
+    lesson: resourceRoutes('admin.lessons', { id: lessonId }),
+    tests: resourceRoutes('admin.lessons.tests', { lessonId }),
+    exercises: resourceRoutes('admin.lessons.exercises', { lessonId }),
+  } : null;
 
   const handleDelete = async () => {
     if (!lessonId) {
-      alert('Lesson id missing — cannot delete.');
+      alert('Lesson ID missing — cannot delete.');
       return;
     }
 
@@ -55,15 +148,11 @@ export default function Show(props) {
       return;
     }
 
-    // try named route first, fallback to manual url
-    const url = safeRoute('admin.lessons.destroy', lessonId) || `/admin/lessons/${lessonId}`;
-
-    // Use router.delete with callbacks: controller returns 303 -> GET show or index
-    router.delete(url, {
+    router.delete(routes.lesson.destroy, {
       onStart: () => console.debug('Deleting lesson', lessonId),
       onSuccess: () => {
         console.debug('Delete success');
-        router.reload({ preserveScroll: true });
+        router.visit(safeRoute('admin.lessons.index'));
       },
       onError: (errors) => {
         console.error('Delete failed', errors);
@@ -72,255 +161,260 @@ export default function Show(props) {
     });
   };
 
-  const getStatusBadge = (status) => {
-    const classes = {
-      active: 'bg-green-100 text-green-800',
-      inactive: 'bg-gray-100 text-gray-800',
-      draft: 'bg-yellow-100 text-yellow-800',
-      archived: 'bg-red-100 text-red-800',
-    };
-
-    const labels = {
-      active: 'Active',
-      inactive: 'Inactive',
-      draft: 'Draft',
-      archived: 'Archived',
-    };
-
-    return (
-      <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${classes[status] || 'bg-gray-100 text-gray-800'}`}>
-        {labels[status] ?? status ?? '—'}
-      </span>
-    );
-  };
-
-  const getDifficultyBadge = (difficulty) => {
-    const classes = {
-      beginner: 'bg-blue-100 text-blue-800',
-      intermediate: 'bg-orange-100 text-orange-800',
-      advanced: 'bg-red-100 text-red-800',
-      easy: 'bg-blue-100 text-blue-800',
-      medium: 'bg-orange-100 text-orange-800',
-      hard: 'bg-red-100 text-red-800',
-    };
-
-    return (
-      <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${classes[difficulty] || 'bg-gray-100 text-gray-800'}`}>
-        {difficulty ?? 'Unknown'}
-      </span>
-    );
-  };
-
-  // If lesson missing, show friendly message
-  if (!lesson) {
-    return (
-      <AuthenticatedLayout user={auth?.user} header={<h2 className="font-semibold text-xl">Lesson</h2>}>
-        <Head title="Lesson not found" />
-        <div className="p-6">
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded">Lesson data not found. It may have been deleted or failed to load.</div>
-          <div className="mt-4">
-            <Link href={safeRoute('admin.lessons.index') || '/admin/lessons'} className="px-4 py-2 border rounded">Back to Lessons</Link>
-          </div>
-        </div>
-      </AuthenticatedLayout>
-    );
-  }
-
   return (
-    <AuthenticatedLayout user={auth?.user} header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">{lesson?.title ?? 'Lesson Details'}</h2>}>
-      <Head title={lesson?.title ?? 'Lesson Details'} />
+    <AuthenticatedLayout>
+      <Head title={lesson.title} />
 
-      <div className="py-12">
-        <div className="max-w-6xl mx-auto sm:px-6 lg:px-8">
-          {/* flash */}
-          {flash?.success && (
-            <div className="mb-4 rounded bg-green-100 border border-green-300 text-green-800 px-4 py-2">
-              {flash.success}
-            </div>
-          )}
+      <div className="space-y-6">
+        {/* Lesson Header with Actions */}
+        <LessonHeader
+          lesson={lesson}
+          routes={routes}
+          onDelete={handleDelete}
+          isDark={isDark}
+        />
 
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center mb-4">
-              <Link href={safeRoute('admin.lessons.index') || '/admin/lessons'} className="flex items-center text-gray-500 hover:text-gray-700 mr-4">
-                <ChevronLeftIcon className="w-5 h-5 mr-1" />
-                Back to Lessons
-              </Link>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Lesson Content */}
+            {lesson?.content && (
+              <LessonContent
+                content={lesson.content}
+                contentType={lesson.content_type || 'markdown'}
+                isDark={isDark}
+              />
+            )}
 
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{lesson?.title ?? 'Untitled Lesson'}</h1>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {getStatusBadge(lesson?.status)}
-                  {getDifficultyBadge(lesson?.difficulty)}
-                  {lesson?.estimated_duration && (
-                    <span className="inline-flex px-3 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                      <ClockIcon className="w-4 h-4 mr-1" />
-                      {lesson.estimated_duration} min
-                    </span>
-                  )}
+            {/* Lesson Sections */}
+            {sections && sections.length > 0 && (
+              <div className={cn(
+                "rounded-2xl shadow-lg border backdrop-blur-sm animate-fadeIn",
+                isDark ? "bg-slate-900/50 border-white/10" : "bg-white border-gray-200"
+              )}>
+                <div className={cn(
+                  "p-6 border-b bg-gradient-to-r",
+                  isDark ? "border-white/10 from-purple-500/10 to-pink-500/10" : "border-gray-200 from-purple-50 to-pink-50"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center shadow-lg",
+                      isDark ? "bg-gradient-to-br from-purple-500/30 to-pink-500/30 border border-purple-500/50" : "bg-gradient-to-br from-purple-100 to-pink-100"
+                    )}>
+                      <BookOpen className={cn("w-5 h-5", isDark ? "text-pink-400" : "text-purple-600")} />
+                    </div>
+                    <div>
+                      <h3 className={cn("text-xl font-bold", isDark ? "text-white" : "text-gray-900")}>
+                        Lesson Sections
+                      </h3>
+                      <p className={cn("text-sm", isDark ? "text-slate-400" : "text-gray-600")}>
+                        {sections.length} section{sections.length !== 1 ? 's' : ''} in this lesson
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  {sections.map((section, index) => {
+                    const sectionId = section.id || section.lesson_section_id || index;
+                    
+                    return (
+                      <div
+                        key={sectionId}
+                        className={cn(
+                          "rounded-xl border transition-all card-hover-effect",
+                          isDark ? "bg-slate-800/50 border-white/10 hover:border-cyan-500/50" : "bg-gray-50 border-gray-200 hover:border-blue-300"
+                        )}
+                      >
+                        <button
+                          onClick={() => toggleSection(index)}
+                          className="w-full p-4 flex items-center justify-between hover:bg-opacity-80 transition-all ripple-effect"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold",
+                              isDark ? "bg-cyan-500/20 text-cyan-300" : "bg-blue-100 text-blue-700"
+                            )}>
+                              {index + 1}
+                            </div>
+                            <span className={cn("font-semibold text-left", isDark ? "text-white" : "text-gray-900")}>
+                              {section.title}
+                            </span>
+                          </div>
+                          {expandedSections[index] ? (
+                            <ChevronUp className={cn("w-5 h-5", isDark ? "text-slate-400" : "text-gray-600")} />
+                          ) : (
+                            <ChevronDown className={cn("w-5 h-5", isDark ? "text-slate-400" : "text-gray-600")} />
+                          )}
+                        </button>
+
+                        {expandedSections[index] && (
+                          <div className={cn(
+                            "px-4 pb-4 border-t animate-fadeIn",
+                            isDark ? "border-white/10" : "border-gray-200"
+                          )}>
+                            <div className={cn(
+                              "mt-4 prose prose-sm max-w-none",
+                              isDark ? "prose-invert" : ""
+                            )}>
+                              <div className={cn(
+                                "whitespace-pre-wrap text-sm leading-relaxed",
+                                isDark ? "text-slate-300" : "text-gray-700"
+                              )}>
+                                {section.content}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
-              <div className="flex space-x-3 ml-4">
+            {/* Video Section */}
+            {lesson.video_url && (
+              <LessonVideo videoUrl={lesson.video_url} isDark={isDark} />
+            )}
 
+            {/* Tests Section */}
+            <TestList
+              tests={tests}
+              lessonId={lessonId}
+              createRoute={routes?.tests?.create}
+              isDark={isDark}
+            />
 
-                <button onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center">
-                  <TrashIcon className="w-4 h-4 mr-2" />
-                  Delete
-                </button>
-              </div>
-            </div>
+            {/* Exercises Section */}
+            <ExerciseList
+              exercises={exercises}
+              lessonId={lessonId}
+              createRoute={routes?.exercises?.create}
+              isDark={isDark}
+            />
           </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-2 space-y-6">
-              {/* Description */}
-              {lesson?.description && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center mb-3">
-                    <DocumentTextIcon className="w-5 h-5 text-gray-500 mr-2" />
-                    <h3 className="text-lg font-semibold text-gray-900">Description</h3>
-                  </div>
-                  <p className="text-gray-700 whitespace-pre-wrap">{lesson.description}</p>
-                </div>
-              )}
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <LessonSidebar
+              lesson={lesson}
+              exercises={exercises}
+              tests={tests}
+              routes={routes}
+              isDark={isDark}
+            />
 
-              {/* Video (if any) */}
-              {lesson?.video_url && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center mb-3">
-                    <PlayIcon className="w-5 h-5 text-gray-500 mr-2" />
-                    <h3 className="text-lg font-semibold text-gray-900">Video</h3>
-                  </div>
-                  <div className="aspect-w-16 aspect-h-9">
-                    <iframe
-                      src={lesson.video_url}
-                      className="w-full h-64 rounded-md"
-                      allowFullScreen
-                      title="Lesson Video"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Tests */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Tests ({tests?.length || 0})</h3>
-                  <Link href={safeRoute('admin.lessons.tests.create', lessonId) || `/admin/lessons/${lessonId}/tests/create`} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm flex items-center">
-                    <PlusIcon className="w-4 h-4 mr-1" />
-                    Add Test
-                  </Link>
-                </div>
-
-                {tests && tests.length > 0 ? (
-                  <div className="space-y-3">
-                    {tests.map((test) => (
-                      <div key={test.test_id ?? test.id} className="border border-gray-200 rounded-md p-4 hover:bg-gray-50">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{test.title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {test.type} • {test.max_score} pts {test.time_limit && `• ${test.time_limit} min`}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {getStatusBadge(test.status)}
-                            <Link href={safeRoute('admin.lessons.tests.show', [lessonId, test.test_id]) || `/admin/lessons/${lessonId}/tests/${test.test_id}`} className="text-blue-600 hover:text-blue-800 text-sm">
-                              View
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <AcademicCapIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No tests created yet.</p>
-                    <Link href={safeRoute('admin.lessons.tests.create', lessonId) || `/admin/lessons/${lessonId}/tests/create`} className="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block">Create your first test</Link>
+            {/* Statistics Card */}
+            <div className={cn(
+              "rounded-2xl shadow-lg border backdrop-blur-sm p-6 animate-fadeIn",
+              isDark ? "bg-slate-900/50 border-white/10" : "bg-white border-gray-200"
+            )}>
+              <h3 className={cn("text-lg font-bold mb-4", isDark ? "text-white" : "text-gray-900")}>
+                📊 Content Statistics
+              </h3>
+              <div className="space-y-4">
+                {/* Sections */}
+                {sections.length > 0 && (
+                  <div className={cn(
+                    "p-4 rounded-lg transition-all card-hover-effect",
+                    isDark ? "bg-purple-500/10 hover:bg-purple-500/20" : "bg-purple-50 hover:bg-purple-100"
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <span className={cn("text-sm font-medium", isDark ? "text-slate-300" : "text-gray-700")}>
+                        📚 Sections
+                      </span>
+                      <span className={cn("text-2xl font-bold", isDark ? "text-purple-400" : "text-purple-600")}>
+                        {sections.length}
+                      </span>
+                    </div>
                   </div>
                 )}
-              </div>
 
-                  {/* Exercises */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">Exercises ({exercises?.length || 0})</h3>
-                          <Link href={safeRoute('admin.lessons.exercises.create', lessonId) || `/admin/lessons/${lessonId}/exercises/create`} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm flex items-center">
-                            <PlusIcon className="w-4 h-4 mr-1" />
-                            Add Exercise
-                          </Link>
-                        </div>
-
-                {exercises && exercises.length > 0 ? (
-                  <div className="space-y-3">
-                    {exercises.map((exercise) => (
-                      <div key={exercise.exercise_id ?? exercise.id} className="border border-gray-200 rounded-md p-4 hover:bg-gray-50">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{exercise.title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{exercise.exercise_type ?? exercise.type} • {exercise.points ?? exercise.max_score ?? 0} pts</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {getStatusBadge(exercise.status)}
-                            <Link href={safeRoute('admin.lessons.exercises.show', [lessonId, exercise.exercise_id]) || `/admin/lessons/${lessonId}/exercises/${exercise.exercise_id}`} className="text-blue-600 hover:text-blue-800 text-sm">
-                              View
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <DocumentTextIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No exercises created yet.</p>
-                    <Link href={safeRoute('admin.lessons.exercises.create', lessonId) || `/admin/lessons/${lessonId}/exercises/create`} className="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block">Create your first exercise</Link>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Lesson Information</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Duration:</span>
-                    <span className="text-sm font-medium text-gray-900">{lesson?.estimated_duration ?? 0} min</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Reward Points:</span>
-                    <span className="text-sm font-medium text-gray-900">{lesson?.completion_reward_points ?? 0} pts</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Created:</span>
-                    <span className="text-sm font-medium text-gray-900">{lesson?.created_at ? new Date(lesson.created_at).toLocaleDateString() : 'Unknown'}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Updated:</span>
-                    <span className="text-sm font-medium text-gray-900">{lesson?.updated_at ? new Date(lesson.updated_at).toLocaleDateString() : 'Unknown'}</span>
+                {/* Exercises */}
+                <div className={cn(
+                  "p-4 rounded-lg transition-all card-hover-effect",
+                  isDark ? "bg-green-500/10 hover:bg-green-500/20" : "bg-green-50 hover:bg-green-100"
+                )}>
+                  <div className="flex items-center justify-between">
+                    <span className={cn("text-sm font-medium", isDark ? "text-slate-300" : "text-gray-700")}>
+                      💻 Exercises
+                    </span>
+                    <span className={cn("text-2xl font-bold", isDark ? "text-green-400" : "text-green-600")}>
+                      {exercises?.length || 0}
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                <div className="space-y-2">
-                  <Link href={safeRoute('admin.lessons.edit', lessonId) || `/admin/lessons/${lessonId}/edit`} className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-center block">Edit Lesson</Link>
-                  <Link href={safeRoute('admin.lessons.tests.index', lessonId) || `/admin/lessons/${lessonId}/tests`} className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-center block">Manage Tests</Link>
-                  <Link href={safeRoute('admin.lessons.exercises.index', lessonId) || `/admin/lessons/${lessonId}/exercises`} className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-center block">Manage Exercises</Link>
+                {/* Tests */}
+                <div className={cn(
+                  "p-4 rounded-lg transition-all card-hover-effect",
+                  isDark ? "bg-blue-500/10 hover:bg-blue-500/20" : "bg-blue-50 hover:bg-blue-100"
+                )}>
+                  <div className="flex items-center justify-between">
+                    <span className={cn("text-sm font-medium", isDark ? "text-slate-300" : "text-gray-700")}>
+                      📝 Tests
+                    </span>
+                    <span className={cn("text-2xl font-bold", isDark ? "text-blue-400" : "text-blue-600")}>
+                      {tests?.length || 0}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .ripple-effect {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .ripple-effect:active::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 100px;
+          height: 100px;
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          transform: translate(-50%, -50%) scale(0);
+          animation: ripple 0.6s ease-out;
+        }
+        
+        @keyframes ripple {
+          to {
+            transform: translate(-50%, -50%) scale(2);
+            opacity: 0;
+          }
+        }
+        
+        .card-hover-effect {
+          transition: all 0.3s ease;
+        }
+        
+        .card-hover-effect:hover {
+          transform: translateY(-2px);
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+      `}</style>
     </AuthenticatedLayout>
   );
 }

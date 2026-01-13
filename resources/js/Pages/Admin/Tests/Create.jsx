@@ -27,11 +27,20 @@ export default function Create({ auth, lesson, statusOptions }) {
         order: '',
     });
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        post(route('admin.lessons.tests.store', lesson.lesson_id));
-    };
+const handleSubmit = (e) => {
+  e.preventDefault();
 
+  // 使用 post 方法提交到 store 路由
+  post(route('admin.lessons.tests.store', lesson.lesson_id), {
+    preserveScroll: true,
+    onSuccess: () => {
+      console.log('Test created successfully');
+    },
+    onError: (errors) => {
+      console.error('Failed to create test:', errors);
+    },
+  });
+};
     return (
         <AuthenticatedLayout
             user={auth.user}

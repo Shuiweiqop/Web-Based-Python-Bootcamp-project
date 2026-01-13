@@ -1,5 +1,5 @@
 <?php
-// 2. app/Models/Question.php
+// app/Models/Question.php
 
 namespace App\Models;
 
@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\SubmissionAnswer; // 确保导入 SubmissionAnswer 模型
 
 class Question extends Model
 {
@@ -47,6 +48,20 @@ class Question extends Model
         self::TYPE_SHORT_ANSWER => 'Short Answer'
     ];
 
+    // Laravel Boot method for auto-setting order
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($question) {
+            // 确保 order 有值
+            if (!$question->order) {
+                $maxOrder = static::where('test_id', $question->test_id)->max('order');
+                $question->order = ($maxOrder ?? 0) + 1;
+            }
+        });
+    }
+
     // Relationships
     public function test(): BelongsTo
     {
@@ -85,30 +100,10 @@ class Question extends Model
         return $query->where('test_id', $testId)->orderBy('order');
     }
 
-    // Helper methods
+    // Accessors - 使用新的 Laravel 语法
     public function getTypeNameAttribute()
     {
         return self::TYPES[$this->type] ?? 'Unknown';
-    }
-
-    public function isMcqAttribute()
-    {
-        return $this->type === self::TYPE_MCQ;
-    }
-
-    public function isCodingAttribute()
-    {
-        return $this->type === self::TYPE_CODING;
-    }
-
-    public function isTrueFalseAttribute()
-    {
-        return $this->type === self::TYPE_TRUE_FALSE;
-    }
-
-    public function isShortAnswerAttribute()
-    {
-        return $this->type === self::TYPE_SHORT_ANSWER;
     }
 
     public function getDifficultyNameAttribute()
@@ -117,6 +112,28 @@ class Question extends Model
         return $levels[$this->difficulty_level] ?? 'Unknown';
     }
 
+    // Boolean checks
+    public function getIsMcqAttribute()
+    {
+        return $this->type === self::TYPE_MCQ;
+    }
+
+    public function getIsCodingAttribute()
+    {
+        return $this->type === self::TYPE_CODING;
+    }
+
+    public function getIsTrueFalseAttribute()
+    {
+        return $this->type === self::TYPE_TRUE_FALSE;
+    }
+
+    public function getIsShortAnswerAttribute()
+    {
+        return $this->type === self::TYPE_SHORT_ANSWER;
+    }
+
+    // Helper methods
     public function getCorrectOptions()
     {
         if ($this->type !== self::TYPE_MCQ) {
@@ -124,6 +141,11 @@ class Question extends Model
         }
 
         return $this->options()->where('is_correct', true)->get();
+    }
+
+    public function getTotalOptionsCount()
+    {
+        return $this->options()->count();
     }
 
     public function checkAnswer($userAnswer)
@@ -162,14 +184,56 @@ class Question extends Model
 
     private function checkShortAnswer($answer)
     {
-        // Simple string comparison (you might want to make this more sophisticated)
+        // Simple string comparison - 可以后续改进为更复杂的匹配
         return strtolower(trim($answer)) === strtolower(trim($this->correct_answer));
     }
 
     private function checkCodingAnswer($code)
     {
-        // This would need actual code execution logic
-        // For now, just return false - implement code execution service later
+        // 编程题的答案检查需要代码执行服务
+        // 目前返回 false，等待实现代码执行功能
         return false;
     }
+
+    // Validation helper
+    public function hasValidAnswer()
+    {
+        switch ($this->type) {
+            case self::TYPE_MCQ:
+                return $this->options()->where('is_correct', true)->exists();
+            case self::TYPE_TRUE_FALSE:
+                return in_array(strtolower($this->correct_answer), ['true', 'false']);
+            case self::TYPE_SHORT_ANSWER:
+            case self::TYPE_CODING:
+                return !empty(trim($this->correct_answer));
+            default:
+                return false;
+        }
+    }
+
+    // 获取题目的配置摘要
+    public function getConfigSummary()
+    {
+        $summary = [
+            'type' => $this->type_name,
+            'points' => $this->points,
+            'difficulty' => $this->difficulty_name,
+            'status' => $this->status,
+        ];
+
+        if ($this->type === self::TYPE_MCQ) {
+            $summary['options_count'] = $this->getTotalOptionsCount();
+            $summary['correct_options'] = $this->getCorrectOptions()->count();
+        }
+
+        if ($this->metadata && is_array($this->metadata)) {
+            $summary['metadata'] = $this->metadata;
+        }
+
+        return $summary;
+    }
+
+    // 软删除支持 (如果需要)
+    // use SoftDeletes;
+    // protected $dates = ['deleted_at'];
 }

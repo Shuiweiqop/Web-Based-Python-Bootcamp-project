@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('forum_posts', function (Blueprint $table) {
             $table->id('post_id');
-            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('user_id'); // ✅ 改用 user_id (支持 admin 和 student)
             $table->string('title', 200);
             $table->text('content');
             $table->enum('category', [
@@ -30,14 +30,14 @@ return new class extends Migration
             $table->boolean('is_locked')->default(false)->comment('Prevent new replies');
             $table->timestamps();
 
-            // Foreign key constraint
-            $table->foreign('student_id')
-                ->references('student_id')
-                ->on('student_profiles')
+            // Foreign key constraint - 关联到 users 表
+            $table->foreign('user_id')
+                ->references('user_Id') // ⚠️ 根据你的 users 表主键调整大小写
+                ->on('users')
                 ->onDelete('cascade');
 
             // Indexes for better performance
-            $table->index('student_id');
+            $table->index('user_id');
             $table->index('category');
             $table->index('created_at');
             $table->index(['category', 'created_at']);

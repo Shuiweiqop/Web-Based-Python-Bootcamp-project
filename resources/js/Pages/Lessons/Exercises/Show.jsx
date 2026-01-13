@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle, Trophy } from 'lucide-react';
+import axios from 'axios';
+import StudentLayout from '@/Layouts/StudentLayout';
 
-// 导入拆分后的组件 - 使用相对路径
+// 导入拆分后的组件
 import GameHeader from './components/GameHeader';
 import GameStatusPanel from './components/GameStatusPanel';
 import GameContainer from './components/GameContainer';
@@ -12,25 +14,27 @@ import GameContainer from './components/GameContainer';
 import DragDropGame from './components/DragDropGame';
 import AdventureGame from './components/AdventureGame';
 import MazeGame from './components/MazeGame';
+import CodingExercise from './components/CodingExercise'; // 🔥 编程练习
 import DefaultGamePlaceholder from './components/DefaultGamePlaceholder';
 
 // 导入 hooks
 import { useTimer } from './hooks/useTimer';
 import { useScore } from './hooks/useScore';
 
-/**
- * 练习详情页面 - 拆分后的版本
- * 文件位置：resources/js/Pages/Lessons/Exercises/Show.jsx
- */
 export default function ExerciseShow({ auth, lesson, exercise }) {
   const [gameStarted, setGameStarted] = useState(false);
+  const [gameCompleted, setGameCompleted] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
 
-  // 使用自定义 hooks
+  // 🔥 检查是否是 Coding Exercise
+  const isCodingExercise = exercise.exercise_type === 'coding' || exercise.type === 'coding';
+
   const timer = useTimer(
     exercise.time_limit, 
     gameStarted,
     () => {
-      // 时间到时的处理
       handleGameComplete();
     }
   );
@@ -38,46 +42,89 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const score = useScore(
     exercise.max_score,
     (newScore) => {
-      // 分数变化时的处理 - 可以发送到后端
       console.log('Score updated:', newScore);
     }
   );
 
-  // 开始游戏
   const handleGameStart = () => {
+    console.log('🎮 Starting exercise:', exercise.title);
+    
     setGameStarted(true);
+    setGameCompleted(false);
     timer.start();
     score.resetScore();
   };
 
-  // 游戏完成处理
-  const handleGameComplete = () => {
-    // 提交分数到后端
-    router.post(route('exercises.submit', exercise.id), {
-      score: score.currentScore,
-      time_taken: exercise.time_limit - timer.timeLeft,
-      completed: true,
-    }, {
-      preserveScroll: true,
-      onSuccess: (page) => {
-        console.log('Score submitted successfully');
-      },
-      onError: (errors) => {
-        console.error('Failed to submit score:', errors);
+  const handleGameComplete = async () => {
+    if (gameCompleted || isSubmitting) return;
+
+    setIsSubmitting(true);
+    const timeTaken = exercise.time_limit_sec 
+      ? exercise.time_limit_sec - timer.timeLeft 
+      : timer.timeLeft;
+    const achievedScore = score.currentScore;
+
+    setFinalScore(achievedScore);
+    setGameCompleted(true);
+    timer.pause();
+
+    const lessonId = lesson.lesson_id;
+    const exerciseId = exercise.exercise_id || exercise.id;
+
+    try {
+      const { data } = await axios.post(
+        route('lessons.exercises.api.submit', { lesson: lessonId, exercise: exerciseId }),
+        {
+          answer: { completed: true, score: achievedScore },
+          time_spent: timeTaken,
+        }
+      );
+
+      console.log('✅ Submission successful:', data);
+      setSubmissionResult(data);
+
+      // 🎉 课程完成提示
+      if (data.lesson_progress?.lesson_completed) {
+        setTimeout(() => {
+          alert(`🎉 Congratulations! You've completed the lesson and earned ${data.lesson_progress.points_amount} points!`);
+        }, 500);
       }
-    });
+    } catch (error) {
+      console.error('❌ Submission failed:', error);
+      alert('Failed to submit your answer. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // 渲染对应的游戏组件
+  const handleReturnToLesson = () => {
+    // 设置刷新标记
+    sessionStorage.setItem('refresh_lesson_progress', 'true');
+    router.visit(`/lessons/${lesson.lesson_id}`);
+  };
+
   const renderGameContent = () => {
     const gameProps = {
       exercise,
       onScoreUpdate: score.updateScore,
+      onComplete: handleGameComplete,
       isTimeUp: timer.isTimeUp,
       timeLeft: timer.timeLeft,
     };
 
-    switch (exercise.type) {
+    // 🔥 Coding Exercise 独立渲染
+    if (isCodingExercise) {
+      return (
+        <CodingExercise 
+          exercise={exercise} 
+          lessonId={lesson.lesson_id}
+          auth={auth}
+        />
+      );
+    }
+
+    // 传统游戏类型
+    switch (exercise.exercise_type || exercise.type) {
       case 'drag_drop':
         return <DragDropGame {...gameProps} />;
       case 'adventure_game':
@@ -89,8 +136,135 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     }
   };
 
+  // 游戏完成结果展示
+  const renderCompletionScreen = () => {
+    const scorePercentage = (finalScore / exercise.max_score) * 100;
+    const isPerfect = scorePercentage === 100;
+    const isGood = scorePercentage >= 70;
+
+    const lessonCompleted = submissionResult?.lesson_progress?.lesson_completed;
+    const pointsAwarded = submissionResult?.lesson_progress?.points_amount;
+
+    return (
+      <div className="min-h-[600px] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center">
+          {/* Success Icon */}
+          <div className="mb-6">
+            {isPerfect ? (
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full">
+                <Trophy className="w-12 h-12 text-white" />
+              </div>
+            ) : (
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full">
+                <CheckCircle className="w-12 h-12 text-white" />
+              </div>
+            )}
+          </div>
+
+          {/* Title */}
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            {isPerfect ? '🎉 Perfect Score!' : isGood ? '✨ Great Job!' : '💪 Keep Trying!'}
+          </h2>
+          <p className="text-gray-600 mb-8">
+            {isPerfect 
+              ? 'You mastered this exercise!' 
+              : isGood 
+              ? 'You did really well!'
+              : 'Practice makes perfect!'}
+          </p>
+
+          {/* Score Display */}
+          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-6 mb-8">
+            <div className="text-sm text-gray-600 mb-2">Your Score</div>
+            <div className="text-5xl font-bold text-indigo-600 mb-2">
+              {finalScore}
+            </div>
+            <div className="text-gray-600">out of {exercise.max_score} points</div>
+            
+            {/* Progress Bar */}
+            <div className="mt-4 h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-1000 ${
+                  isPerfect ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
+                  isGood ? 'bg-gradient-to-r from-green-400 to-emerald-500' :
+                  'bg-gradient-to-r from-blue-400 to-indigo-500'
+                }`}
+                style={{ width: `${scorePercentage}%` }}
+              />
+            </div>
+            <div className="text-sm text-gray-600 mt-2">{scorePercentage.toFixed(0)}%</div>
+          </div>
+
+          {/* 课程完成提示 */}
+          {lessonCompleted && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl">
+              <div className="text-lg font-bold text-yellow-800 mb-1">
+                🎊 Lesson Completed!
+              </div>
+              <div className="text-yellow-700">
+                You earned <span className="font-bold">{pointsAwarded}</span> bonus points!
+              </div>
+            </div>
+          )}
+
+          {/* 进度信息 */}
+          {submissionResult?.lesson_progress && !lessonCompleted && (
+            <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+              <div className="text-blue-800">
+                Exercises: {submissionResult.lesson_progress.exercises_completed}/{lesson.required_exercises || '?'} • 
+                Tests: {submissionResult.lesson_progress.tests_passed}/{lesson.required_tests || '?'}
+              </div>
+            </div>
+          )}
+
+          {/* Time Taken */}
+          {timer.formattedTime && (
+            <div className="text-sm text-gray-600 mb-6">
+              Time: {timer.formattedTime}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleReturnToLesson}
+              className="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Return to Lesson
+            </button>
+
+            <button
+              onClick={() => {
+                setGameStarted(false);
+                setGameCompleted(false);
+                setSubmissionResult(null);
+                score.resetScore();
+                timer.reset(exercise.time_limit);
+              }}
+              className="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 🔥 Coding Exercise 使用独立布局（全屏）
+  if (isCodingExercise) {
+    return (
+      <>
+        <Head title={`${exercise.title} - ${lesson.title}`} />
+        {renderGameContent()}
+      </>
+    );
+  }
+
+  // 🎮 传统游戏类型的布局（带侧边栏）
   return (
-    <AuthenticatedLayout user={auth.user}>
+    <StudentLayout user={auth.user}>
       <Head title={`${exercise.title} - ${lesson.title}`} />
       
       <div className="max-w-6xl mx-auto p-6">
@@ -107,6 +281,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                   exercise={exercise}
                   onGameStart={handleGameStart}
                 />
+              ) : gameCompleted ? (
+                renderCompletionScreen()
               ) : (
                 <div className="min-h-[600px]">
                   {renderGameContent()}
@@ -114,8 +290,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
               )}
             </div>
 
-            {/* 状态面板 - 只在游戏开始后显示 */}
-            {gameStarted && (
+            {/* 状态面板 - 只在游戏进行中显示 */}
+            {gameStarted && !gameCompleted && (
               <div className="w-64 border-l border-gray-200 p-4">
                 <GameStatusPanel
                   currentScore={score.currentScore}
@@ -125,7 +301,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                   hasTimeLimit={!!exercise.time_limit}
                 />
                 
-                {/* 额外的游戏控制按钮 */}
+                {/* 游戏控制按钮 */}
                 <div className="mt-4 space-y-2">
                   <button
                     onClick={timer.isRunning ? timer.pause : timer.start}
@@ -136,9 +312,18 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                   </button>
                   
                   <button
+                    onClick={handleGameComplete}
+                    className="w-full px-3 py-2 text-sm bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors font-medium"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Finish & Submit'}
+                  </button>
+                  
+                  <button
                     onClick={() => {
                       if (confirm('Are you sure you want to restart?')) {
                         setGameStarted(false);
+                        setGameCompleted(false);
                         timer.reset(exercise.time_limit);
                         score.resetScore();
                       }
@@ -153,6 +338,6 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </StudentLayout>
   );
 }

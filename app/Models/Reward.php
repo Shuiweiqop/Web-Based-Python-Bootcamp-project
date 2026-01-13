@@ -1,0 +1,196 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class Reward extends Model
+{
+    protected $table = 'reward_catalog';
+    protected $primaryKey = 'reward_id';
+    public $timestamps = true;
+
+    protected $fillable = [
+        'name',
+        'description',
+        'reward_type',
+        'rarity',
+        'stock_quantity',
+        'point_cost',
+        'max_owned',
+        'image_url',
+        'apply_instructions',
+        'metadata',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'metadata' => 'array',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'stock_quantity' => 'integer',
+        'point_cost' => 'integer',
+        'max_owned' => 'integer',
+    ];
+
+    // ==================== ✅ 添加这两个方法 ====================
+
+    /**
+     * 添加 'id' 访问器，让前端可以使用 reward.id
+     * 这样 Inertia.js 和 React 都能正常工作
+     */
+    protected $appends = ['id'];
+
+    public function getIdAttribute()
+    {
+        return $this->reward_id;
+    }
+
+    // ==================== Route Model Binding Configuration ====================
+
+    /**
+     * Get the route key for the model.
+     * This tells Laravel to use 'reward_id' instead of 'id' for route binding
+     */
+    public function getRouteKeyName()
+    {
+        return 'reward_id';
+    }
+
+    // ==================== 关系 ====================
+
+    public function rewardRecords(): HasMany
+    {
+        return $this->hasMany(RewardRecord::class, 'reward_id', 'reward_id');
+    }
+
+    public function inventoryItems(): HasMany
+    {
+        return $this->hasMany(StudentRewardInventory::class, 'reward_id', 'reward_id');
+    }
+
+    // ==================== 方法 ====================
+
+    /**
+     * 检查奖励是否可购买
+     */
+    public function canPurchase(): bool
+    {
+        return (bool) ($this->is_active && ($this->stock_quantity < 0 || $this->stock_quantity > 0));
+    }
+
+    /**
+     * 并发安全地扣减库存
+     *
+     * 返回 true = 扣减成功（或无限库存），false = 库存不足
+     */
+    public function decreaseStock(int $quantity = 1): bool
+    {
+        // 无限库存直接成功
+        if ($this->stock_quantity < 0) {
+            return true;
+        }
+
+        // 使用事务 + 行锁（SELECT ... FOR UPDATE）防止并发超卖
+        return DB::transaction(function () use ($quantity) {
+            // 锁定当前行（使用主键）
+            $row = self::where('reward_id', $this->reward_id)->lockForUpdate()->first();
+
+            if (!$row) {
+                return false;
+            }
+
+            // 重新检查库存
+            if ($row->stock_quantity < $quantity) {
+                return false;
+            }
+
+            // 扣减
+            $row->decrement('stock_quantity', $quantity);
+
+            return true;
+        });
+    }
+
+    /**
+     * 增加库存
+     */
+    public function increaseStock(int $quantity = 1): void
+    {
+        if ($this->stock_quantity >= 0 && $quantity > 0) {
+            $this->increment('stock_quantity', $quantity);
+            // 同步当前实例的值
+            $this->refresh();
+        }
+    }
+
+    /**
+     * 获取稀有度标签（UI 使用）
+     */
+    public function getRarityBadge(): string
+    {
+        return match ($this->rarity) {
+            'legendary' => '🌟 传说',
+            'epic' => '💜 史诗',
+            'rare' => '💙 稀有',
+            'common' => '⚪ 普通',
+            default => '未知',
+        };
+    }
+
+    /**
+     * 检查学生是否能再买这个奖励
+     *
+     * 说明：StudentRewardInventory 表可能有两种实现：
+     *  1) 每次获得记录一行 (无 quantity 字段) -> 使用 count()
+     *  2) 表含 quantity 字段 -> 使用 sum(quantity)
+     *
+     * 该方法会自动兼容两种实现。
+     */
+    public function canStudentOwn(int $studentId): bool
+    {
+        if ($this->max_owned < 0) {
+            return true; // 无限制
+        }
+
+        // 优先尝试用 quantity 字段（如果存在）
+        $inventoryQuery = StudentRewardInventory::where('student_id', $studentId)
+            ->where('reward_id', $this->reward_id);
+
+        // 如果字段 quantity 存在，则用 sum；否则用 count
+        $hasQuantityCol = Schema::hasColumn((new StudentRewardInventory)->getTable(), 'quantity');
+
+        $ownCount = $hasQuantityCol
+            ? (int) $inventoryQuery->sum('quantity')
+            : (int) $inventoryQuery->count();
+
+        return $ownCount < $this->max_owned;
+    }
+
+    // ==================== Scopes ====================
+
+    public function scopeActive(Builder $query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeByType(Builder $query, string $type)
+    {
+        return $query->where('reward_type', $type);
+    }
+
+    public function scopeByRarity(Builder $query, string $rarity)
+    {
+        return $query->where('rarity', $rarity);
+    }
+
+    public function scopeAffordable(Builder $query, int $points)
+    {
+        return $query->where('point_cost', '<=', $points);
+    }
+}

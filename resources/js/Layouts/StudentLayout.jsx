@@ -1,373 +1,569 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import BackgroundContainer from './Components/BackgroundContainer';
+import GameControlPanel from '@/Components/GameControlPanel';
+import SearchBar from '@/Components/SearchBar';
+import NotificationBell from '@/Components/NotificationBell';
+import ProvidersWrapper from './ProvidersWrapper';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { 
-  Bell, 
   Search, 
-  Settings, 
   User, 
-  ChevronDown, 
-  Menu, 
-  X,
   Home,
   BookOpen,
   Trophy,
   Calendar,
-  MessageCircle,
-  Play,
+  TrendingUp,
   Star,
   GraduationCap,
-  TrendingUp,
-  Heart
+  Menu,
+  X,
+  ShoppingBag,
+  Package,
+  Sparkles,
+  BarChart3,
+  History,
+  MessageCircle,
+  LogOut,
+  ChevronRight
 } from 'lucide-react';
+import { useEquip } from '@/Contexts/EquipContext';
+import { useSFX } from '@/Contexts/SFXContext';
 
-export default function StudentLayout({ header, children }) {
-  // 安全取 auth.user（可能为 undefined/null）
-  const user = usePage().props?.auth?.user;
+/**
+ * ✅ AvatarDisplay Component - 显示装备的头像框
+ */
+function AvatarDisplay({ size = 'default', className = '' }) {
+  const { auth } = usePage().props;
+  const { equipped } = useEquip();
+  const user = auth?.user;
+
+  const equippedAvatar = equipped?.avatar_frame;
   
-  const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // 是否为已认证用户（用 id 判断比只判断 user 更稳）
-  const isAuthenticated = Boolean(user && user.id);
-
-  const handleSearch = () => {
-    console.log('Searching for:', searchQuery);
-    // Add search logic here
+  const sizeClasses = {
+    small: 'w-10 h-10',
+    default: 'w-10 h-10',
+    large: 'w-12 h-12',
   };
 
+  const iconSizes = {
+    small: 'w-5 h-5',
+    default: 'w-5 h-5',
+    large: 'w-6 h-6',
+  };
+
+  // ✅ 如果有装备的图片头像框 - 只显示头像框，不显示 User icon
+  if (equippedAvatar?.image_url) {
+    return (
+      <div 
+        className={`${sizeClasses[size]} ${className} rounded-full bg-cover bg-center transition-transform duration-200 hover:scale-110 animate-float shadow-xl ring-2 ring-white/30`}
+        style={{
+          backgroundImage: `url(${equippedAvatar.image_url})`,
+        }}
+      />
+    );
+  }
+
+  // ✅ 如果有装备的 emoji/icon 头像框 - 只显示 emoji，不显示 User icon
+  if (equippedAvatar?.icon) {
+    return (
+      <div className={`${sizeClasses[size]} ${className} rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center hover:scale-110 transition-transform duration-200 shadow-xl animate-float ring-2 ring-white/30`}>
+        <span className="text-2xl drop-shadow-lg">{equippedAvatar.icon}</span>
+      </div>
+    );
+  }
+
+  // ✅ 默认状态 - 显示 User icon（没有装备时）
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900">
-      {/* Enhanced Navigation */}
-      <nav className="fixed top-0 w-full bg-black/20 backdrop-blur-lg z-50 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            {/* Logo Section - Fixed Width */}
-            <div className="flex items-center space-x-4 flex-shrink-0 w-80">
-              <Link href="/" className="flex items-center space-x-4 group">
-                <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <ApplicationLogo className="w-9 h-9 text-white" />
-                </div>
-                <div>
-                  <span className="text-2xl font-bold text-white group-hover:text-green-300 transition-colors duration-300">LearnHub</span>
-                  <div className="text-xs text-green-400 font-medium">Student Portal</div>
-                </div>
-              </Link>
-            </div>
-            
-            {/* Desktop Navigation - Center */}
-            <div className="hidden lg:flex items-center justify-center flex-1">
-              <div className="flex items-center space-x-8">
-                <a href="#dashboard" className="flex items-center space-x-2 text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300">
-                  <Home className="w-5 h-5" />
-                  <span className="font-medium">Dashboard</span>
-                </a>
-                
-              <Link 
-                href={route('lessons.index')} 
-                className="flex items-center space-x-4 text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-white/10 transition-all duration-300"
-              >
-                <BookOpen className="w-5 h-5" />
-                <span>Lessons</span>
-              </Link>
-                              
-                <a href="#progress" className="flex items-center space-x-2 text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300">
-                  <TrendingUp className="w-5 h-5" />
-                  <span className="font-medium">Progress</span>
-                </a>
-                
-                <a href="#achievements" className="flex items-center space-x-2 text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300">
-                  <Trophy className="w-5 h-5" />
-                  <span className="font-medium">Achievements</span>
-                </a>
-                
-                <a href="#schedule" className="flex items-center space-x-2 text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300">
-                  <Calendar className="w-5 h-5" />
-                  <span className="font-medium">Schedule</span>
-                </a>
-              </div>
-            </div>
+    <div className={`${sizeClasses[size]} ${className} bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-200 shadow-xl animate-float ring-2 ring-white/30`}>
+      <User className={`${iconSizes[size]} text-white drop-shadow-lg`} />
+    </div>
+  );
+}
 
-            {/* Desktop Search and User Actions - Right Side */}
-            <div className="hidden lg:flex items-center justify-end space-x-6 w-80">
-              {/* Search Bar */}
-              <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 w-48 backdrop-blur-sm transition-all duration-300"
-                  />
-                </div>
-              </form>
+/**
+ * ✅ StudentLayoutContent - 实际的布局内容
+ * 这个组件在 Providers 内部，可以使用所有 Contexts
+ */
+function StudentLayoutContent({ header, children }) {
+  const { auth } = usePage().props;
+  const { equipped } = useEquip();
+  const { playSFX } = useSFX();
+  const user = auth?.user;
+  
+  const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
-              {isAuthenticated ? (
-                <div className="flex items-center space-x-4">
-                  {/* Settings Button */}
-                  <button 
-                    className="text-gray-400 hover:text-white transition-colors duration-300 p-2 rounded-lg hover:bg-white/10"
-                    title="Settings"
-                  >
-                    <Settings className="w-5 h-5" />
-                  </button>
+  const isAuthenticated = Boolean(user && (user.id || user.user_Id));
+  const studentPoints = user?.student_profile?.current_points || 0;
 
-                  {/* User Avatar with Dropdown */}
-                  <div className="relative">
-                    <Dropdown>
-                      <Dropdown.Trigger>
-                        <button
-                          type="button"
-                          className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-400/50"
-                          title={user?.name || 'User Menu'}
-                        >
-                          <User className="w-5 h-5 text-white" />
-                        </button>
-                      </Dropdown.Trigger>
+  // ✅ Navigation items configuration
+  const mainNavItems = [
+    { 
+      href: 'dashboard', 
+      label: 'Dashboard', 
+      icon: Home,
+      current: 'dashboard'
+    },
+    { 
+      href: 'lessons.index', 
+      label: 'Lessons', 
+      icon: BookOpen,
+      current: 'lessons.*'
+    },
+    { 
+      href: 'forum.index',
+      label: 'Community', 
+      icon: MessageCircle,
+      current: 'forum.*',
+      badge: '💬'
+    },
+    { 
+      href: 'student.rewards.index', 
+      label: 'Rewards', 
+      icon: ShoppingBag,
+      current: 'student.rewards.*',
+      badge: '🆕'
+    },
+    { 
+      href: 'student.inventory.index', 
+      label: 'Inventory', 
+      icon: Package,
+      current: 'student.inventory.*'
+    },
+    { 
+      href: 'student.paths.index',
+      label: 'Learning Paths', 
+      icon: GraduationCap,
+      current: 'student.paths.*'
+    },
+  ];
 
-                      <Dropdown.Content className="w-64 bg-black/90 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
-                        <div className="px-6 py-4 border-b border-white/10 bg-gradient-to-r from-green-500/10 to-blue-500/10">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                              <User className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-white font-medium text-lg">{user?.name || 'Student'}</div>
-                              <div className="text-sm text-gray-400">{user?.email}</div>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <Star className="w-3 h-3 text-yellow-400" />
-                                <span className="text-xs text-gray-400">Level {user?.level || 1}</span>
-                                <span className="text-xs text-gray-400">• {user?.xp || 0} XP</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <Dropdown.Link 
-                          href={route('profile.edit')}
-                          className="flex items-center space-x-4 px-6 py-4 text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300"
-                        >
-                          <User className="w-5 h-5" />
-                          <span className="font-medium">My Profile</span>
-                        </Dropdown.Link>
-                        
-                        <Dropdown.Link 
-                          href="#settings"
-                          className="flex items-center space-x-4 px-6 py-4 text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300"
-                        >
-                          <Settings className="w-5 h-5" />
-                          <span className="font-medium">Settings</span>
-                        </Dropdown.Link>
-                        
-                        <Dropdown.Link 
-                          href="#certificates"
-                          className="flex items-center space-x-4 px-6 py-4 text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300"
-                        >
-                          <GraduationCap className="w-5 h-5" />
-                          <span className="font-medium">My Certificates</span>
-                        </Dropdown.Link>
-                        
-                        <Dropdown.Link 
-                          href={route('logout')} 
-                          method="post" 
-                          as="button"
-                          className="flex items-center space-x-4 px-6 py-4 text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-all duration-300 w-full text-left border-t border-white/10"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" />
-                          </svg>
-                          <span className="font-medium">Log Out</span>
-                        </Dropdown.Link>
-                      </Dropdown.Content>
-                    </Dropdown>
-                  </div>
-                </div>
-              ) : (
-                // 未登录时显示登录/注册按钮
-                <div className="flex items-center space-x-3">
-                  <Link 
-                    href={route('login')} 
-                    className="text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium"
-                  >
-                    Log In
-                  </Link>
-                  <Link 
-                    href={route('register')} 
-                    className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-blue-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl hover:scale-105"
-                  >
-                    Start Learning
-                  </Link>
-                </div>
-              )}
-            </div>
+  return (
+    <>
+      {/* ✅ Layer 1: 全屏背景（-z-50）- 包含装备背景系统 */}
+      <BackgroundContainer />
 
-            {/* Mobile Menu Button */}
-            <button 
-              className="lg:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-all duration-300"
-              onClick={() => setShowingNavigationDropdown(!showingNavigationDropdown)}
-            >
-              {showingNavigationDropdown ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
-            </button>
-          </div>
-
-          {/* Mobile Menu */}
-          {showingNavigationDropdown && (
-            <div className="lg:hidden bg-black/50 backdrop-blur-lg rounded-2xl mt-4 p-6 mx-4 border border-white/10">
-              {/* Mobile Search */}
-              <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search courses..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-white/10 border border-white/20 rounded-xl pl-12 pr-6 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-green-400 w-full backdrop-blur-sm transition-all duration-300"
-                  />
-                </div>
-              </form>
+      {/* ✅ Layer 2: 导航栏（z-50） */}
+      <nav className="fixed top-0 w-full z-50">
+        <div className="bg-black/70 backdrop-blur-xl border-b border-white/20 shadow-2xl">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
               
-              {/* Mobile Navigation Links */}
-              <div className="space-y-3 mb-8">
-                <ResponsiveNavLink 
-                  href={route('dashboard')} 
-                  active={route().current('dashboard')}
-                  className={`flex items-center space-x-4 px-6 py-4 rounded-xl font-medium transition-all duration-300 ${
-                    route().current('dashboard') 
-                      ? 'bg-gradient-to-r from-green-500/20 to-blue-500/20 text-green-300 border border-green-500/30 backdrop-blur-sm' 
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
+              {/* Logo */}
+              <div className="flex items-center flex-shrink-0">
+                <Link 
+                  href="/" 
+                  className="flex items-center space-x-3 group"
+                  onMouseEnter={() => playSFX('hover')}
+                  onClick={() => playSFX('click')}
                 >
-                  <Home className="w-5 h-5" />
-                  <span>Dashboard</span>
-                </ResponsiveNavLink>
-                
-          <Link 
-            href={route('lessons.index')} 
-            className="flex items-center space-x-4 text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-white/10 transition-all duration-300"
-          >
-            <BookOpen className="w-5 h-5" />
-            <span>Lessons</span>
-          </Link>
-                
-                <a href="#progress" className="flex items-center space-x-4 text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-white/10 transition-all duration-300">
-                  <TrendingUp className="w-5 h-5" />
-                  <span>Progress</span>
-                </a>
-                
-                <a href="#achievements" className="flex items-center space-x-4 text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-white/10 transition-all duration-300">
-                  <Trophy className="w-5 h-5" />
-                  <span>Achievements</span>
-                </a>
-                
-                <a href="#schedule" className="flex items-center space-x-4 text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-white/10 transition-all duration-300">
-                  <Calendar className="w-5 h-5" />
-                  <span>Schedule</span>
-                </a>
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-xl hover-lift ripple-effect">
+                    <ApplicationLogo className="w-6 h-6 text-white drop-shadow-lg" />
+                  </div>
+                  <div className="hidden lg:block">
+                    <span className="text-lg font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                      LearnHub
+                    </span>
+                    <div className="text-xs text-gray-200 font-medium drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
+                      Student Portal
+                    </div>
+                  </div>
+                </Link>
+              </div>
+              
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center justify-center flex-1 px-8">
+                <div className="flex items-center space-x-1">
+                  {mainNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = route().current(item.current);
+                    
+                    return (
+                      <Link
+                        key={item.href}
+                        href={route(item.href)}
+                        onMouseEnter={() => playSFX('hover')}
+                        onClick={() => playSFX('nav')}
+                        className={`
+                          flex items-center space-x-2 px-4 py-2.5 rounded-xl
+                          transition-all duration-200 font-bold relative
+                          overflow-visible
+                          ripple-effect button-press-effect
+                          ${isActive
+                            ? 'bg-white/30 text-white shadow-xl backdrop-blur-sm ring-2 ring-white/30'
+                            : 'text-white/95 hover:text-white hover:bg-white/20 glow-on-hover'
+                          }
+                        `}
+                      >
+                        <Icon className="w-5 h-5 flex-shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]" />
+                        <span className="text-sm whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                          {item.label}
+                        </span>
+                        
+                        {/* ✅ Badge - 只保留 emoji 动画 */}
+                        {item.badge && (
+                          <span className="
+                            absolute -top-1 -right-1 
+                            text-base
+                            drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]
+                            animate-bounce
+                            z-50
+                            pointer-events-none
+                          ">
+                            {item.badge}
+                          </span>
+                        )}
+                        
+                        {/* ✅ Shimmer 底部条 - 青色渐变高对比度 */}
+                        {isActive && (
+                          <span className="
+                            absolute -bottom-1 left-1/2 -translate-x-1/2 
+                            w-16 h-1 
+                            bg-gradient-to-r from-transparent via-cyan-400 to-transparent
+                            rounded-full shadow-xl shadow-cyan-400/50
+                            animate-shimmer
+                            z-10
+                          " />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Mobile User Section */}
-              <div className="border-t border-white/10 pt-6">
+              {/* Right Side Actions */}
+              <div className="flex items-center space-x-3 flex-shrink-0">
+                
+                {/* Search Bar */}
+                <SearchBar />
+
                 {isAuthenticated ? (
                   <>
-                    <div className="flex items-center space-x-4 px-6 py-4 mb-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-xl border border-green-500/20">
-                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-white font-medium text-lg">
-                          {user?.name || 'Student'}
-                        </div>
-                        <div className="text-sm text-gray-400 flex items-center space-x-3 mt-1">
-                          <Star className="w-4 h-4 text-yellow-400" />
-                          <span>Level {user?.level || 1}</span>
-                          <span>•</span>
-                          <span>{user?.xp || 0} XP</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <ResponsiveNavLink 
-                        href={route('profile.edit')}
-                        className="flex items-center space-x-4 text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-white/10 transition-all duration-300"
-                      >
-                        <User className="w-5 h-5" />
-                        <span>My Profile</span>
-                      </ResponsiveNavLink>
-                      
-                      <ResponsiveNavLink 
-                        href="#certificates"
-                        className="flex items-center space-x-4 text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-white/10 transition-all duration-300"
-                      >
-                        <GraduationCap className="w-5 h-5" />
-                        <span>My Certificates</span>
-                      </ResponsiveNavLink>
-                      
-                      <ResponsiveNavLink 
-                        method="post" 
-                        href={route('logout')} 
-                        as="button"
-                        className="flex items-center space-x-4 text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-red-500/20 transition-all duration-300 w-full text-left"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" />
-                        </svg>
-                        <span>Log Out</span>
-                      </ResponsiveNavLink>
+                    {/* Points Display */}
+                    <Link
+                      href={route('student.rewards.index')}
+                      onMouseEnter={() => playSFX('hover')}
+                      onClick={() => playSFX('points')}
+                      className="
+                        flex items-center gap-2 
+                        bg-gradient-to-r from-yellow-500 to-orange-500 
+                        px-4 py-2 rounded-lg 
+                        hover:from-yellow-600 hover:to-orange-600 
+                        transition-all duration-200 
+                        shadow-xl hover:shadow-2xl hover:scale-105
+                        flex-shrink-0
+                        ripple-effect button-press-effect
+                        animate-rainbowGradient
+                        ring-2 ring-yellow-400/50 hover:ring-yellow-300/70
+                      "
+                    >
+                      <Sparkles className="w-4 h-4 text-white drop-shadow-lg animate-spin-slow" />
+                      <span className="text-white font-bold text-sm drop-shadow-lg">
+                        {studentPoints.toLocaleString()}
+                      </span>
+                    </Link>
+
+                    {/* Notification Bell */}
+                    <NotificationBell />
+
+                    {/* Game Control Panel */}
+                    <GameControlPanel />
+
+                    {/* User Avatar Dropdown */}
+                    <div className="hidden lg:block">
+                      <Dropdown>
+                        <Dropdown.Trigger>
+                          <button
+                            type="button"
+                            onMouseEnter={() => playSFX('hover')}
+                            onClick={() => playSFX('dropdown')}
+                            className="
+                              focus:outline-none focus:ring-2 focus:ring-white/70
+                              transition-all duration-200 
+                              flex-shrink-0 rounded-full
+                              ripple-effect
+                            "
+                          >
+                            <AvatarDisplay size="default" />
+                          </button>
+                        </Dropdown.Trigger>
+
+                        <Dropdown.Content className="w-72 bg-gradient-to-br from-gray-900 to-gray-800 backdrop-blur-2xl border border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden">
+                          {/* User Info Header */}
+                          <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-900/40 to-pink-900/40">
+                            <div className="flex items-center space-x-4">
+                              <AvatarDisplay size="large" className="shadow-xl ring-2 ring-purple-500/50" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-white font-bold text-lg truncate">{user.name}</div>
+                                <div className="text-sm text-gray-300 truncate">{user.email}</div>
+                              </div>
+                            </div>
+                            
+                            {/* Points Badge */}
+                            <div className="mt-4 flex items-center justify-between bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl px-4 py-2">
+                              <div className="flex items-center space-x-2">
+                                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                <span className="text-white font-bold text-lg">
+                                  {studentPoints.toLocaleString()}
+                                </span>
+                              </div>
+                              <span className="text-xs text-yellow-300 font-medium">Points</span>
+                            </div>
+                            
+                            {equipped?.avatar_frame && (
+                              <div className="mt-3 px-3 py-2 bg-purple-600/30 border border-purple-500/40 rounded-lg">
+                                <p className="text-xs text-purple-200 text-center font-medium">
+                                  🖼️ {equipped.avatar_frame.name}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Menu Items */}
+                          <div className="p-2">
+                            <Dropdown.Link 
+                              href={route('student.profile.show')}
+                              onMouseEnter={() => playSFX('hover')}
+                              onClick={() => playSFX('click')}
+                              className="group flex items-center justify-between px-4 py-3 text-gray-200 hover:text-white hover:bg-gradient-to-r hover:from-purple-600/50 hover:to-pink-600/50 transition-all duration-200 rounded-xl"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <User className="w-5 h-5 flex-shrink-0" />
+                                <span className="font-medium">My Profile</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Dropdown.Link>
+
+                            <Dropdown.Link 
+                              href={route('student.inventory.index')}
+                              onMouseEnter={() => playSFX('hover')}
+                              onClick={() => playSFX('click')}
+                              className="group flex items-center justify-between px-4 py-3 text-gray-200 hover:text-white hover:bg-gradient-to-r hover:from-purple-600/50 hover:to-pink-600/50 transition-all duration-200 rounded-xl"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <Package className="w-5 h-5 flex-shrink-0" />
+                                <span className="font-medium">My Inventory</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Dropdown.Link>
+
+                            <div className="my-2 border-t border-gray-700/50"></div>
+
+                            <Dropdown.Link 
+                              href={route('forum.index')}
+                              onMouseEnter={() => playSFX('hover')}
+                              onClick={() => playSFX('click')}
+                              className="group flex items-center justify-between px-4 py-3 text-gray-200 hover:text-white hover:bg-gradient-to-r hover:from-blue-600/50 hover:to-cyan-600/50 transition-all duration-200 rounded-xl"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <MessageCircle className="w-5 h-5 flex-shrink-0" />
+                                <span className="font-medium">Community Forum</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Dropdown.Link>
+
+                            <Dropdown.Link 
+                              href={route('student.rewards.index')}
+                              onMouseEnter={() => playSFX('hover')}
+                              onClick={() => playSFX('click')}
+                              className="group flex items-center justify-between px-4 py-3 text-gray-200 hover:text-white hover:bg-gradient-to-r hover:from-yellow-600/50 hover:to-orange-600/50 transition-all duration-200 rounded-xl"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <ShoppingBag className="w-5 h-5 flex-shrink-0" />
+                                <span className="font-medium">Rewards Shop</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Dropdown.Link>
+                            
+                            <div className="my-2 border-t border-gray-700/50"></div>
+                            
+                            <Dropdown.Link 
+                              href={route('logout')} 
+                              method="post" 
+                              as="button"
+                              onMouseEnter={() => playSFX('hover')}
+                              onClick={() => playSFX('click')}
+                              className="group flex items-center justify-between px-4 py-3 text-red-400 hover:text-white hover:bg-gradient-to-r hover:from-red-600/50 hover:to-red-700/50 transition-all duration-200 w-full text-left rounded-xl"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <LogOut className="w-5 h-5 flex-shrink-0" />
+                                <span className="font-medium">Log Out</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Dropdown.Link>
+                          </div>
+                        </Dropdown.Content>
+                      </Dropdown>
                     </div>
                   </>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="px-6 py-4 mb-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-xl border border-green-500/20">
-                      <div className="text-white font-medium text-lg">Welcome!</div>
-                      <div className="text-sm text-gray-400 mt-1">Join us to start your learning journey</div>
-                    </div>
-                    
-                    <ResponsiveNavLink 
+                  <div className="flex items-center space-x-3 flex-shrink-0">
+                    <Link 
                       href={route('login')}
-                      className="flex items-center justify-center text-gray-300 hover:text-white px-6 py-4 rounded-xl hover:bg-white/10 transition-all duration-300 font-medium"
+                      onMouseEnter={() => playSFX('hover')}
+                      onClick={() => playSFX('click')}
+                      className="text-white/95 hover:text-white px-4 py-2 rounded-lg hover:bg-white/25 backdrop-blur-sm transition-all duration-200 font-bold text-sm whitespace-nowrap shadow-lg ripple-effect button-press-effect"
                     >
                       Log In
-                    </ResponsiveNavLink>
-                    
-                    <ResponsiveNavLink 
+                    </Link>
+                    <Link 
                       href={route('register')}
-                      className="flex items-center justify-center bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-4 rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-300 font-medium"
+                      onMouseEnter={() => playSFX('hover')}
+                      onClick={() => playSFX('success')}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-5 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-bold shadow-xl hover:shadow-2xl hover:scale-105 text-sm whitespace-nowrap ripple-effect ring-2 ring-blue-400/50"
                     >
                       Start Learning
-                    </ResponsiveNavLink>
+                    </Link>
                   </div>
                 )}
+
+                {/* Mobile Menu Button */}
+                <button 
+                  className="lg:hidden text-white p-2 rounded-lg hover:bg-white/25 backdrop-blur-sm transition-all duration-200 flex-shrink-0 shadow-lg ripple-effect button-press-effect"
+                  onClick={() => {
+                    playSFX('click');
+                    setShowingNavigationDropdown(!showingNavigationDropdown);
+                  }}
+                >
+                  {showingNavigationDropdown ? 
+                    <X className="w-6 h-6 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] animate-spin" /> : 
+                    <Menu className="w-6 h-6 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]" />
+                  }
+                </button>
               </div>
             </div>
-          )}
+
+            {/* Mobile Menu */}
+            {showingNavigationDropdown && (
+              <div className="lg:hidden bg-black/85 backdrop-blur-xl rounded-2xl my-4 p-4 border border-white/20 shadow-2xl animate-slideDown">
+                {isAuthenticated && (
+                  <div className="mb-4 pb-4 border-b border-white/20">
+                    <div className="flex items-center space-x-3">
+                      <AvatarDisplay size="large" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-semibold truncate">{user.name}</div>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Sparkles className="w-4 h-4 text-yellow-400 animate-pulse" />
+                          <span className="text-sm text-gray-300 font-bold">
+                            {studentPoints.toLocaleString()} Points
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {equipped?.avatar_frame && (
+                      <div className="mt-2 px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded-lg ring-2 ring-purple-400/30">
+                        <p className="text-xs text-purple-300 text-center font-medium">
+                          🖼️ {equipped.avatar_frame.name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  {mainNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = route().current(item.current);
+                    
+                    return (
+                      <Link
+                        key={item.href}
+                        href={route(item.href)}
+                        onClick={() => playSFX('nav')}
+                        className={`
+                          flex items-center space-x-3 px-4 py-3 rounded-lg
+                          transition-all duration-200 relative
+                          ripple-effect
+                          ${isActive
+                            ? 'bg-white/30 text-white ring-2 ring-white/30'
+                            : 'text-white/90 hover:bg-white/20'
+                          }
+                        `}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span className="font-medium">{item.label}</span>
+                        {item.badge && (
+                          <span className="ml-auto text-base drop-shadow-lg animate-bounce">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                  
+                  {/* Mobile - User Menu Items */}
+                  {isAuthenticated && (
+                    <>
+                      <div className="my-2 border-t border-white/20"></div>
+                      
+                      <Link
+                        href={route('student.profile.show')}
+                        onClick={() => playSFX('click')}
+                        className="flex items-center space-x-3 px-4 py-3 rounded-lg text-white/90 hover:bg-white/20 transition-all duration-200 ripple-effect"
+                      >
+                        <User className="w-5 h-5" />
+                        <span className="font-medium">My Profile</span>
+                      </Link>
+                      
+                      <Link
+                        href={route('student.inventory.index')}
+                        onClick={() => playSFX('click')}
+                        className="flex items-center space-x-3 px-4 py-3 rounded-lg text-white/90 hover:bg-white/20 transition-all duration-200 ripple-effect"
+                      >
+                        <Package className="w-5 h-5" />
+                        <span className="font-medium">My Inventory</span>
+                      </Link>
+                      
+                      <Link
+                        href={route('logout')}
+                        method="post"
+                        as="button"
+                        onClick={() => playSFX('click')}
+                        className="flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-600/30 transition-all duration-200 w-full text-left ripple-effect"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span className="font-medium">Log Out</span>
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* Header with enhanced styling */}
-      {header && (
-        <header className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl">
+      {/* ✅ Layer 3: 内容层（z-0） */}
+      <div className="relative z-0 min-h-screen">
+        {/* Header */}
+        {header && (
+          <header className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
               {header}
             </div>
-          </div>
-        </header>
-      )}
+          </header>
+        )}
 
-      {/* Main Content with padding adjustment for fixed nav */}
-      <main className={`${header ? '' : 'pt-28'} px-4 sm:px-6 lg:px-8 pb-12`}>
-        <div className="max-w-7xl mx-auto">
-          {children}
-        </div>
-      </main>
-    </div>
+        {/* Main Content */}
+        <main className={`${header ? '' : 'pt-24'} px-4 sm:px-6 lg:px-8 pb-12`}>
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
+
+/**
+ * ✅ StudentLayout - 外层包裹器
+ * 用 ProvidersWrapper 包裹内容，确保所有 Contexts 可用
+ */
+export default function StudentLayout({ header, children }) {
+  return (
+    <ProvidersWrapper>
+      <StudentLayoutContent header={header} children={children} />
+    </ProvidersWrapper>
   );
 }

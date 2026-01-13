@@ -48,7 +48,6 @@ class AdminExerciseController extends Controller
     public function create(Request $request)
     {
         $lessons = Lesson::orderBy('title')->get();
-        // 若路由中有 lesson model，这里会取得 model（route model binding）
         $routeLesson = $request->route('lesson');
 
         return Inertia::render('Admin/Exercises/Create', [
@@ -90,10 +89,29 @@ class AdminExerciseController extends Controller
             $rules['solution'] = 'nullable|string';
         }
 
+        // ⭐⭐⭐ 新增：Live Editor 字段验证 ⭐⭐⭐
+        if (Schema::hasColumn('interactive_exercises', 'enable_live_editor')) {
+            $rules['enable_live_editor'] = 'nullable|boolean';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'coding_instructions')) {
+            $rules['coding_instructions'] = 'nullable|string';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'test_cases')) {
+            $rules['test_cases'] = 'nullable|array';
+            $rules['test_cases.*.input'] = 'nullable|string';
+            $rules['test_cases.*.expected'] = 'required_with:test_cases|string';
+            $rules['test_cases.*.description'] = 'nullable|string';
+        }
+
         $data = $request->validate($rules);
 
         if (isset($data['content']) && is_array($data['content'])) {
             $data['content'] = json_encode($data['content']);
+        }
+
+        // ⭐ 设置默认值
+        if (isset($data['enable_live_editor'])) {
+            $data['enable_live_editor'] = (bool) $data['enable_live_editor'];
         }
 
         if (Schema::hasColumn('interactive_exercises', 'created_by')) {
@@ -102,12 +120,17 @@ class AdminExerciseController extends Controller
 
         $exercise = InteractiveExercise::create($data);
 
-        // 若你想要在非嵌套创建后跳回该 lesson 的 exercises 页，可用下面这种逻辑：
-        // return redirect()->route('admin.lessons.exercises.index', ['lesson' => $data['lesson_id']]);
+        // ⭐ 记录日志（方便调试）
+        Log::info('Exercise created', [
+            'exercise_id' => $exercise->exercise_id,
+            'type' => $exercise->exercise_type,
+            'enable_live_editor' => $exercise->enable_live_editor ?? false,
+            'test_cases_count' => is_array($exercise->test_cases) ? count($exercise->test_cases) : 0,
+        ]);
 
         return redirect()
             ->route('admin.exercises.index')
-            ->with('success', 'Exercise created.');
+            ->with('success', 'Exercise created successfully!');
     }
 
     /**
@@ -157,7 +180,6 @@ class AdminExerciseController extends Controller
      */
     public function update(Request $request, InteractiveExercise $exercise): RedirectResponse
     {
-
         $rules = [
             'lesson_id' => 'required|exists:lessons,lesson_id',
             'title' => 'required|string|max:255',
@@ -182,6 +204,17 @@ class AdminExerciseController extends Controller
             $rules['solution'] = 'nullable|string';
         }
 
+        // ⭐ Live Editor 字段验证
+        if (Schema::hasColumn('interactive_exercises', 'enable_live_editor')) {
+            $rules['enable_live_editor'] = 'nullable|boolean';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'coding_instructions')) {
+            $rules['coding_instructions'] = 'nullable|string';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'test_cases')) {
+            $rules['test_cases'] = 'nullable|array';
+        }
+
         $data = $request->validate($rules);
 
         if (isset($data['content']) && is_array($data['content'])) {
@@ -190,7 +223,6 @@ class AdminExerciseController extends Controller
 
         $exercise->update($data);
 
-        // 返回 303，告知客户端用 GET 去请求重定向目标，避免 PUT/PATCH 被重发或造成重定向环
         return redirect()
             ->route('admin.exercises.show', ['exercise' => $exercise->exercise_id])
             ->setStatusCode(303)
@@ -206,7 +238,7 @@ class AdminExerciseController extends Controller
 
         return redirect()
             ->route('admin.exercises.index')
-            ->setStatusCode(303)
+            ->setStatusCode()
             ->with('success', 'Exercise deleted.');
     }
 
@@ -243,6 +275,9 @@ class AdminExerciseController extends Controller
         ]);
     }
 
+    /**
+     * ⭐⭐⭐ 嵌套路由的 store - 添加 Live Editor 支持 ⭐⭐⭐
+     */
     public function storeForLesson(Request $request, Lesson $lesson)
     {
         $rules = [
@@ -268,6 +303,20 @@ class AdminExerciseController extends Controller
             $rules['solution'] = 'nullable|string';
         }
 
+        // ⭐⭐⭐ 新增：Live Editor 字段验证 ⭐⭐⭐
+        if (Schema::hasColumn('interactive_exercises', 'enable_live_editor')) {
+            $rules['enable_live_editor'] = 'nullable|boolean';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'coding_instructions')) {
+            $rules['coding_instructions'] = 'nullable|string';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'test_cases')) {
+            $rules['test_cases'] = 'nullable|array';
+            $rules['test_cases.*.input'] = 'nullable|string';
+            $rules['test_cases.*.expected'] = 'required_with:test_cases|string';
+            $rules['test_cases.*.description'] = 'nullable|string';
+        }
+
         $data = $request->validate($rules);
 
         if (isset($data['content']) && is_array($data['content'])) {
@@ -279,10 +328,18 @@ class AdminExerciseController extends Controller
             $data['created_by'] = $request->user()->getKey();
         }
 
-        InteractiveExercise::create($data);
+        $exercise = InteractiveExercise::create($data);
+
+        // ⭐ 记录日志
+        Log::info('Exercise created (nested)', [
+            'exercise_id' => $exercise->exercise_id,
+            'lesson_id' => $lesson->lesson_id,
+            'type' => $exercise->exercise_type,
+            'enable_live_editor' => $exercise->enable_live_editor ?? false,
+        ]);
 
         return redirect()
-            ->route('admin.lessons.exercises.index', ['lesson' => $lesson->lesson_id])
+            ->route('admin.lessons.show', ['lesson' => $lesson->lesson_id])
             ->with('success', 'Exercise created successfully.');
     }
 
@@ -322,6 +379,9 @@ class AdminExerciseController extends Controller
         ]);
     }
 
+    /**
+     * ⭐ Update 嵌套路由 - 添加 Live Editor 支持
+     */
     public function updateForLesson(Request $request, Lesson $lesson, InteractiveExercise $exercise): RedirectResponse
     {
         if ($exercise->lesson_id !== $lesson->lesson_id) {
@@ -344,6 +404,23 @@ class AdminExerciseController extends Controller
         if (Schema::hasColumn('interactive_exercises', 'difficulty')) {
             $rules['difficulty'] = 'nullable|string';
         }
+        if (Schema::hasColumn('interactive_exercises', 'starter_code')) {
+            $rules['starter_code'] = 'nullable|string';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'solution')) {
+            $rules['solution'] = 'nullable|string';
+        }
+
+        // ⭐ Live Editor 字段
+        if (Schema::hasColumn('interactive_exercises', 'enable_live_editor')) {
+            $rules['enable_live_editor'] = 'nullable|boolean';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'coding_instructions')) {
+            $rules['coding_instructions'] = 'nullable|string';
+        }
+        if (Schema::hasColumn('interactive_exercises', 'test_cases')) {
+            $rules['test_cases'] = 'nullable|array';
+        }
 
         $data = $request->validate($rules);
 
@@ -351,27 +428,23 @@ class AdminExerciseController extends Controller
             $data['content'] = json_encode($data['content']);
         }
 
-        // 保持 lesson_id 不变（安全）
         $data['lesson_id'] = $lesson->lesson_id;
 
         $exercise->update($data);
 
-        // 重定向到嵌套的 show（或你偏好到 index），这里我重定向到嵌套 show
         return redirect()
-            ->route('admin.lessons.exercises.show', ['lesson' => $lesson->lesson_id, 'exercise' => $exercise->exercise_id])
+            ->route('admin.lessons.show', ['lesson' => $lesson->lesson_id])
             ->setStatusCode(303)
             ->with('success', 'Exercise updated successfully.');
     }
 
     public function destroyForLesson(Lesson $lesson, InteractiveExercise $exercise): RedirectResponse
     {
-        // 确保该 exercise 属于传入的 lesson，防止越权删除或错误的组合路由触发
         if ($exercise->lesson_id !== $lesson->lesson_id) {
             abort(404, 'Exercise does not belong to this lesson');
         }
         $exercise->delete();
 
-        // 使用 303，告知客户端用 GET 去请求重定向页面，避免把 DELETE 重复提交
         return redirect()
             ->route('admin.lessons.exercises.index', ['lesson' => $lesson->lesson_id])
             ->setStatusCode(303)

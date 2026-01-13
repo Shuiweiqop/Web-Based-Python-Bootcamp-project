@@ -1,5 +1,4 @@
 <?php
-// 4. app/Models/TestSubmission.php
 
 namespace App\Models;
 
@@ -17,7 +16,7 @@ class TestSubmission extends Model
 
     protected $fillable = [
         'test_id',
-        'user_id',
+        'student_id',
         'attempt_number',
         'started_at',
         'submitted_at',
@@ -26,7 +25,12 @@ class TestSubmission extends Model
         'total_questions',
         'correct_answers',
         'status',
-        'metadata'
+        'metadata',
+        'recommended_path_id',
+        'is_completed',
+        'is_placement_test',
+        'recommendation_confidence',
+        'recommendation_message',
     ];
 
     protected $casts = [
@@ -37,7 +41,11 @@ class TestSubmission extends Model
         'total_questions' => 'integer',
         'correct_answers' => 'integer',
         'attempt_number' => 'integer',
-        'metadata' => 'array'
+        'metadata' => 'array',
+        'recommended_path_id' => 'integer',
+        'is_completed' => 'boolean',
+        'is_placement_test' => 'boolean',
+        'recommendation_confidence' => 'decimal:2',
     ];
 
     const STATUS_IN_PROGRESS = 'in_progress';
@@ -45,15 +53,21 @@ class TestSubmission extends Model
     const STATUS_TIMEOUT = 'timeout';
     const STATUS_ABANDONED = 'abandoned';
 
-    // Relationships
+    // ==================== Original Relationships ====================
+
     public function test(): BelongsTo
     {
         return $this->belongsTo(Test::class, 'test_id', 'test_id');
     }
 
+    public function studentProfile(): BelongsTo
+    {
+        return $this->belongsTo(StudentProfile::class, 'student_id', 'student_id');
+    }
+
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->studentProfile->user();
     }
 
     public function answers(): HasMany
@@ -61,7 +75,18 @@ class TestSubmission extends Model
         return $this->hasMany(SubmissionAnswer::class, 'submission_id', 'submission_id');
     }
 
-    // Scopes
+    // ==================== NEW: Learning Path Relationships ====================
+
+    /**
+     * The learning path recommended based on this test submission
+     */
+    public function recommendedPath(): BelongsTo
+    {
+        return $this->belongsTo(LearningPath::class, 'recommended_path_id', 'path_id');
+    }
+
+    // ==================== Original Scopes ====================
+
     public function scopeCompleted($query)
     {
         return $query->whereIn('status', [self::STATUS_SUBMITTED, self::STATUS_TIMEOUT]);
@@ -72,9 +97,9 @@ class TestSubmission extends Model
         return $query->where('status', self::STATUS_IN_PROGRESS);
     }
 
-    public function scopeForUser($query, $userId)
+    public function scopeForStudent($query, $studentId)
     {
-        return $query->where('user_id', $userId);
+        return $query->where('student_id', $studentId);
     }
 
     public function scopeForTest($query, $testId)
@@ -89,18 +114,32 @@ class TestSubmission extends Model
         });
     }
 
-    // Helper methods
-    public function isCompletedAttribute()
+    // ==================== NEW: Placement Test Scopes ====================
+
+    /**
+     * Scope: Only placement test submissions
+     */
+    public function scopePlacementTests($query)
     {
-        return in_array($this->status, [self::STATUS_SUBMITTED, self::STATUS_TIMEOUT]);
+        return $query->where('is_placement_test', true);
     }
 
-    public function isInProgressAttribute()
+    /**
+     * Scope: Submissions with recommended paths
+     */
+    public function scopeWithRecommendations($query)
+    {
+        return $query->whereNotNull('recommended_path_id');
+    }
+
+    // ==================== Original Helper Methods ====================
+
+    public function getIsInProgressAttribute()
     {
         return $this->status === self::STATUS_IN_PROGRESS;
     }
 
-    public function isPassedAttribute()
+    public function getIsPassedAttribute()
     {
         return $this->score >= $this->test->passing_score;
     }
@@ -138,7 +177,7 @@ class TestSubmission extends Model
         return max(0, $remaining);
     }
 
-    public function isTimeExpiredAttribute()
+    public function getIsTimeExpiredAttribute()
     {
         return $this->remaining_time === 0;
     }
@@ -174,10 +213,16 @@ class TestSubmission extends Model
         $this->update([
             'submitted_at' => Carbon::now(),
             'status' => self::STATUS_SUBMITTED,
-            'time_spent' => Carbon::now()->diffInSeconds($this->started_at)
+            'time_spent' => Carbon::now()->diffInSeconds($this->started_at),
+            'is_completed' => true,
         ]);
 
         $this->updateScoreAndStats();
+
+        // NEW: Auto-recommend path if this is a placement test
+        if ($this->is_placement_test) {
+            $this->recommendPath();
+        }
     }
 
     public function timeoutTest()
@@ -185,9 +230,201 @@ class TestSubmission extends Model
         $this->update([
             'submitted_at' => Carbon::now(),
             'status' => self::STATUS_TIMEOUT,
-            'time_spent' => $this->test->time_limit * 60
+            'time_spent' => $this->test->time_limit * 60,
+            'is_completed' => true,
         ]);
 
         $this->updateScoreAndStats();
+
+        // NEW: Auto-recommend path if this is a placement test
+        if ($this->is_placement_test) {
+            $this->recommendPath();
+        }
+    }
+
+    // ==================== NEW: Learning Path Recommendation Methods ====================
+
+    /**
+     * Recommend a learning path based on test score
+     * 
+     * @return LearningPath|null The recommended path, or null if no suitable path found
+     */
+    public function recommendPath(): ?LearningPath
+    {
+        // Only recommend for placement tests
+        if (!$this->is_placement_test) {
+            return null;
+        }
+
+        // Find the most suitable path based on score
+        $path = LearningPath::active()
+            ->forScore($this->score)
+            ->orderBy('min_score_required', 'desc')
+            ->first();
+
+        if ($path) {
+            // Calculate confidence
+            $confidence = $this->calculateRecommendationConfidence($path);
+
+            // Generate message
+            $message = $this->generateRecommendationMessage($path, $confidence);
+
+            $this->update([
+                'recommended_path_id' => $path->path_id,
+                'recommendation_confidence' => $confidence,
+                'recommendation_message' => $message,
+            ]);
+
+            // Refresh the relationship
+            $this->load('recommendedPath');
+        }
+
+        return $path;
+    }
+
+    /**
+     * Calculate recommendation confidence score (0-100)
+     * Higher confidence when score is in the middle of the path's score range
+     */
+    protected function calculateRecommendationConfidence(LearningPath $path): float
+    {
+        $range = $path->max_score_required - $path->min_score_required;
+
+        // If range is 0 (exact score match), return 100%
+        if ($range === 0) {
+            return 100;
+        }
+
+        $position = $this->score - $path->min_score_required;
+
+        // Calculate distance from center of range
+        $centerPosition = $range / 2;
+        $distanceFromCenter = abs($centerPosition - $position);
+
+        // Confidence is higher when closer to center
+        // Maximum penalty is 30% (so minimum confidence is 70%)
+        $penalty = ($distanceFromCenter / $centerPosition) * 30;
+        $confidence = 100 - $penalty;
+
+        return max(70, min(100, round($confidence, 2)));
+    }
+
+    /**
+     * Generate a formatted recommendation message
+     */
+    protected function generateRecommendationMessage(LearningPath $path, float $confidence): string
+    {
+        $messages = [
+            'high' => "Based on your test score of {$this->score}%, we strongly recommend the \"{$path->title}\" learning path.",
+            'medium' => "Your score of {$this->score}% suggests the \"{$path->title}\" learning path would be a good fit.",
+            'low' => "We recommend starting with the \"{$path->title}\" learning path based on your score of {$this->score}%.",
+        ];
+
+        if ($confidence >= 85) {
+            return $messages['high'];
+        } elseif ($confidence >= 75) {
+            return $messages['medium'];
+        } else {
+            return $messages['low'];
+        }
+    }
+
+    /**
+     * Get alternative learning paths that are also suitable
+     * 
+     * @param int $limit Maximum number of alternatives to return
+     * @return \Illuminate\Support\Collection
+     */
+    public function getAlternativePaths(int $limit = 3)
+    {
+        if (!$this->is_placement_test) {
+            return collect();
+        }
+
+        return LearningPath::active()
+            ->where('path_id', '!=', $this->recommended_path_id)
+            ->where(function ($query) {
+                // Include paths where score is close to the boundaries
+                $marginOfError = 10; // ±10 points
+
+                $query->where(function ($q) use ($marginOfError) {
+                    // Paths where score is within range or slightly below
+                    $q->where('min_score_required', '<=', $this->score)
+                        ->where('max_score_required', '>=', $this->score - $marginOfError);
+                })->orWhere(function ($q) use ($marginOfError) {
+                    // Paths where score is slightly above minimum
+                    $q->where('min_score_required', '<=', $this->score + $marginOfError)
+                        ->where('max_score_required', '>=', $this->score);
+                });
+            })
+            ->orderBy('display_order', 'asc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Get difficulty level name based on score
+     */
+    public function getDifficultyLevelAttribute(): string
+    {
+        if ($this->score >= 86) {
+            return 'advanced';
+        } elseif ($this->score >= 61) {
+            return 'intermediate';
+        } else {
+            return 'beginner';
+        }
+    }
+
+    /**
+     * Check if student has accepted the recommended path
+     */
+    public function hasAcceptedRecommendation(): bool
+    {
+        if (!$this->recommended_path_id) {
+            return false;
+        }
+
+        return StudentLearningPath::where('student_id', $this->student_id)
+            ->where('path_id', $this->recommended_path_id)
+            ->where('placement_test_submission_id', $this->submission_id)
+            ->exists();
+    }
+
+    /**
+     * Get the student learning path if recommendation was accepted
+     */
+    public function getAcceptedPathAssignment(): ?StudentLearningPath
+    {
+        if (!$this->recommended_path_id) {
+            return null;
+        }
+
+        return StudentLearningPath::where('student_id', $this->student_id)
+            ->where('path_id', $this->recommended_path_id)
+            ->where('placement_test_submission_id', $this->submission_id)
+            ->first();
+    }
+
+    // ==================== Boot Method ====================
+
+    /**
+     * Boot method to automatically recommend paths when test is completed
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // When submission is updated and status changes to completed
+        static::updated(function ($submission) {
+            // If just completed and is a placement test and no recommendation yet
+            if (
+                $submission->is_completed &&
+                $submission->is_placement_test &&
+                !$submission->recommended_path_id
+            ) {
+                $submission->recommendPath();
+            }
+        });
     }
 }

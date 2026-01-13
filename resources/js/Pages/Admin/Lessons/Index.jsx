@@ -1,195 +1,346 @@
+// resources/js/Pages/Admin/Lessons/Index.jsx
 import React, { useState } from 'react';
-import { Link, usePage, router } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import {
+  PlusIcon,
+  FunnelIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
+import { safeRoute } from '@/utils/routeHelpers';
+import { cn } from '@/utils/cn';
 
-export default function Index() {
-  const { props } = usePage();
-  const { lessons, filters, auth } = usePage().props;
-  const [searchQuery, setSearchQuery] = useState(filters?.q || '');
+// Import sub-components
+import StatisticsCards from './components/StatisticsCards';
+import LessonCard from './components/LessonCard';
+import SearchBar from './components/SearchBar';
+import FilterPanel from './components/FilterPanel';
+import Pagination from '@/Components/Pagination';
+import EmptyState from './components/EmptyState';
 
+export default function Index({ auth }) {
+  const { lessons, filters, statistics } = usePage().props;
+  const [showFilters, setShowFilters] = useState(false);
+  const [isDark, setIsDark] = useState(true); 
   const meta = lessons?.meta || {};
   const data = lessons?.data || [];
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    router.get(
-      route('admin.lessons.index'),
-      searchQuery ? { q: searchQuery } : {},
-      { preserveState: true, replace: true }
-    );
-  };
-
+  // Handle lesson deletion
   const handleDelete = (lessonId, lessonTitle) => {
     if (!lessonId) {
       alert('Internal error: missing lesson id for "' + (lessonTitle || '') + '"');
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete "${lessonTitle}"? This action cannot be undone.`)) {
+    if (!confirm(
+      `Are you sure you want to delete "${lessonTitle}"?\n\n` +
+      `This will also delete:\n` +
+      `• All exercises\n` +
+      `• All tests and questions\n` +
+      `• All student progress\n\n` +
+      `This action cannot be undone.`
+    )) {
       return;
     }
 
-    // Resolve route via Ziggy first, fallback to manual URL
-    let deleteUrl;
-    try {
-      deleteUrl = route('admin.lessons.destroy', { lesson: lessonId });
-    } catch (error) {
-      console.warn('Ziggy route() failed, falling back to manual URL:', error);
-      deleteUrl = `/admin/lessons/${lessonId}`;
-    }
-
-    console.log('Deleting — resolved URL:', deleteUrl, 'lessonId:', lessonId);
-
-    router.delete(deleteUrl, {
-      onStart: () => console.log('Delete request started for', lessonId),
+    router.delete(safeRoute('admin.lessons.destroy', lessonId), {
+      preserveScroll: true,
       onSuccess: () => {
-        router.reload({ preserveScroll: true });
+        console.log('Lesson deleted successfully');
       },
       onError: (errs) => {
         console.error('Delete failed', errs);
-        alert('Failed to delete lesson. See console/network for details.');
+        alert('Failed to delete lesson. See console for details.');
       }
     });
   };
 
+  // Handle bulk actions
+  const [selectedLessons, setSelectedLessons] = useState([]);
+  const [bulkAction, setBulkAction] = useState('');
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedLessons(data.map(l => l.lesson_id));
+    } else {
+      setSelectedLessons([]);
+    }
+  };
+
+  const handleSelectLesson = (lessonId) => {
+    setSelectedLessons(prev => 
+      prev.includes(lessonId) 
+        ? prev.filter(id => id !== lessonId)
+        : [...prev, lessonId]
+    );
+  };
+
+  const handleBulkAction = () => {
+    if (!bulkAction || selectedLessons.length === 0) return;
+
+    if (bulkAction === 'delete') {
+      if (!confirm(`Delete ${selectedLessons.length} lesson(s)? This cannot be undone.`)) {
+        return;
+      }
+    }
+
+    router.post(safeRoute('admin.lessons.bulk-action'), {
+      action: bulkAction,
+      lesson_ids: selectedLessons,
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setSelectedLessons([]);
+        setBulkAction('');
+      },
+      onError: (errs) => {
+        console.error('Bulk action failed', errs);
+        alert('Failed to perform bulk action. See console for details.');
+      }
+    });
+  };
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    router.get(safeRoute('admin.lessons.index'), {}, { preserveState: true });
+  };
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Lessons</h1>
-        <Link
-          href={route('admin.lessons.create')}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          New Lesson
-        </Link>
-      </div>
-
-      {/* Search Form */}
-      <div className="mb-4">
-        <form onSubmit={handleSearch} className="flex">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search title..."
-            className="border border-gray-300 px-3 py-2 rounded-l-md flex-1"
-          />
-          <button type="submit" className="px-4 py-2 bg-gray-800 text-white rounded-r-md hover:bg-gray-700">
-            Search
-          </button>
-          {filters?.q && (
-            <Link
-              href={route('admin.lessons.index')}
-              className="ml-2 px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-            >
-              Clear
-            </Link>
-          )}
-        </form>
-      </div>
-
-      {/* Lessons List */}
-      <div className="space-y-3">
-        {data.length === 0 && (
-          <div className="text-gray-600 text-center py-8">
-            {filters?.q ? `No lessons found matching "${filters.q}"` : 'No lessons found.'}
+    <AuthenticatedLayout
+      user={auth?.user}
+      header={
+        <div className="flex items-center justify-between animate-fadeIn">
+          <div>
+            <h2 className="font-semibold text-3xl leading-tight bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+              Lessons Management
+            </h2>
+            <p className="text-sm mt-2 text-slate-300">
+              Manage and organize your course lessons
+            </p>
           </div>
-        )}
+          <Link
+            href={safeRoute('admin.lessons.create')}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-lg hover:from-purple-600 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all shadow-lg shadow-purple-500/50 hover:shadow-xl hover:shadow-purple-500/60 hover-lift ripple-effect button-press-effect font-medium"
+          >
+            <PlusIcon className="w-5 h-5 mr-2" />
+            New Lesson
+          </Link>
+        </div>
+      }
+    >
+      <Head title="Lessons Management" />
 
-        {data.map((lesson) => (
-          <div key={lesson.lesson_id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
-            <div className="flex-1">
-              <h2 className="font-semibold text-lg text-gray-900">{lesson.title}</h2>
-              <div className="text-sm text-gray-500 mt-1">
-                <span className="inline-flex items-center">
-                  Difficulty:{' '}
-                  <span className={`ml-1 px-2 py-0.5 rounded text-xs font-medium ${
-                    lesson.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
-                    lesson.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>{lesson.difficulty}</span>
-                </span>
-                <span className="mx-2">•</span>
-                Status: <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                  lesson.status === 'active' ? 'bg-green-100 text-green-800' :
-                  lesson.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                  'bg-red-100 text-red-800'
-                }`}>{lesson.status}</span>
-                {lesson.creator?.name && (
-                  <>
-                    <span className="mx-2">•</span>
-                    Created by: {lesson.creator.name}
-                  </>
-                )}
-              </div>
-              {lesson.description && (
-                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{lesson.description}</p>
-              )}
+      <div className="py-12">
+        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          {/* Statistics Cards */}
+          {statistics && (
+            <div className="animate-fadeIn">
+              <StatisticsCards 
+                statistics={statistics}
+                currentData={data}
+              />
             </div>
+          )}
 
-            <div className="flex space-x-2 ml-4">
-              <Link
-                href={route('admin.lessons.show', { lesson: lesson.lesson_id })}
-                className="px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-              >
-                View
-              </Link>
+          {/* Search & Filter Bar */}
+          <div className="mb-6 glassmorphism-enhanced rounded-xl shadow-2xl border border-white/10 p-6 animate-slideDown">
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Search */}
+              <div className="flex-1">
+                <SearchBar 
+                  initialQuery={filters?.q || ''}
+                  placeholder="Search lessons by title or content..."
+                />
+              </div>
 
-              <Link
-                href={route('admin.lessons.edit', { lesson: lesson.lesson_id })}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-              >
-                Edit
-              </Link>
-
+              {/* Filter Toggle */}
               <button
-                onClick={() => handleDelete(lesson.lesson_id, lesson.title)}
-                className="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(
+                  "inline-flex items-center px-6 py-3 border rounded-lg transition-all whitespace-nowrap ripple-effect button-press-effect font-medium",
+                  showFilters || filters?.difficulty || filters?.status
+                    ? 'bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/20 animate-glowPulse'
+                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 card-hover-effect'
+                )}
               >
-                Delete
+                <FunnelIcon className="w-5 h-5 mr-2" />
+                Filters
+                {(filters?.difficulty || filters?.status) && (
+                  <span className="ml-2 px-2.5 py-1 bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-xs rounded-full shadow-lg animate-bounceIn">
+                    {[filters?.difficulty, filters?.status].filter(Boolean).length}
+                  </span>
+                )}
               </button>
             </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Pagination */}
-      {meta.total > 0 && (
-        <div className="mt-8 flex justify-center">
-          <div className="flex items-center space-x-2">
-            {meta.current_page > 1 && (
-              <Link
-                href={route('admin.lessons.index', {
-                  page: meta.current_page - 1,
-                  ...(filters?.q && { q: filters.q })
-                })}
-                className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Previous
-              </Link>
+            {/* Filter Panel */}
+            {showFilters && (
+              <div className="animate-slideDown">
+                <FilterPanel 
+                  currentFilters={filters}
+                  onClose={() => setShowFilters(false)}
+                />
+              </div>
             )}
 
-            <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded">
-              Page {meta.current_page} of {meta.last_page}
-            </span>
+            {/* Active Filters Display */}
+            {(filters?.q || filters?.difficulty || filters?.status) && (
+              <div className="mt-6 pt-6 border-t border-white/10 animate-fadeIn">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-slate-300 font-semibold">Active filters:</span>
+                  
+                  {filters?.q && (
+                    <FilterTag 
+                      label={`Search: "${filters.q}"`}
+                      onRemove={() => router.get(safeRoute('admin.lessons.index'), {
+                        ...filters,
+                        q: undefined,
+                      }, { preserveState: true })}
+                    />
+                  )}
+                  
+                  {filters?.difficulty && (
+                    <FilterTag 
+                      label={`Difficulty: ${filters.difficulty}`}
+                      onRemove={() => router.get(safeRoute('admin.lessons.index'), {
+                        ...filters,
+                        difficulty: undefined,
+                      }, { preserveState: true })}
+                    />
+                  )}
+                  
+                  {filters?.status && (
+                    <FilterTag 
+                      label={`Status: ${filters.status}`}
+                      onRemove={() => router.get(safeRoute('admin.lessons.index'), {
+                        ...filters,
+                        status: undefined,
+                      }, { preserveState: true })}
+                    />
+                  )}
 
-            {meta.current_page < meta.last_page && (
-              <Link
-                href={route('admin.lessons.index', {
-                  page: meta.current_page + 1,
-                  ...(filters?.q && { q: filters.q })
-                })}
-                className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Next
-              </Link>
+                  <Link
+                    href={safeRoute('admin.lessons.index')}
+                    className="text-sm text-cyan-400 hover:text-cyan-300 font-medium ml-2 transition-colors ripple-effect"
+                  >
+                    Clear all
+                  </Link>
+                </div>
+              </div>
             )}
           </div>
 
-          <div className="ml-4 text-sm text-gray-600 flex items-center">
-            Showing {meta.from || 0} to {meta.to || 0} of {meta.total} results
-          </div>
+          {/* Bulk Actions Bar */}
+          {data.length > 0 && (
+            <div className="mb-6 glassmorphism-enhanced rounded-xl shadow-2xl border border-white/10 p-6 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <label className="flex items-center whitespace-nowrap group cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedLessons.length === data.length && data.length > 0}
+                      onChange={handleSelectAll}
+                      className="rounded border-purple-400/50 bg-white/5 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer transition-all"
+                    />
+                    <span className="ml-3 text-sm text-slate-200 group-hover:text-white transition-colors font-medium">
+                      Select all ({selectedLessons.length} selected)
+                    </span>
+                  </label>
+
+                  {selectedLessons.length > 0 && (
+                    <div className="flex items-center gap-3 animate-bounceIn">
+                      <select
+                        value={bulkAction}
+                        onChange={(e) => setBulkAction(e.target.value)}
+                        className="text-sm border border-white/20 bg-white/5 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all card-hover-effect"
+                      >
+                        <option value="" className="bg-slate-800">Bulk actions...</option>
+                        <option value="activate" className="bg-slate-800">Set to Active</option>
+                        <option value="deactivate" className="bg-slate-800">Set to Inactive</option>
+                        <option value="draft" className="bg-slate-800">Set to Draft</option>
+                        <option value="delete" className="bg-slate-800">Delete</option>
+                      </select>
+
+                      <button
+                        onClick={handleBulkAction}
+                        disabled={!bulkAction}
+                        className="px-6 py-2 text-sm bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-lg hover:from-purple-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-500/50 hover:shadow-xl hover:shadow-purple-500/60 font-semibold ripple-effect button-press-effect"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 rounded-lg text-sm text-white font-medium shadow-lg animate-pulse-slow">
+                  <span className="mr-2">📚</span>
+                  {meta.total} lesson{meta.total !== 1 ? 's' : ''} total
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Lessons List */}
+          {data.length === 0 ? (
+            <div className="animate-fadeIn">
+              <EmptyState 
+                hasFilters={!!(filters?.q || filters?.difficulty || filters?.status)}
+                searchQuery={filters?.q}
+                onClearFilters={handleClearFilters}
+                 isDark={isDark}
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {data.map((lesson, index) => (
+                <div 
+                  key={lesson.lesson_id}
+                  className="animate-fadeIn"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <LessonCard
+                    lesson={lesson}
+                    isSelected={selectedLessons.includes(lesson.lesson_id)}
+                    onSelect={() => handleSelectLesson(lesson.lesson_id)}
+                    onDelete={handleDelete}
+                    isDark={isDark}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {meta.total > 0 && meta.last_page > 1 && (
+            <div className="mt-8 animate-fadeIn">
+              <Pagination 
+                meta={meta}
+                filters={filters}
+              />
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </AuthenticatedLayout>
+  );
+}
+
+/**
+ * Filter Tag Component
+ * Displays active filters with remove button
+ */
+function FilterTag({ label, onRemove }) {
+  return (
+    <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500/30 to-cyan-500/30 border border-purple-400/50 text-white text-sm font-medium rounded-full shadow-lg hover-lift transition-all animate-bounceIn">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 transition-all ripple-effect button-press-effect"
+        title="Remove filter"
+      >
+        <XMarkIcon className="w-3 h-3" />
+      </button>
+    </span>
   );
 }

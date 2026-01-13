@@ -1,0 +1,703 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===================================
+   背景动画效果（BackgroundContainer）
+   =================================== */
+
+/* 背景缩放动画 */
+@keyframes bg-scale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* 背景旋转动画 */
+@keyframes bg-rotate {
+  0% { transform: rotate(0deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1.2); }
+}
+
+/* 背景浮动动画 */
+@keyframes bg-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+/* Ken Burns 效果 */
+@keyframes ken-burns {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.2) translate(-10%, -10%); }
+}
+
+/* 粒子漂浮动画 */
+@keyframes particle-float {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
+}
+
+.animate-bg-scale {
+  animation: bg-scale ease-in-out infinite;
+}
+
+.animate-bg-rotate {
+  animation: bg-rotate linear infinite;
+}
+
+.animate-bg-float {
+  animation: bg-float ease-in-out infinite;
+}
+
+.animate-ken-burns {
+  animation: ken-burns ease-out forwards;
+}
+
+.animate-particle-float {
+  animation: particle-float linear infinite;
+}
+
+/* ===================================
+   Inventory 趣味动画样式
+   =================================== */
+
+/* ✨ 五彩纸屑下落 */
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti {
+  animation: confetti linear forwards;
+}
+
+/* ✨ 浮动积分 */
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-floatUp {
+  animation: floatUp 2s ease-out forwards;
+}
+
+/* ✨ 闪烁光芒 */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ✨ 数字递增效果 */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-countUp {
+  animation: countUp 0.5s ease-out;
+}
+
+/* ✨ 缓慢脉冲 */
+@keyframes pulseSlow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ✨ 缓慢旋转 */
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 3s linear infinite;
+}
+
+/* ✨ 下滑展开 */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* ✨ 淡入 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* ✨ 弹入 */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-bounceIn {
+  animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ✨ 卡片翻转 */
+@keyframes cardFlip {
+  0% {
+    transform: perspective(1000px) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(1000px) rotateY(180deg);
+  }
+  100% {
+    transform: perspective(1000px) rotateY(360deg);
+  }
+}
+
+.animate-cardFlip {
+  animation: cardFlip 0.6s ease-in-out;
+}
+
+/* ✨ 抖动 */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-10px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(10px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ✨ 光晕脉冲 */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8), 0 0 60px rgba(139, 92, 246, 0.5);
+  }
+}
+
+.animate-glowPulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* ✨ 3D翻转 */
+@keyframes flip3D {
+  0% {
+    transform: perspective(400px) rotateY(0);
+  }
+  100% {
+    transform: perspective(400px) rotateY(360deg);
+  }
+}
+
+.animate-flip3D {
+  animation: flip3D 1s ease-in-out;
+}
+
+/* ✨ 悬浮 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ✨ 霓虹闪烁 */
+@keyframes neonBlink {
+  0%, 100% {
+    text-shadow: 
+      0 0 10px #fff,
+      0 0 20px #fff,
+      0 0 30px #3b82f6,
+      0 0 40px #3b82f6;
+  }
+  50% {
+    text-shadow: 
+      0 0 5px #fff,
+      0 0 10px #fff,
+      0 0 15px #3b82f6,
+      0 0 20px #3b82f6;
+  }
+}
+
+.animate-neonBlink {
+  animation: neonBlink 1.5s ease-in-out infinite;
+}
+
+/* ✨ 彩虹渐变 */
+@keyframes rainbowGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-rainbowGradient {
+  background: linear-gradient(90deg, #f59e0b, #ef4444, #ec4899, #8b5cf6, #3b82f6, #10b981);
+  background-size: 200% 200%;
+  animation: rainbowGradient 3s ease infinite;
+}
+
+/* ✨ 悬停放大 */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* ✨ 点击缩放 */
+.active-scale:active {
+  transform: scale(0.95);
+}
+
+/* ===================================
+   🎮 GameControlPanel 动画效果
+   =================================== */
+
+/* 🌊 波纹点击效果 */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+}
+
+.ripple-effect:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+/* ✨ 按钮悬停发光效果 */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(168, 85, 247, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.6),
+                0 0 30px rgba(168, 85, 247, 0.4);
+  }
+}
+
+.glow-on-hover:hover {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* 🎵 音乐播放脉动效果 */
+@keyframes music-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.music-playing {
+  animation: music-pulse 2s ease-in-out infinite;
+}
+
+/* 🔘 开关按钮增强动画 */
+@keyframes toggle-bounce {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.toggle-switch:active .toggle-knob {
+  animation: toggle-bounce 0.3s ease-out;
+}
+
+/* 🌈 渐变背景动画 */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* 🎚️ 滑块增强效果 */
+@keyframes slider-thumb-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+  animation: slider-thumb-bounce 0.3s ease-out;
+}
+
+input[type="range"]::-webkit-slider-track {
+  transition: background 0.3s ease;
+}
+
+input[type="range"]:hover::-webkit-slider-track {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ⭐ 设置图标旋转增强 */
+@keyframes spin-in {
+  from {
+    transform: rotate(0deg);
+    opacity: 0.5;
+  }
+  to {
+    transform: rotate(90deg);
+    opacity: 1;
+  }
+}
+
+@keyframes spin-out {
+  from {
+    transform: rotate(90deg);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 0.5;
+  }
+}
+
+.settings-icon-enter {
+  animation: spin-in 0.3s ease-out forwards;
+}
+
+.settings-icon-exit {
+  animation: spin-out 0.3s ease-out forwards;
+}
+
+/* 💫 面板弹出增强动画 */
+@keyframes panel-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panel-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+.panel-enter {
+  animation: panel-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.panel-exit {
+  animation: panel-slide-out 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* 🎯 按钮点击反馈增强 */
+@keyframes button-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.button-press-effect:active {
+  animation: button-press 0.2s ease-out;
+}
+
+/* 🌊 卡片悬停阴影效果 */
+.card-hover-effect {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3),
+              0 0 20px rgba(168, 85, 247, 0.1);
+}
+
+/* ✨ 文字闪烁效果（Now Playing）*/
+@keyframes text-shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    rgba(168, 85, 247, 0.8) 0%,
+    rgba(236, 72, 153, 1) 50%,
+    rgba(168, 85, 247, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-shimmer 3s linear infinite;
+}
+
+/* 🎵 音频波形可视化效果 */
+@keyframes wave-1 {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+
+@keyframes wave-2 {
+  0%, 100% { height: 8px; }
+  50% { height: 16px; }
+}
+
+@keyframes wave-3 {
+  0%, 100% { height: 6px; }
+  50% { height: 14px; }
+}
+
+.audio-visualizer {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 16px;
+}
+
+.audio-visualizer .bar {
+  width: 2px;
+  background: linear-gradient(to top, #a855f7, #ec4899);
+  border-radius: 2px;
+}
+
+.audio-visualizer .bar:nth-child(1) {
+  animation: wave-1 1s ease-in-out infinite;
+}
+
+.audio-visualizer .bar:nth-child(2) {
+  animation: wave-2 1s ease-in-out infinite 0.1s;
+}
+
+.audio-visualizer .bar:nth-child(3) {
+  animation: wave-3 1s ease-in-out infinite 0.2s;
+}
+
+.audio-visualizer .bar:nth-child(4) {
+  animation: wave-1 1s ease-in-out infinite 0.3s;
+}
+
+.audio-visualizer .bar:nth-child(5) {
+  animation: wave-2 1s ease-in-out infinite 0.4s;
+}
+
+/* 🎨 自定义滚动条样式 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    to bottom,
+    rgba(168, 85, 247, 0.6),
+    rgba(236, 72, 153, 0.6)
+  );
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    to bottom,
+    rgba(168, 85, 247, 0.8),
+    rgba(236, 72, 153, 0.8)
+  );
+}
+
+/* 🌟 特殊效果：玻璃形态增强 */
+.glassmorphism-enhanced {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+/* ===================================
+   📱 响应式优化
+   =================================== */
+@media (max-width: 768px) {
+  .panel-enter {
+    animation: panel-slide-in 0.2s ease-out forwards;
+  }
+  
+  .ripple-effect:active::after {
+    animation: ripple 0.4s ease-out;
+  }
+}
+
+/* ===================================
+   ♿ 无障碍优化
+   =================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================================
+   🎯 高对比度模式支持
+   =================================== */
+@media (prefers-contrast: high) {
+  .card-hover-effect {
+    border: 2px solid currentColor;
+  }
+  
+  .toggle-switch {
+    border: 2px solid currentColor;
+  }
+}

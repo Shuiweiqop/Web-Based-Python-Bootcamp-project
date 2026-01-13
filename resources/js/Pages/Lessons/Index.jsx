@@ -1,249 +1,406 @@
 import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { Search, Clock, Award, Play, BookOpen, Filter, Star, Users } from 'lucide-react';
+import StudentLayout from '@/Layouts/StudentLayout';
+import { 
+  Search, 
+  Filter, 
+  BookOpen, 
+  Clock, 
+  Trophy,
+  Star,
+  TrendingUp,
+  Sparkles,
+  X,
+  Award,
+  Target,
+  Zap
+} from 'lucide-react';
 
+// Lesson Card Component
+const LessonCard = ({ lesson }) => {
+  const difficultyConfig = {
+    beginner: {
+      color: 'from-green-500 to-emerald-600',
+      badge: 'bg-green-500/20 text-green-300 border-green-500/30',
+      icon: '🌱',
+      label: 'Beginner'
+    },
+    intermediate: {
+      color: 'from-yellow-500 to-orange-600',
+      badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      icon: '⚡',
+      label: 'Intermediate'
+    },
+    advanced: {
+      color: 'from-red-500 to-purple-600',
+      badge: 'bg-red-500/20 text-red-300 border-red-500/30',
+      icon: '🔥',
+      label: 'Advanced'
+    }
+  };
+
+  const config = difficultyConfig[lesson.difficulty] || difficultyConfig.beginner;
+
+  return (
+    <Link 
+      href={route('lessons.show', lesson.lesson_id)}
+      className="group block"
+    >
+      <div className="
+        relative overflow-hidden
+        bg-black/40 backdrop-blur-xl
+        border border-white/20
+        rounded-2xl
+        hover:border-white/40
+        transition-all duration-300
+        hover:scale-105 hover:shadow-2xl
+        h-full
+      ">
+        {/* Gradient Overlay */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${config.color} opacity-10 group-hover:opacity-20 transition-opacity duration-300`} />
+        
+        {/* Content */}
+        <div className="relative p-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${config.badge}`}>
+                {config.icon} {config.label}
+              </span>
+            </div>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-xl font-bold text-white mb-3 line-clamp-2 group-hover:text-blue-300 transition-colors">
+            {lesson.title}
+          </h3>
+
+          {/* Description */}
+          {lesson.content && (
+            <p className="text-gray-300 text-sm line-clamp-2 mb-4">
+              {lesson.content.replace(/<[^>]*>/g, '').substring(0, 100)}...
+            </p>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-4 border-t border-white/10">
+            <div className="flex items-center space-x-4 text-sm text-gray-400">
+              {lesson.duration && (
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-4 h-4" />
+                  <span>{lesson.duration} min</span>
+                </div>
+              )}
+              {lesson.points && (
+                <div className="flex items-center space-x-1">
+                  <Sparkles className="w-4 h-4 text-yellow-400" />
+                  <span className="text-yellow-400 font-bold">{lesson.points}</span>
+                </div>
+              )}
+            </div>
+            <div className="text-blue-400 font-semibold text-sm group-hover:text-blue-300 transition-colors">
+              Start Lesson →
+            </div>
+          </div>
+        </div>
+
+        {/* Hover Shine Effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+      </div>
+    </Link>
+  );
+};
+
+// Filter Bar Component
+const FilterBar = ({ 
+  searchTerm, 
+  onSearchChange, 
+  difficultyFilter, 
+  onDifficultyChange,
+  hasActiveFilters,
+  onClearFilters,
+  stats 
+}) => {
+  const difficulties = [
+    { value: 'all', label: 'All Levels', count: stats.showing, icon: '📚' },
+    { value: 'beginner', label: 'Beginner', count: stats.beginner, icon: '🌱' },
+    { value: 'intermediate', label: 'Intermediate', count: stats.intermediate, icon: '⚡' },
+    { value: 'advanced', label: 'Advanced', count: stats.advanced, icon: '🔥' }
+  ];
+
+  return (
+    <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl p-6 mb-8 shadow-2xl">
+      {/* Search Bar */}
+      <div className="relative mb-6">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input
+          type="text"
+          placeholder="Search lessons by title or content..."
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="
+            w-full bg-white/10 border border-white/20 rounded-xl
+            pl-12 pr-4 py-3
+            text-white placeholder-gray-400
+            focus:outline-none focus:border-blue-500 focus:bg-white/20
+            transition-all duration-200
+          "
+        />
+        {searchTerm && (
+          <button
+            onClick={() => onSearchChange('')}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      {/* Difficulty Filters */}
+      <div className="flex flex-wrap gap-3">
+        {difficulties.map((diff) => (
+          <button
+            key={diff.value}
+            onClick={() => onDifficultyChange(diff.value)}
+            className={`
+              px-4 py-2.5 rounded-xl font-semibold text-sm
+              transition-all duration-200
+              flex items-center space-x-2
+              ${difficultyFilter === diff.value
+                ? 'bg-blue-500 text-white shadow-lg scale-105'
+                : 'bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white'
+              }
+            `}
+          >
+            <span>{diff.icon}</span>
+            <span>{diff.label}</span>
+            <span className={`
+              px-2 py-0.5 rounded-full text-xs font-bold
+              ${difficultyFilter === diff.value ? 'bg-white/30' : 'bg-white/20'}
+            `}>
+              {diff.count}
+            </span>
+          </button>
+        ))}
+        
+        {hasActiveFilters && (
+          <button
+            onClick={onClearFilters}
+            className="
+              px-4 py-2.5 rounded-xl font-semibold text-sm
+              bg-red-500/20 text-red-300 border border-red-500/30
+              hover:bg-red-500/30
+              transition-all duration-200
+              flex items-center space-x-2
+            "
+          >
+            <X className="w-4 h-4" />
+            <span>Clear Filters</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Empty State Component
+const EmptyState = ({ hasFilters, onClearFilters }) => {
+  return (
+    <div className="text-center py-16">
+      <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl p-12 max-w-2xl mx-auto">
+        <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+          <BookOpen className="w-12 h-12 text-white" />
+        </div>
+        
+        {hasFilters ? (
+          <>
+            <h3 className="text-2xl font-bold text-white mb-4">
+              No Lessons Found
+            </h3>
+            <p className="text-gray-300 mb-6">
+              We couldn't find any lessons matching your filters.
+              <br />Try adjusting your search criteria or clearing the filters.
+            </p>
+            <button
+              onClick={onClearFilters}
+              className="
+                bg-gradient-to-r from-blue-500 to-purple-600 
+                text-white px-8 py-3 rounded-xl font-bold
+                hover:from-blue-600 hover:to-purple-700
+                transition-all duration-200 shadow-xl
+                hover:scale-105
+              "
+            >
+              Clear All Filters
+            </button>
+          </>
+        ) : (
+          <>
+            <h3 className="text-2xl font-bold text-white mb-4">
+              No Lessons Available Yet
+            </h3>
+            <p className="text-gray-300 mb-6">
+              Check back soon! New lessons are being added regularly.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// CTA Section Component
+const CTASection = () => {
+  return (
+    <div className="bg-gradient-to-r from-blue-500/20 to-purple-600/20 backdrop-blur-xl border border-white/20 rounded-3xl p-8 text-center">
+      <div className="flex justify-center mb-6">
+        <div className="flex items-center space-x-2">
+          <Trophy className="w-8 h-8 text-yellow-400" />
+          <Sparkles className="w-8 h-8 text-blue-400" />
+          <Award className="w-8 h-8 text-purple-400" />
+        </div>
+      </div>
+      
+      <h3 className="text-2xl font-bold text-white mb-3">
+        Keep Learning, Keep Growing! 🚀
+      </h3>
+      <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+        Complete more lessons to earn points and unlock amazing rewards in the shop!
+      </p>
+      
+      <div className="flex flex-wrap justify-center gap-4">
+        <Link
+          href={route('student.rewards.index')}
+          className="
+            bg-gradient-to-r from-yellow-500 to-orange-600 
+            text-white px-6 py-3 rounded-xl font-bold
+            hover:from-yellow-600 hover:to-orange-700
+            transition-all duration-200 shadow-xl
+            hover:scale-105
+            flex items-center space-x-2
+          "
+        >
+          <Sparkles className="w-5 h-5" />
+          <span>View Rewards</span>
+        </Link>
+        
+        <Link
+          href={route('student.profile.statistics')}
+          className="
+            bg-white/10 border border-white/20 
+            text-white px-6 py-3 rounded-xl font-bold
+            hover:bg-white/20
+            transition-all duration-200
+            flex items-center space-x-2
+          "
+        >
+          <TrendingUp className="w-5 h-5" />
+          <span>View Progress</span>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+// Main Component
 const LessonsIndex = ({ lessons, filters = {} }) => {
   const [searchTerm, setSearchTerm] = useState(filters.q || '');
   const [difficultyFilter, setDifficultyFilter] = useState(filters.difficulty || 'all');
 
-  // Filter lessons client-side for immediate feedback
+  // Filter logic
   const filteredLessons = useMemo(() => {
     return lessons.data.filter(lesson => {
-      // Only show active lessons for students
       const isActive = lesson.status === 'active';
-      const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (lesson.description && lesson.description.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesDifficulty = difficultyFilter === 'all' || lesson.difficulty === difficultyFilter;
-      
+      const matchesSearch =
+        lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (lesson.content && lesson.content.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesDifficulty =
+        difficultyFilter === 'all' || lesson.difficulty === difficultyFilter;
+
       return isActive && matchesSearch && matchesDifficulty;
     });
   }, [lessons.data, searchTerm, difficultyFilter]);
 
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case 'beginner': return 'bg-green-100 text-green-800 border-green-200';
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'advanced': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  // Statistics
+  const stats = useMemo(() => {
+    const active = lessons.data.filter(l => l.status === 'active');
+    return {
+      showing: filteredLessons.length,
+      beginner: active.filter(l => l.difficulty === 'beginner').length,
+      intermediate: active.filter(l => l.difficulty === 'intermediate').length,
+      advanced: active.filter(l => l.difficulty === 'advanced').length
+    };
+  }, [lessons.data, filteredLessons.length]);
 
-  const getDifficultyIcon = (difficulty) => {
-    switch (difficulty) {
-      case 'beginner': return '🌱';
-      case 'intermediate': return '🌿';
-      case 'advanced': return '🌳';
-      default: return '📚';
-    }
+  const hasActiveFilters = searchTerm !== '' || difficultyFilter !== 'all';
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setDifficultyFilter('all');
   };
 
   return (
-    <>
-      <Head title="Available Lessons" />
-      
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <StudentLayout
+      header={
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2 flex items-center space-x-3">
+              <BookOpen className="w-8 h-8 text-blue-400" />
+              <span>Available Lessons</span>
+            </h1>
+            <p className="text-gray-300">
+              Explore {filteredLessons.length} lesson{filteredLessons.length !== 1 ? 's' : ''} and start your learning journey
+            </p>
+          </div>
+          
+          <div className="hidden md:flex items-center space-x-6">
             <div className="text-center">
-              <h1 className="text-4xl font-bold mb-4">Explore Our Lessons</h1>
-              <p className="text-xl text-blue-100 mb-8">
-                Discover engaging content designed to help you learn and grow
-              </p>
-              <div className="flex justify-center gap-8 text-center">
-                <div>
-                  <div className="text-3xl font-bold">{lessons.total}</div>
-                  <div className="text-blue-200">Total Lessons</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold">{filteredLessons.length}</div>
-                  <div className="text-blue-200">Available Now</div>
-                </div>
-              </div>
+              <div className="text-3xl font-bold text-white">{lessons.total}</div>
+              <div className="text-sm text-gray-400">Total Lessons</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-400">{filteredLessons.length}</div>
+              <div className="text-sm text-gray-400">Available Now</div>
             </div>
           </div>
         </div>
+      }
+    >
+      <Head title="Lessons - Learn & Grow" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Filters */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search for lessons..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                />
-              </div>
+      {/* Filter Bar */}
+      <FilterBar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        difficultyFilter={difficultyFilter}
+        onDifficultyChange={setDifficultyFilter}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={handleClearFilters}
+        stats={stats}
+      />
 
-              {/* Difficulty Filter */}
-              <div className="relative">
-                <Filter className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <select
-                  value={difficultyFilter}
-                  onChange={(e) => setDifficultyFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white transition-colors"
-                >
-                  <option value="all">All Difficulty Levels</option>
-                  <option value="beginner">🌱 Beginner</option>
-                  <option value="intermediate">🌿 Intermediate</option>
-                  <option value="advanced">🌳 Advanced</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>Showing {filteredLessons.length} lessons</span>
-                <div className="flex gap-4">
-                  <span className="flex items-center gap-1">
-                    🌱 {lessons.data.filter(l => l.difficulty === 'beginner' && l.status === 'active').length} Beginner
-                  </span>
-                  <span className="flex items-center gap-1">
-                    🌿 {lessons.data.filter(l => l.difficulty === 'intermediate' && l.status === 'active').length} Intermediate
-                  </span>
-                  <span className="flex items-center gap-1">
-                    🌳 {lessons.data.filter(l => l.difficulty === 'advanced' && l.status === 'active').length} Advanced
-                  </span>
-                </div>
-              </div>
-            </div>
+      {/* Lessons Grid or Empty State */}
+      {filteredLessons.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {filteredLessons.map(lesson => (
+              <LessonCard key={lesson.lesson_id} lesson={lesson} />
+            ))}
           </div>
 
-          {/* Lessons Grid */}
-          {filteredLessons.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredLessons.map((lesson) => (
-                <div key={lesson.lesson_id} className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                  {/* Card Header with Gradient */}
-                  <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl">
-                        {getDifficultyIcon(lesson.difficulty)}
-                      </span>
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getDifficultyColor(lesson.difficulty)} bg-white/90`}>
-                        {lesson.difficulty.charAt(0).toUpperCase() + lesson.difficulty.slice(1)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                      {lesson.title}
-                    </h3>
-
-                    {lesson.description && (
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
-                        {lesson.description}
-                      </p>
-                    )}
-
-                    {/* Lesson Details */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <Clock className="h-4 w-4" />
-                        <span>{lesson.estimated_duration ? `${lesson.estimated_duration} min` : 'Self-paced'}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-blue-600 font-medium">
-                        <Award className="h-4 w-4" />
-                        <span>{lesson.completion_reward_points} pts</span>
-                      </div>
-                    </div>
-
-                    {/* Features */}
-                    <div className="flex items-center gap-3 mb-6">
-                      {lesson.video_url && (
-                        <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                          <Play className="h-3 w-3" />
-                          <span>Video Content</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                        <BookOpen className="h-3 w-3" />
-                        <span>Interactive</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Footer */}
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-gray-500">
-                        Lesson #{lesson.lesson_id}
-                      </div>
-                      
-                <Link
-                  href={`/lessons/${lesson.lesson_id}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 group-hover:bg-blue-700"
-                >
-                  Start Learning
-                  <Play className="h-4 w-4" />
-                </Link>
-                                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* No Results */
-            <div className="text-center py-16">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No lessons found</h3>
-                <p className="text-gray-600 mb-6">
-                  {searchTerm || difficultyFilter !== 'all'
-                    ? 'Try adjusting your search or filter criteria.'
-                    : 'No lessons are currently available. Check back soon!'}
-                </p>
-                {(searchTerm || difficultyFilter !== 'all') && (
-                  <button
-                    onClick={() => {
-                      setSearchTerm('');
-                      setDifficultyFilter('all');
-                    }}
-                    className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  >
-                    Clear Filters
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Call to Action */}
-          {filteredLessons.length > 0 && (
-            <div className="mt-16 text-center">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-8 text-white">
-                <h2 className="text-2xl font-bold mb-4">Ready to Start Learning?</h2>
-                <p className="text-blue-100 mb-6">
-                  Join thousands of students already learning with our engaging lessons
-                </p>
-                <div className="flex justify-center gap-8 text-center">
-                  <div>
-                    <div className="text-2xl font-bold">⭐</div>
-                    <div className="text-sm text-blue-200">High Quality</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">🎯</div>
-                    <div className="text-sm text-blue-200">Goal Oriented</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">🏆</div>
-                    <div className="text-sm text-blue-200">Rewarding</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+          {/* CTA Section */}
+          <CTASection />
+        </>
+      ) : (
+        <EmptyState
+          hasFilters={hasActiveFilters}
+          onClearFilters={handleClearFilters}
+        />
+      )}
+    </StudentLayout>
   );
 };
 

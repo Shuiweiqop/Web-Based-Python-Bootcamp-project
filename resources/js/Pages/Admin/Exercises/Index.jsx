@@ -23,7 +23,7 @@ export default function Index({ auth, exercises, filters }) {
         { value: 'coding', label: 'Coding' },
         { value: 'drag_drop', label: 'Drag & Drop' },
         { value: 'fill_blank', label: 'Fill in the blank' },
-        { value: 'matching', label: 'Matching' },
+        // ❌ 已删除: { value: 'matching', label: 'Matching' },
         { value: 'sorting', label: 'Sorting' },
         { value: 'simulation', label: 'Simulation' },
         { value: 'multiple_choice', label: 'Multiple choice' }
@@ -81,7 +81,7 @@ export default function Index({ auth, exercises, filters }) {
             case 'coding': return 'bg-blue-100 text-blue-800';
             case 'drag_drop': return 'bg-purple-100 text-purple-800';
             case 'fill_blank': return 'bg-indigo-100 text-indigo-800';
-            case 'matching': return 'bg-pink-100 text-pink-800';
+            // ❌ 已删除: case 'matching': return 'bg-pink-100 text-pink-800';
             case 'sorting': return 'bg-orange-100 text-orange-800';
             case 'simulation': return 'bg-cyan-100 text-cyan-800';
             case 'multiple_choice': return 'bg-emerald-100 text-emerald-800';

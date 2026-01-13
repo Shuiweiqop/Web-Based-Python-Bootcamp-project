@@ -17,8 +17,8 @@ const GameHeader = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // 默认返回路由
-  const defaultBackRoute = backRoute || route('lessons.exercises.index', lesson?.lesson_id || lesson?.id);
+  // 默认返回到课程详情页
+  const defaultBackRoute = backRoute || route('lessons.show', lesson?.lesson_id || lesson?.id);
 
   return (
     <>
@@ -29,7 +29,7 @@ const GameHeader = ({
           className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
         >
           <ArrowLeftIcon className="w-5 h-5 mr-2" />
-          Back to Exercises
+          Back to Lesson
         </Link>
       </div>
 

@@ -6,8 +6,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Lesson;
 use App\Models\Test;
-use App\Models\Question;
-use App\Models\QuestionOption;
 
 class AdminTestController extends Controller
 {
@@ -102,6 +100,7 @@ class AdminTestController extends Controller
 
         // Set defaults
         $data['lesson_id'] = $lesson->lesson_id;
+        $data['test_type'] = 'lesson'; // ✅ 添加这一行
         $data['max_attempts'] = $data['max_attempts'] ?? 3;
         $data['passing_score'] = $data['passing_score'] ?? 70;
         $data['shuffle_questions'] = $request->boolean('shuffle_questions');
@@ -218,6 +217,8 @@ class AdminTestController extends Controller
     }
 
     // PUT admin/lessons/{lesson}/tests/{test}
+    // app/Http/Controllers/AdminTestController.php
+
     public function updateForLesson(Request $request, Lesson $lesson, Test $test)
     {
         if ($test->lesson_id !== $lesson->lesson_id) {
@@ -244,11 +245,11 @@ class AdminTestController extends Controller
 
         $test->update($data);
 
+        // 使用 Inertia::location 或者 back()
         return redirect()->route('admin.lessons.tests.show', [
             'lesson' => $lesson->lesson_id,
-            'test' => $test->test_id
-        ])
-            ->with('success', 'Test updated successfully.');
+            'test' => $test->test_id,
+        ])->setStatusCode(303)->with('success', 'Test updated successfully.');
     }
 
     // DELETE admin/lessons/{lesson}/tests/{test}

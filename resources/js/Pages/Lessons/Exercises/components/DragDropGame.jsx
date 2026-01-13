@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   CheckCircleIcon, 
   XCircleIcon, 
   CursorArrowRaysIcon,
-  SparklesIcon
+  SparklesIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -21,18 +22,59 @@ const DragDropGame = ({
   const [isDragging, setIsDragging] = useState(false);
   const draggedElementRef = useRef(null);
 
+  // 🔥 调试：打印 exercise 数据结构
+  useEffect(() => {
+    console.log('📦 Exercise data:', exercise);
+    console.log('📦 Exercise content:', exercise.content);
+    console.log('📦 Exercise content type:', typeof exercise.content);
+    
+    // 如果 content 是字符串，尝试解析
+    if (typeof exercise.content === 'string') {
+      try {
+        const parsed = JSON.parse(exercise.content);
+        console.log('✅ Parsed content:', parsed);
+      } catch (e) {
+        console.error('❌ Failed to parse content:', e);
+      }
+    }
+  }, [exercise]);
+
+  // 🔥 安全地获取 content，支持字符串 JSON
+  const getExerciseContent = () => {
+    if (!exercise.content) return null;
+    
+    // 如果已经是对象，直接返回
+    if (typeof exercise.content === 'object') {
+      return exercise.content;
+    }
+    
+    // 如果是字符串，尝试解析
+    if (typeof exercise.content === 'string') {
+      try {
+        return JSON.parse(exercise.content);
+      } catch (e) {
+        console.error('Failed to parse exercise.content:', e);
+        return null;
+      }
+    }
+    
+    return null;
+  };
+
+  const content = getExerciseContent();
+
   // 计算分数
   const calculateScore = (newDraggedItems = draggedItems) => {
-    if (!exercise.content?.items) return 0;
+    if (!content?.items) return 0;
     
     let correctCount = 0;
-    exercise.content.items.forEach(item => {
+    content.items.forEach(item => {
       if (newDraggedItems[item.id] === item.correct_zone) {
         correctCount++;
       }
     });
     
-    const score = Math.floor((correctCount / exercise.content.items.length) * exercise.max_score);
+    const score = Math.floor((correctCount / content.items.length) * exercise.max_score);
     onScoreUpdate(score);
     return score;
   };
@@ -44,11 +86,10 @@ const DragDropGame = ({
       return;
     }
     
-    console.log('🚀 Drag start:', item.id, 'type:', typeof item.id); // 调试日志
+    console.log('🚀 Drag start:', item.id, 'type:', typeof item.id);
     
     e.dataTransfer.effectAllowed = 'move';
     
-    // 🔥 确保传输的是字符串，但也保存原始值
     const itemIdString = String(item.id);
     e.dataTransfer.setData('text/plain', itemIdString);
     e.dataTransfer.setData('application/json', JSON.stringify(item));
@@ -58,7 +99,6 @@ const DragDropGame = ({
     draggedElementRef.current = item;
     setIsDragging(true);
     
-    // 添加拖拽样式
     setTimeout(() => {
       e.target.style.opacity = '0.5';
     }, 0);
@@ -66,7 +106,7 @@ const DragDropGame = ({
 
   // 拖拽结束
   const handleDragEnd = (e) => {
-    console.log('Drag end'); // 调试日志
+    console.log('Drag end');
     
     e.target.style.opacity = '1';
     draggedElementRef.current = null;
@@ -74,25 +114,24 @@ const DragDropGame = ({
     setIsDragging(false);
   };
 
-  // 拖拽经过放置区 - 这是关键，必须阻止默认行为才能触发 drop
+  // 拖拽经过放置区
   const handleDragOver = (e, zoneId) => {
-    e.preventDefault(); // 🔥 这个很重要！没有这个 drop 不会触发
+    e.preventDefault();
     e.stopPropagation();
     
-    // 设置拖拽效果
     e.dataTransfer.dropEffect = 'move';
     
     if (dragOverZone !== zoneId) {
       setDragOverZone(zoneId);
-      console.log('Drag over zone:', zoneId); // 调试日志
+      console.log('Drag over zone:', zoneId);
     }
     
-    return false; // 额外保险
+    return false;
   };
 
   // 拖拽进入放置区
   const handleDragEnter = (e, zoneId) => {
-    e.preventDefault(); // 🔥 也很重要
+    e.preventDefault();
     e.stopPropagation();
     setDragOverZone(zoneId);
     return false;
@@ -100,21 +139,19 @@ const DragDropGame = ({
 
   // 离开放置区
   const handleDragLeave = (e) => {
-    // 不要阻止默认行为，这里只需要检查边界
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
     
-    // 只有当鼠标真正离开区域时才清除高亮
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       setDragOverZone(null);
-      console.log('Drag leave zone'); // 调试日志
+      console.log('Drag leave zone');
     }
   };
 
   // 放置到目标区域
   const handleDrop = (e, zoneId) => {
-    console.log('🎯 Drop event triggered!', zoneId); // 重要的调试日志
+    console.log('🎯 Drop event triggered!', zoneId);
     
     e.preventDefault();
     e.stopPropagation();
@@ -132,22 +169,21 @@ const DragDropGame = ({
     
     console.log('✅ Item ID found (string):', itemIdString, 'type:', typeof itemIdString);
     
-    // 🔥 关键修复：尝试字符串和数字两种匹配方式
     const itemId = itemIdString;
     const itemIdNumber = parseInt(itemIdString, 10);
     
     console.log('🔍 Looking for item with ID:', itemId, 'or', itemIdNumber);
-    console.log('📦 Available items:', exercise.content.items.map(i => ({ id: i.id, type: typeof i.id })));
+    console.log('📦 Available items:', content.items.map(i => ({ id: i.id, type: typeof i.id })));
     
-    const item = exercise.content.items.find(i => 
-      i.id === itemId ||           // 字符串匹配
-      i.id === itemIdNumber ||     // 数字匹配
-      String(i.id) === itemId      // 强制转换匹配
+    const item = content.items.find(i => 
+      i.id === itemId ||
+      i.id === itemIdNumber ||
+      String(i.id) === itemId
     );
     
     if (!item) {
       console.error('❌ Item not found with ID:', itemId);
-      console.error('Available item IDs:', exercise.content.items.map(i => i.id));
+      console.error('Available item IDs:', content.items.map(i => i.id));
       return;
     }
     
@@ -159,11 +195,10 @@ const DragDropGame = ({
 
     console.log('🎲 Dropping item:', item.id, 'to zone:', zoneId);
 
-    // 检查放置区域是否已满
     const currentItemsInZone = Object.entries(draggedItems)
       .filter(([_, currentZoneId]) => currentZoneId === zoneId).length;
     
-    const zone = exercise.content.drop_zones.find(z => z.id === zoneId);
+    const zone = content.drop_zones.find(z => z.id === zoneId);
     const maxItems = zone?.max_items;
     
     if (maxItems && currentItemsInZone >= maxItems) {
@@ -171,12 +206,10 @@ const DragDropGame = ({
       return;
     }
 
-    // 🔥 使用原始的 item.id 而不是字符串版本
     const actualItemId = item.id;
     const newDraggedItems = { ...draggedItems, [actualItemId]: zoneId };
     setDraggedItems(newDraggedItems);
 
-    // 检查是否正确
     if (zoneId === item.correct_zone) {
       setCompletedItems(prev => new Set([...prev, actualItemId]));
       console.log('🎉 Correct placement!');
@@ -189,7 +222,6 @@ const DragDropGame = ({
       console.log('❌ Incorrect placement');
     }
 
-    // 计算新分数
     const newScore = calculateScore(newDraggedItems);
     console.log('📊 New score:', newScore);
   };
@@ -211,16 +243,77 @@ const DragDropGame = ({
     calculateScore(newDraggedItems);
   };
 
-  if (!exercise.content?.items || !exercise.content?.drop_zones) {
+  // 🔥 增强的错误检查和提示
+  if (!content) {
     return (
-      <div className="p-8 text-center text-red-600">
-        <XCircleIcon className="w-12 h-12 mx-auto mb-4" />
-        <p>Game configuration error. Please contact your instructor.</p>
+      <div className="p-8 text-center">
+        <XCircleIcon className="w-12 h-12 mx-auto mb-4 text-red-600" />
+        <p className="text-red-600 font-semibold mb-2">Configuration Error</p>
+        <p className="text-gray-600 text-sm mb-4">
+          The exercise content is missing or invalid.
+        </p>
+        <details className="text-left bg-gray-100 p-4 rounded-lg text-xs">
+          <summary className="cursor-pointer font-medium mb-2">Debug Information</summary>
+          <pre className="overflow-auto">
+            {JSON.stringify({
+              hasExercise: !!exercise,
+              hasContent: !!exercise.content,
+              contentType: typeof exercise.content,
+              exerciseKeys: exercise ? Object.keys(exercise) : []
+            }, null, 2)}
+          </pre>
+        </details>
       </div>
     );
   }
 
-  const allCompleted = completedItems.size === exercise.content.items.length;
+  if (!content.items || !Array.isArray(content.items) || content.items.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-4 text-yellow-600" />
+        <p className="text-yellow-600 font-semibold mb-2">No Items Configured</p>
+        <p className="text-gray-600 text-sm mb-4">
+          This exercise doesn't have any draggable items yet.
+        </p>
+        <details className="text-left bg-gray-100 p-4 rounded-lg text-xs">
+          <summary className="cursor-pointer font-medium mb-2">Debug Information</summary>
+          <pre className="overflow-auto">
+            {JSON.stringify({
+              hasItems: !!content.items,
+              isArray: Array.isArray(content.items),
+              itemsLength: content.items?.length || 0,
+              contentKeys: Object.keys(content)
+            }, null, 2)}
+          </pre>
+        </details>
+      </div>
+    );
+  }
+
+  if (!content.drop_zones || !Array.isArray(content.drop_zones) || content.drop_zones.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-4 text-yellow-600" />
+        <p className="text-yellow-600 font-semibold mb-2">No Drop Zones Configured</p>
+        <p className="text-gray-600 text-sm mb-4">
+          This exercise doesn't have any drop zones yet.
+        </p>
+        <details className="text-left bg-gray-100 p-4 rounded-lg text-xs">
+          <summary className="cursor-pointer font-medium mb-2">Debug Information</summary>
+          <pre className="overflow-auto">
+            {JSON.stringify({
+              hasDropZones: !!content.drop_zones,
+              isArray: Array.isArray(content.drop_zones),
+              zonesLength: content.drop_zones?.length || 0,
+              contentKeys: Object.keys(content)
+            }, null, 2)}
+          </pre>
+        </details>
+      </div>
+    );
+  }
+
+  const allCompleted = completedItems.size === content.items.length;
 
   return (
     <div className="p-8">
@@ -231,7 +324,7 @@ const DragDropGame = ({
           Drag & Drop Challenge
         </h3>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          {exercise.content.instructions || "Drag the code blocks to their correct positions"}
+          {content.instructions || "Drag the code blocks to their correct positions"}
         </p>
       </div>
 
@@ -253,7 +346,7 @@ const DragDropGame = ({
           </h4>
           
           <div className="space-y-3">
-            {exercise.content.items.map(item => {
+            {content.items.map(item => {
               const isPlaced = draggedItems[item.id];
               const isCorrect = completedItems.has(item.id);
               const isIncorrect = isPlaced && !isCorrect;
@@ -299,7 +392,6 @@ const DragDropGame = ({
                         )}
                       </div>
                       
-                      {/* 状态指示器 */}
                       <div className="ml-3 flex-shrink-0">
                         {isCorrect && (
                           <CheckCircleIcon className="w-5 h-5 text-green-600" />
@@ -310,7 +402,6 @@ const DragDropGame = ({
                       </div>
                     </div>
                     
-                    {/* 重置按钮（错误放置时显示） */}
                     {isIncorrect && (
                       <button
                         onClick={() => resetItem(item.id)}
@@ -333,10 +424,10 @@ const DragDropGame = ({
           </h4>
           
           <div className="space-y-4">
-            {exercise.content.drop_zones.map(zone => {
+            {content.drop_zones.map(zone => {
               const placedItems = Object.entries(draggedItems)
                 .filter(([_, zoneId]) => zoneId === zone.id)
-                .map(([itemId, _]) => exercise.content.items.find(item => item.id === itemId))
+                .map(([itemId, _]) => content.items.find(item => item.id == itemId))
                 .filter(Boolean);
               
               const isHighlighted = dragOverZone === zone.id;
@@ -365,7 +456,7 @@ const DragDropGame = ({
                     if (!isFull) {
                       handleDragOver(e, zone.id);
                     } else {
-                      e.preventDefault(); // 即使满了也要阻止默认行为
+                      e.preventDefault();
                     }
                   }}
                   onDragEnter={(e) => {
@@ -378,7 +469,6 @@ const DragDropGame = ({
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => !isFull && handleDrop(e, zone.id)}
                 >
-                  {/* 区域标题 */}
                   <div className="flex items-center justify-between mb-3">
                     <h5 className="font-bold text-gray-800" style={{ color: zone.color }}>
                       {zone.name}
@@ -393,7 +483,6 @@ const DragDropGame = ({
                     <p className="text-sm text-gray-600 mb-3">{zone.description}</p>
                   )}
                   
-                  {/* 已放置的项目 */}
                   {placedItems.length > 0 ? (
                     <div className="space-y-2">
                       {placedItems.map(item => {
@@ -429,23 +518,12 @@ const DragDropGame = ({
         </div>
       </div>
 
-      {/* 游戏提示 */}
       {!isTimeUp && (
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-blue-800 text-sm text-center">
             💡 <strong>Tip:</strong> Drag code blocks to the matching zones. 
             Incorrectly placed items can be reset using the ↺ button.
           </p>
-        </div>
-      )}
-      
-      {/* 调试信息 (开发时可以显示) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs">
-          <p><strong>Debug Info:</strong></p>
-          <p>Is Dragging: {isDragging ? 'Yes' : 'No'}</p>
-          <p>Drag Over Zone: {dragOverZone || 'None'}</p>
-          <p>Completed Items: {Array.from(completedItems).join(', ') || 'None'}</p>
         </div>
       )}
     </div>

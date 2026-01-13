@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\TestSubmission;
+use App\Models\LessonProgress;
+use Illuminate\Support\Facades\Log;
 
 class StudentProfile extends Model
 {
@@ -18,7 +20,6 @@ class StudentProfile extends Model
     public $incrementing = true;
     protected $keyType = 'int';
 
-    // 保持字段名和 DB 一致（使用 user_Id）
     protected $fillable = [
         'user_Id',
         'current_points',
@@ -27,9 +28,9 @@ class StudentProfile extends Model
         'average_score',
         'streak_days',
         'last_activity_date',
+        'equipped_snapshot',
     ];
 
-    // 使用属性形式定义 casts
     protected $casts = [
         'current_points' => 'integer',
         'total_lessons_completed' => 'integer',
@@ -39,24 +40,18 @@ class StudentProfile extends Model
         'last_activity_date' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'equipped_snapshot' => 'array',
     ];
 
     /* -------------------------
        关系定义 (Relationships)
        ------------------------- */
 
-    /**
-     * Student Profile belongs to User.
-     * 注意：这里把 FK 显式写为 'user_Id' -> User PK 'user_Id'
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_Id', 'user_Id');
     }
 
-    /**
-     * Many-to-Many: Student -> Lessons through lesson_registrations pivot.
-     */
     public function lessons(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -64,27 +59,379 @@ class StudentProfile extends Model
             'lesson_registrations',
             'student_id',
             'lesson_id'
-        )->withPivot(['registration_id', 'registration_status', 'created_at', 'updated_at'])
-            ->withTimestamps()
-            ->wherePivot('registration_status', 'active');
+        )->withPivot(['registration_id', 'registration_status', 'exercises_completed', 'tests_passed', 'completion_points_awarded', 'completed_at'])
+            ->withTimestamps();
     }
 
-    public function registrations(): HasMany
+    public function lessonRegistrations(): HasMany
     {
         return $this->hasMany(LessonRegistration::class, 'student_id', 'student_id');
     }
 
-    /**
-     * Get all test submissions for this student
-     */
+    public function exerciseSubmissions(): HasMany
+    {
+        return $this->hasMany(ExerciseSubmission::class, 'student_id', 'student_id');
+    }
+
     public function testSubmissions(): HasMany
     {
         return $this->hasMany(TestSubmission::class, 'student_id', 'student_id');
     }
 
+    public function rewardInventory(): HasMany
+    {
+        return $this->hasMany(StudentRewardInventory::class, 'student_id', 'student_id');
+    }
+
+    public function lessonProgress(): HasMany
+    {
+        return $this->hasMany(LessonProgress::class, 'student_id', 'student_id');
+    }
+
+    // ==================== NEW: Learning Path Relationships ====================
+
+    /**
+     * All learning paths assigned to this student
+     */
+    public function learningPaths(): HasMany
+    {
+        return $this->hasMany(StudentLearningPath::class, 'student_id', 'student_id');
+    }
+    /**
+     * Active learning paths
+     */
+    public function activeLearningPaths(): HasMany
+    {
+        return $this->learningPaths()->where('status', 'active');
+    }
+
+    /**
+     * Primary learning path (main path the student is following)
+     */
+    public function primaryLearningPath(): HasMany
+    {
+        return $this->learningPaths()
+            ->where('is_primary', true)
+            ->where('status', 'active');
+    }
+
+    /**
+     * Completed learning paths
+     */
+    public function completedLearningPaths(): HasMany
+    {
+        return $this->hasMany(StudentLearningPath::class, 'student_id', 'student_id')
+            ->where('student_learning_paths.status', 'completed');
+    }
+
+
+    /**
+     * Placement test submissions
+     */
+    public function placementTestSubmissions(): HasMany
+    {
+        return $this->testSubmissions()
+            ->whereHas('test', function ($query) {
+                $query->where('test_type', 'placement');
+            });
+    }
+
+    // ==================== NEW: Learning Path Methods ====================
+
+    /**
+     * Get the student's primary learning path
+     */
+    public function getPrimaryPath(): ?StudentLearningPath
+    {
+        return $this->primaryLearningPath()->first();
+    }
+
+    /**
+     * Check if student has completed placement test
+     */
+    public function hasCompletedPlacementTest(): bool
+    {
+        return $this->placementTestSubmissions()
+            ->whereIn('status', ['submitted', 'timeout'])
+            ->exists();
+    }
+
+    /**
+     * Get latest placement test submission
+     */
+    public function getLatestPlacementTest(): ?TestSubmission
+    {
+        return $this->placementTestSubmissions()
+            ->whereIn('status', ['submitted', 'timeout'])
+            ->latest('submitted_at')
+            ->first();
+    }
+
+    /**
+     * Check if student has a learning path assigned
+     */
+    public function hasLearningPath(): bool
+    {
+        return $this->learningPaths()->exists();
+    }
+
+    /**
+     * Check if student has an active learning path
+     */
+    public function hasActiveLearningPath(): bool
+    {
+        return StudentLearningPath::where('student_id', $this->student_id)
+            ->where('status', 'active')
+            ->exists();
+    }
+
+    /**
+     * Get recommended learning path based on placement test
+     */
+    public function getRecommendedPath(): ?LearningPath
+    {
+        $placementTest = $this->getLatestPlacementTest();
+
+        return $placementTest?->recommendedPath;
+    }
+
+    /**
+     * Assign a learning path to this student
+     * 
+     * @param int $pathId The learning path ID
+     * @param string $assignedBy Who assigned it ('system', 'admin', 'self')
+     * @param array $additionalData Additional data (submission_id, notes, etc.)
+     * @return StudentLearningPath
+     */
+    public function assignLearningPath(
+        int $pathId,
+        string $assignedBy = 'system',
+        array $additionalData = []
+    ): StudentLearningPath {
+        // Check if already assigned (使用直接查询)
+        $existing = StudentLearningPath::where('student_id', $this->student_id)
+            ->where('path_id', $pathId)
+            ->whereIn('status', ['active', 'paused'])
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // Check if student has any active paths (for is_primary logic)
+        $hasActivePaths = StudentLearningPath::where('student_id', $this->student_id)
+            ->where('status', 'active')
+            ->exists();
+
+        // Create new assignment
+        return StudentLearningPath::create([
+            'student_id' => $this->student_id,
+            'path_id' => $pathId,
+            'assigned_by' => $assignedBy,
+            'assigned_at' => now(),
+            'status' => 'active',
+            'is_primary' => $additionalData['is_primary'] ?? !$hasActivePaths,
+            'placement_test_submission_id' => $additionalData['placement_test_submission_id'] ?? null,
+            'assigned_by_user_id' => $additionalData['assigned_by_user_id'] ?? null,
+            'recommendation_score' => $additionalData['recommendation_score'] ?? null,
+            'recommendation_reason' => $additionalData['recommendation_reason'] ?? null,
+            'target_completion_date' => $additionalData['target_completion_date'] ?? null,
+        ]);
+    }
+
+    /**
+     * Accept recommended learning path from placement test
+     */
+    public function acceptRecommendedPath(): ?StudentLearningPath
+    {
+        $placementTest = $this->getLatestPlacementTest();
+
+        if (!$placementTest || !$placementTest->recommended_path_id) {
+            return null;
+        }
+
+        // Check if already accepted
+        if ($placementTest->hasAcceptedRecommendation()) {
+            return $placementTest->getAcceptedPathAssignment();
+        }
+
+        return $this->assignLearningPath(
+            $placementTest->recommended_path_id,
+            'system',
+            [
+                'placement_test_submission_id' => $placementTest->submission_id,
+                'recommendation_score' => $placementTest->recommendation_confidence,
+                'recommendation_reason' => $placementTest->recommendation_message,
+                'is_primary' => true,
+            ]
+        );
+    }
+    /**
+     * Get learning path progress summary
+     */
+    public function getLearningPathProgress(): array
+    {
+        // 使用直接查询而不是关系
+        $activePaths = StudentLearningPath::where('student_id', $this->student_id)
+            ->where('status', 'active')
+            ->with('learningPath')
+            ->get();
+
+        if ($activePaths->isEmpty()) {
+            return [
+                'has_active_path' => false,
+                'paths' => [],
+                'overall_progress' => 0,
+            ];
+        }
+
+        return [
+            'has_active_path' => true,
+            'paths' => $activePaths->map(function ($studentPath) {
+                return [
+                    'id' => $studentPath->student_path_id,
+                    'path_id' => $studentPath->path_id,
+                    'title' => $studentPath->learningPath->title,
+                    'difficulty' => $studentPath->learningPath->difficulty_level,
+                    'progress_percent' => $studentPath->progress_percent,
+                    'status' => $studentPath->status,
+                    'is_primary' => $studentPath->is_primary,
+                    'started_at' => $studentPath->started_at?->format('Y-m-d'),
+                    'last_activity' => $studentPath->last_activity_at?->diffForHumans(),
+                    'days_in_path' => $studentPath->days_in_path,
+                    'next_lesson' => $studentPath->getNextLesson()?->title,
+                ];
+            }),
+            'overall_progress' => round($activePaths->avg('progress_percent'), 2),
+        ];
+    }
+
+    /**
+     * Get next lesson in primary learning path
+     */
+    public function getNextPathLesson(): ?Lesson
+    {
+        $primaryPath = $this->getPrimaryPath();
+
+        return $primaryPath?->getNextLesson();
+    }
+
+    /**
+     * Update all learning path progress
+     */
+    public function updateAllPathProgress(): void
+    {
+        // 使用直接查询
+        $activePaths = StudentLearningPath::where('student_id', $this->student_id)
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($activePaths as $studentPath) {
+            $studentPath->updateProgress();
+        }
+    }
+
+    /**
+     * Get learning path statistics
+     */
+    public function getLearningPathStats(): array
+    {
+        // 使用 Eloquent 查询而不是关系属性
+        $allPaths = StudentLearningPath::where('student_id', $this->student_id)->get();
+
+        return [
+            'total_paths' => $allPaths->count(),
+            'active_paths' => $allPaths->where('status', 'active')->count(),
+            'completed_paths' => $allPaths->where('status', 'completed')->count(),
+            'paused_paths' => $allPaths->where('status', 'paused')->count(),
+            'abandoned_paths' => $allPaths->where('status', 'abandoned')->count(),
+            'average_path_progress' => round($allPaths->avg('progress_percent'), 2),
+            'has_completed_placement' => $this->hasCompletedPlacementTest(),
+            'placement_test_score' => $this->getLatestPlacementTest()?->score,
+        ];
+    }
     /* -------------------------
-       基础积分和学习管理方法
+       保持所有原有方法不变
        ------------------------- */
+
+    public function getCompletedExercisesCount($lessonId = null): int
+    {
+        $query = $this->exerciseSubmissions()
+            ->where('completed', true)
+            ->distinct('exercise_id');
+
+        if ($lessonId) {
+            $query->whereHas('exercise', function ($q) use ($lessonId) {
+                $q->where('lesson_id', $lessonId);
+            });
+        }
+
+        return $query->count('exercise_id');
+    }
+
+    public function getBestScoreForExercise($exerciseId): ?int
+    {
+        return $this->exerciseSubmissions()
+            ->where('exercise_id', $exerciseId)
+            ->where('completed', true)
+            ->max('score');
+    }
+
+    public function hasCompletedExercise($exerciseId): bool
+    {
+        return $this->exerciseSubmissions()
+            ->where('exercise_id', $exerciseId)
+            ->where('completed', true)
+            ->whereRaw('score >= (SELECT max_score * 0.7 FROM interactive_exercises WHERE exercise_id = ?)', [$exerciseId])
+            ->exists();
+    }
+
+    public function getExerciseHistory(int $limit = 10)
+    {
+        return $this->exerciseSubmissions()
+            ->with(['exercise.lesson'])
+            ->where('completed', true)
+            ->latest('submitted_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function getExerciseStats(): array
+    {
+        $submissions = $this->exerciseSubmissions()->where('completed', true);
+        $totalSubmissions = $submissions->count();
+
+        if ($totalSubmissions === 0) {
+            return [
+                'total_exercises' => 0,
+                'completed_exercises' => 0,
+                'average_score' => 0,
+                'total_time_spent' => 0,
+            ];
+        }
+
+        return [
+            'total_exercises' => $totalSubmissions,
+            'completed_exercises' => $submissions->distinct('exercise_id')->count('exercise_id'),
+            'average_score' => round($submissions->avg('score'), 2),
+            'total_time_spent' => $submissions->sum('time_taken'),
+        ];
+    }
+
+    public function getOverallStats(): array
+    {
+        return [
+            'exercises' => $this->getExerciseStats(),
+            'tests' => $this->getTestProgressStats(),
+            'learning_paths' => $this->getLearningPathStats(), // ← 新增
+            'total_points' => $this->current_points,
+            'level' => $this->points_level,
+            'streak_days' => $this->streak_days,
+            'streak_status' => $this->streak_status,
+            'lessons_completed' => $this->total_lessons_completed,
+            'last_activity' => $this->last_activity_date?->diffForHumans(),
+        ];
+    }
 
     public function addPoints(int $points): self
     {
@@ -106,6 +453,10 @@ class StudentProfile extends Model
     {
         $this->increment('total_lessons_completed');
         $this->updateLastActivity();
+
+        // ← 新增：更新学习路径进度
+        $this->updateAllPathProgress();
+
         $this->refresh();
         return $this;
     }
@@ -135,13 +486,6 @@ class StudentProfile extends Model
         $this->save();
     }
 
-    /* -------------------------
-       测验系统核心方法
-       ------------------------- */
-
-    /**
-     * 更新测验统计数据
-     */
     public function updateTestStats(): self
     {
         $submissions = $this->testSubmissions()->whereIn('status', ['submitted', 'timeout']);
@@ -154,9 +498,6 @@ class StudentProfile extends Model
         return $this;
     }
 
-    /**
-     * 完成测验后更新学生记录
-     */
     public function completedTest(float $percentageScore): self
     {
         $previousCount = (int) $this->total_tests_taken;
@@ -173,19 +514,14 @@ class StudentProfile extends Model
         return $this;
     }
 
-    /**
-     * 处理测验完成的完整流程（主要方法）
-     */
     public function processTestCompletion($testSubmission): self
     {
         if (!$testSubmission || !$testSubmission->is_completed) {
             return $this;
         }
 
-        // 更新测验统计
         $this->completedTest($testSubmission->score);
 
-        // 计算并添加奖励积分
         $averageDifficulty = $testSubmission->test->questions()
             ->avg('difficulty_level') ?? 1;
         $rewardPoints = $this->calculateTestRewardPoints(
@@ -194,19 +530,11 @@ class StudentProfile extends Model
         );
         $this->addPoints($rewardPoints);
 
-        // 更新连续天数
         $this->updateStreak();
 
         return $this;
     }
 
-    /* -------------------------
-       测验查询和检查方法
-       ------------------------- */
-
-    /**
-     * 检查学生是否可以参加特定测验
-     */
     public function canTakeTest($testId): bool
     {
         $test = \App\Models\Test::find($testId);
@@ -215,9 +543,6 @@ class StudentProfile extends Model
         return $test->canStudentTakeTest($this->student_id);
     }
 
-    /**
-     * 获取学生在特定测验中的尝试次数
-     */
     public function getTestAttemptsForTest($testId): int
     {
         return $this->testSubmissions()
@@ -226,9 +551,6 @@ class StudentProfile extends Model
             ->count();
     }
 
-    /**
-     * 获取学生在特定测验中的最高分
-     */
     public function getBestScoreForTest($testId): ?float
     {
         return $this->testSubmissions()
@@ -237,9 +559,6 @@ class StudentProfile extends Model
             ->max('score');
     }
 
-    /**
-     * 获取最近的测验提交记录
-     */
     public function getLatestTestSubmission()
     {
         return $this->testSubmissions()
@@ -248,9 +567,6 @@ class StudentProfile extends Model
             ->first();
     }
 
-    /**
-     * 检查是否有正在进行的测验
-     */
     public function hasInProgressTest(): bool
     {
         return $this->testSubmissions()
@@ -258,9 +574,6 @@ class StudentProfile extends Model
             ->exists();
     }
 
-    /**
-     * 获取当前正在进行的测验提交
-     */
     public function getCurrentTestSubmission()
     {
         return $this->testSubmissions()
@@ -269,33 +582,23 @@ class StudentProfile extends Model
             ->first();
     }
 
-    /* -------------------------
-       积分和奖励计算
-       ------------------------- */
-
-    /**
-     * 根据测验分数和难度计算奖励积分
-     */
     public function calculateTestRewardPoints(float $score, int $testDifficulty = 1): int
     {
-        // 基础积分（根据分数）
         $basePoints = match (true) {
-            $score >= 95 => 60,  // 优秀
-            $score >= 90 => 50,  // 很好
-            $score >= 80 => 40,  // 良好
-            $score >= 70 => 30,  // 及格
-            $score >= 60 => 20,  // 接近及格
-            default => 10,       // 参与奖励
+            $score >= 95 => 60,
+            $score >= 90 => 50,
+            $score >= 80 => 40,
+            $score >= 70 => 30,
+            $score >= 60 => 20,
+            default => 10,
         };
 
-        // 难度系数
         $difficultyMultiplier = match ($testDifficulty) {
-            3 => 1.5,  // 困难
-            2 => 1.2,  // 中等
-            default => 1.0, // 简单
+            3 => 1.5,
+            2 => 1.2,
+            default => 1.0,
         };
 
-        // 连续天数奖励（额外奖励）
         $streakBonus = match (true) {
             $this->streak_days >= 7 => 1.2,
             $this->streak_days >= 3 => 1.1,
@@ -305,13 +608,6 @@ class StudentProfile extends Model
         return (int) round($basePoints * $difficultyMultiplier * $streakBonus);
     }
 
-    /* -------------------------
-       数据统计和分析
-       ------------------------- */
-
-    /**
-     * 获取测验历史记录
-     */
     public function getTestHistory(int $limit = 10)
     {
         return $this->testSubmissions()
@@ -322,9 +618,6 @@ class StudentProfile extends Model
             ->get();
     }
 
-    /**
-     * 获取详细的测验进度统计
-     */
     public function getTestProgressStats(): array
     {
         $submissions = $this->testSubmissions()->whereIn('status', ['submitted', 'timeout']);
@@ -360,9 +653,6 @@ class StudentProfile extends Model
         ];
     }
 
-    /**
-     * 计算最近的进步情况
-     */
     private function calculateRecentImprovement(): float
     {
         $recentSubmissions = $this->testSubmissions()
@@ -379,9 +669,6 @@ class StudentProfile extends Model
         return round($recent - $earlier, 2);
     }
 
-    /**
-     * 获取测验总耗时（分钟）
-     */
     private function getTotalTestTimeSpent(): int
     {
         return $this->testSubmissions()
@@ -389,9 +676,6 @@ class StudentProfile extends Model
             ->sum('time_spent') ?? 0;
     }
 
-    /**
-     * 获取按题目类型的统计
-     */
     public function getQuestionTypeStats(): array
     {
         $submissions = $this->testSubmissions()
@@ -418,7 +702,6 @@ class StudentProfile extends Model
             }
         }
 
-        // 计算正确率
         foreach ($stats as $type => &$data) {
             $data['accuracy'] = $data['total'] > 0
                 ? round(($data['correct'] / $data['total']) * 100, 2)
@@ -427,10 +710,6 @@ class StudentProfile extends Model
 
         return $stats;
     }
-
-    /* -------------------------
-       访问器 (Accessors) 和属性
-       ------------------------- */
 
     public function getPointsLevelAttribute(): string
     {
@@ -445,18 +724,18 @@ class StudentProfile extends Model
 
     public function getCompletionPercentageAttribute(): int
     {
-        $totalLessons = 100; // 可以从配置或数据库获取
+        $totalLessons = 100;
         return min(100, (int) round(($this->total_lessons_completed / max(1, $totalLessons)) * 100));
     }
 
     public function getStreakStatusAttribute(): string
     {
         return match (true) {
-            $this->streak_days >= 30 => 'On Fire! 🔥',
-            $this->streak_days >= 7 => 'Great Streak! ⚡',
-            $this->streak_days >= 3 => 'Building Momentum! 💪',
-            $this->streak_days > 0 => 'Getting Started! 🌟',
-            default => 'Ready to Start! 🚀',
+            $this->streak_days >= 30 => 'On Fire!',
+            $this->streak_days >= 7 => 'Great Streak!',
+            $this->streak_days >= 3 => 'Building Momentum!',
+            $this->streak_days > 0 => 'Getting Started!',
+            default => 'Ready to Start!',
         };
     }
 
@@ -473,17 +752,10 @@ class StudentProfile extends Model
         };
     }
 
-    /**
-     * 检查今天是否活跃
-     */
     public function isActiveToday(): bool
     {
         return $this->last_activity_date?->isToday() ?? false;
     }
-
-    /* -------------------------
-       查询作用域 (Scopes)
-       ------------------------- */
 
     public function scopeHighAchievers($query)
     {
@@ -520,5 +792,332 @@ class StudentProfile extends Model
     public function scopeRecentlyActive($query, int $days = 3)
     {
         return $query->where('last_activity_date', '>=', now()->subDays($days));
+    }
+
+    public function rewards(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Reward::class,
+            'student_reward_inventory',
+            'student_id',
+            'reward_id',
+            'student_id',
+            'reward_id'
+        )->withPivot(['quantity', 'obtained_at', 'is_equipped', 'equipped_at'])
+            ->withTimestamps();
+    }
+
+    public function rewardRecords(): HasMany
+    {
+        return $this->hasMany(RewardRecord::class, 'student_id', 'student_id');
+    }
+
+    public function getEquippedAvatarFrame()
+    {
+        return $this->rewardInventory()
+            ->where('is_equipped', true)
+            ->whereHas('reward', function ($q) {
+                $q->where('reward_type', 'avatar_frame');
+            })
+            ->with('reward')
+            ->first();
+    }
+
+    public function getEquippedBackground()
+    {
+        return $this->rewardInventory()
+            ->where('is_equipped', true)
+            ->whereHas('reward', function ($q) {
+                $q->where('reward_type', 'profile_background');
+            })
+            ->with('reward')
+            ->first();
+    }
+
+    public function getEquippedTitle()
+    {
+        return $this->rewardInventory()
+            ->where('is_equipped', true)
+            ->whereHas('reward', function ($q) {
+                $q->where('reward_type', 'profile_title');
+            })
+            ->with('reward')
+            ->first();
+    }
+
+    public function getEquippedBadges()
+    {
+        return $this->rewardInventory()
+            ->where('is_equipped', true)
+            ->whereHas('reward', function ($q) {
+                $q->where('reward_type', 'badge');
+            })
+            ->with('reward')
+            ->get();
+    }
+
+    public function getEquippedRewards()
+    {
+        return $this->rewardInventory()
+            ->where('is_equipped', true)
+            ->with('reward')
+            ->get();
+    }
+
+    public function getEquippedSnapshot(): array
+    {
+        $snapshot = $this->equipped_snapshot;
+
+        if (empty($snapshot) || !is_array($snapshot)) {
+            return [
+                'avatar_frame' => null,
+                'background' => null,
+                'title' => null,
+                'badges' => [],
+                'updated_at' => null,
+            ];
+        }
+
+        return [
+            'avatar_frame' => $snapshot['avatar_frame'] ?? null,
+            'background' => $snapshot['background'] ?? null,
+            'title' => $snapshot['title'] ?? null,
+            'badges' => $snapshot['badges'] ?? [],
+            'updated_at' => $snapshot['updated_at'] ?? null,
+        ];
+    }
+
+    public function updateEquippedSnapshot(): void
+    {
+        $avatarFrame = $this->getEquippedAvatarFrame();
+        $background = $this->getEquippedBackground();
+        $title = $this->getEquippedTitle();
+        $badges = $this->getEquippedBadges();
+
+        $snapshot = [
+            'avatar_frame' => $avatarFrame ? [
+                'id' => $avatarFrame->reward->reward_id,
+                'name' => $avatarFrame->reward->name,
+                'image_url' => $avatarFrame->reward->image_url,
+                'reward_type' => $avatarFrame->reward->reward_type,
+                'rarity' => $avatarFrame->reward->rarity,
+                'metadata' => is_string($avatarFrame->reward->metadata)
+                    ? json_decode($avatarFrame->reward->metadata, true)
+                    : ($avatarFrame->reward->metadata ?? []),
+            ] : null,
+
+            'background' => $background ? [
+                'id' => $background->reward->reward_id,
+                'name' => $background->reward->name,
+                'image_url' => $background->reward->image_url,
+                'reward_type' => $background->reward->reward_type,
+                'rarity' => $background->reward->rarity,
+                'metadata' => is_string($background->reward->metadata)
+                    ? json_decode($background->reward->metadata, true)
+                    : ($background->reward->metadata ?? []),
+            ] : null,
+
+            'title' => $title ? [
+                'id' => $title->reward->reward_id,
+                'name' => $title->reward->name,
+                'image_url' => $title->reward->image_url,
+                'reward_type' => $title->reward->reward_type,
+                'rarity' => $title->reward->rarity,
+                'metadata' => is_string($title->reward->metadata)
+                    ? json_decode($title->reward->metadata, true)
+                    : ($title->reward->metadata ?? []),
+            ] : null,
+
+            'badges' => $badges->map(function ($badge) {
+                return [
+                    'id' => $badge->reward->reward_id,
+                    'name' => $badge->reward->name,
+                    'image_url' => $badge->reward->image_url,
+                    'reward_type' => $badge->reward->reward_type,
+                    'rarity' => $badge->reward->rarity,
+                    'metadata' => is_string($badge->reward->metadata)
+                        ? json_decode($badge->reward->metadata, true)
+                        : ($badge->reward->metadata ?? []),
+                ];
+            })->toArray(),
+
+            'updated_at' => now()->timestamp,
+        ];
+
+        $this->update(['equipped_snapshot' => $snapshot]);
+        $this->refresh();
+
+        Log::info('📸 Snapshot updated:', [
+            'student_id' => $this->student_id,
+            'has_avatar_frame' => $snapshot['avatar_frame'] !== null,
+            'has_background' => $snapshot['background'] !== null,
+            'has_title' => $snapshot['title'] !== null,
+            'badges_count' => count($snapshot['badges']),
+        ]);
+    }
+
+    public function getProgressForLesson($lessonId): ?LessonProgress
+    {
+        return $this->lessonProgress()
+            ->where('lesson_id', $lessonId)
+            ->first();
+    }
+
+    public function getOrCreateProgress($lessonId): LessonProgress
+    {
+        return $this->lessonProgress()
+            ->firstOrCreate(
+                ['lesson_id' => $lessonId],
+                [
+                    'status' => 'not_started',
+                    'progress_percent' => 0,
+                    'reward_granted' => false,
+                    'exercise_completed' => false,
+                    'test_completed' => false,
+                ]
+            );
+    }
+
+    public function getInProgressLessons()
+    {
+        return $this->lessonProgress()
+            ->with('lesson')
+            ->where('status', 'in_progress')
+            ->orderBy('last_updated_at', 'desc')
+            ->get();
+    }
+
+    public function getCompletedLessons()
+    {
+        return $this->lessonProgress()
+            ->with('lesson')
+            ->where('status', 'completed')
+            ->orderBy('completed_at', 'desc')
+            ->get();
+    }
+
+    public function getLessonCompletionRate(): float
+    {
+        $total = $this->lessonProgress()->count();
+
+        if ($total === 0) {
+            return 0;
+        }
+
+        $completed = $this->lessonProgress()->where('status', 'completed')->count();
+
+        return round(($completed / $total) * 100, 2);
+    }
+
+    public function getProgressSummary(): array
+    {
+        $progress = $this->lessonProgress();
+
+        return [
+            'total_lessons' => $progress->count(),
+            'completed' => $progress->where('status', 'completed')->count(),
+            'in_progress' => $progress->where('status', 'in_progress')->count(),
+            'not_started' => $progress->where('status', 'not_started')->count(),
+            'completion_rate' => $this->getLessonCompletionRate(),
+            'average_progress' => round($progress->avg('progress_percent') ?? 0, 2),
+            'total_rewards_earned' => $progress->where('reward_granted', true)->count(),
+        ];
+    }
+
+    public function updateLessonProgress($lessonId): void
+    {
+        $progress = $this->getProgressForLesson($lessonId);
+
+        if (!$progress) {
+            Log::warning('No progress record found for lesson', [
+                'student_id' => $this->student_id,
+                'lesson_id' => $lessonId,
+            ]);
+            return;
+        }
+
+        $progress->updateCompletionFlags();
+        $calculatedProgress = $progress->calculateProgress();
+        $progress->updateProgress($calculatedProgress);
+
+        Log::info('Lesson progress updated', [
+            'student_id' => $this->student_id,
+            'lesson_id' => $lessonId,
+            'progress_percent' => $calculatedProgress,
+            'status' => $progress->status,
+        ]);
+    }
+
+    public function canCompleteLesson($lessonId): array
+    {
+        $progress = $this->getProgressForLesson($lessonId);
+
+        if (!$progress) {
+            return [
+                'can_complete' => false,
+                'reason' => 'Progress record not found.',
+                'details' => [],
+            ];
+        }
+
+        $lesson = $progress->lesson;
+
+        $totalExercises = $lesson->interactiveExercises()->where('is_active', true)->count();
+        $completedExercises = 0;
+
+        if ($totalExercises > 0) {
+            $exerciseIds = $lesson->interactiveExercises()->where('is_active', true)->pluck('exercise_id');
+
+            foreach ($exerciseIds as $exerciseId) {
+                if ($this->hasCompletedExercise($exerciseId)) {
+                    $completedExercises++;
+                }
+            }
+        }
+
+        $totalTests = $lesson->tests()->where('status', 'active')->count();
+        $passedTests = 0;
+
+        if ($totalTests > 0) {
+            $testIds = $lesson->tests()->where('status', 'active')->pluck('test_id');
+
+            foreach ($testIds as $testId) {
+                $bestScore = $this->getBestScoreForTest($testId);
+                $test = \App\Models\Test::find($testId);
+
+                if ($bestScore !== null && $bestScore >= $test->passing_score) {
+                    $passedTests++;
+                }
+            }
+        }
+
+        $allExercisesCompleted = $totalExercises === 0 || $completedExercises >= $totalExercises;
+        $allTestsPassed = $totalTests === 0 || $passedTests >= $totalTests;
+
+        $canComplete = $allExercisesCompleted && $allTestsPassed;
+
+        $reason = '';
+        if (!$allExercisesCompleted) {
+            $reason = "Complete all exercises ({$completedExercises}/{$totalExercises} done).";
+        } elseif (!$allTestsPassed) {
+            $reason = "Pass all tests ({$passedTests}/{$totalTests} passed).";
+        }
+
+        return [
+            'can_complete' => $canComplete,
+            'reason' => $reason,
+            'details' => [
+                'exercises' => [
+                    'total' => $totalExercises,
+                    'completed' => $completedExercises,
+                    'all_done' => $allExercisesCompleted,
+                ],
+                'tests' => [
+                    'total' => $totalTests,
+                    'passed' => $passedTests,
+                    'all_done' => $allTestsPassed,
+                ],
+            ],
+        ];
     }
 }
