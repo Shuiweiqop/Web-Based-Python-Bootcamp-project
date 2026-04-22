@@ -12,6 +12,7 @@ import {
   Award,
   Package
 } from 'lucide-react';
+import { useSFX } from '@/Contexts/SFXContext';
 
 /**
  * ✅ Student Rewards Shop - Fixed visibility for custom backgrounds
@@ -24,6 +25,21 @@ export default function RewardsIndex({
   rarities,
   filters 
 }) {
+  const { playSFX } = useSFX();
+
+  const handleRewardShopPointerDown = (e) => {
+    const target = e.target instanceof Element ? e.target : null;
+    if (!target) return;
+
+    const interactive = target.closest(
+      'button, a, [role="button"], input, select, textarea, [data-sfx], .cursor-pointer'
+    );
+
+    if (interactive) {
+      playSFX('click');
+    }
+  };
+
   // Filter states
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [showFilters, setShowFilters] = useState(false);
@@ -119,7 +135,7 @@ export default function RewardsIndex({
     >
       <Head title="Rewards Shop" />
 
-      <div className="space-y-6">
+      <div className="space-y-6" onPointerDownCapture={handleRewardShopPointerDown}>
         {/* Quick Links - 增强背景 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <QuickLinkCard
