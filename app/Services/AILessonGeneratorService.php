@@ -9,6 +9,7 @@ class AILessonGeneratorService
 {
     private ?string $apiKey;
     private string $model = 'gemini-2.5-flash';
+    private int $maxRetries = 3;
 
     public function __construct()
     {
@@ -22,36 +23,24 @@ class AILessonGeneratorService
     {
         try {
             if (empty($this->apiKey)) {
-                throw new \Exception('Gemini API key not configured');
+                throw new \RuntimeException('Gemini API key not configured', 500);
             }
 
             $prompt = $this->buildPrompt($title, $videoUrl, $difficulty);
 
-            $response = Http::timeout(60)->post(
-                "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}",
-                [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                [
-                                    'text' => "You are an expert programming instructor. Generate structured lesson content in JSON format only. Do not include any markdown formatting or code blocks.\n\n" . $prompt,
-                                ],
-                            ],
-                        ],
-                    ],
-                    'generationConfig' => [
-                        'temperature' => 0.7,
-                        'maxOutputTokens' => 8000,
-                    ],
-                ]
-            );
+            $response = $this->requestLessonWithRetry($prompt);
 
             if ($response->failed()) {
+                $status = $response->status();
+                $errorMessage = data_get($response->json(), 'error.message')
+                    ?? "Gemini request failed with status {$status}.";
+
                 Log::error('Gemini API Error', [
-                    'status' => $response->status(),
+                    'status' => $status,
                     'body' => $response->body(),
                 ]);
-                throw new \Exception('AI service unavailable: ' . $response->body());
+
+                throw new \RuntimeException($errorMessage, $status >= 400 && $status <= 599 ? $status : 502);
             }
 
             $data = $response->json();
@@ -59,13 +48,15 @@ class AILessonGeneratorService
             // API-level error object returned by Gemini.
             if (isset($data['error'])) {
                 Log::error('Gemini API Error', ['error' => $data['error']]);
-                throw new \Exception('API Error: ' . ($data['error']['message'] ?? 'Unknown error'));
+                $status = (int) ($data['error']['code'] ?? 502);
+                $errorMessage = $data['error']['message'] ?? 'Unknown Gemini API error.';
+                throw new \RuntimeException($errorMessage, $status >= 400 && $status <= 599 ? $status : 502);
             }
 
             // Response must contain at least one candidate.
             if (!isset($data['candidates']) || empty($data['candidates'])) {
                 Log::error('No candidates in response', ['data' => $data]);
-                throw new \Exception('AI did not generate a valid response');
+                throw new \RuntimeException('AI did not generate a valid response', 502);
             }
 
             $candidate = $data['candidates'][0];
@@ -79,7 +70,7 @@ class AILessonGeneratorService
                     'candidate' => $candidate,
                     'finishReason' => $candidate['finishReason'] ?? 'unknown',
                 ]);
-                throw new \Exception('AI did not generate lesson text content');
+                throw new \RuntimeException('AI did not generate lesson text content', 502);
             }
 
             $content = $candidate['content']['parts'][0]['text'];
@@ -95,7 +86,7 @@ class AILessonGeneratorService
                     'content' => $content,
                     'error' => json_last_error_msg(),
                 ]);
-                throw new \Exception('Failed to parse AI response: ' . json_last_error_msg());
+                throw new \RuntimeException('Failed to parse AI response: ' . json_last_error_msg(), 502);
             }
 
             return $this->validateAndFormatResponse($lessonData);
@@ -106,6 +97,59 @@ class AILessonGeneratorService
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Request Gemini with lightweight retry for transient rate/capacity failures.
+     */
+    private function requestLessonWithRetry(string $prompt): \Illuminate\Http\Client\Response
+    {
+        $payload = [
+            'contents' => [
+                [
+                    'parts' => [
+                        [
+                            'text' => "You are an expert programming instructor. Generate structured lesson content in JSON format only. Do not include any markdown formatting or code blocks.\n\n" . $prompt,
+                        ],
+                    ],
+                ],
+            ],
+            'generationConfig' => [
+                'temperature' => 0.7,
+                'maxOutputTokens' => 8000,
+            ],
+        ];
+
+        $response = null;
+
+        for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
+            $response = Http::timeout(60)->post(
+                "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}",
+                $payload
+            );
+
+            if ($response->successful()) {
+                return $response;
+            }
+
+            $status = $response->status();
+            $shouldRetry = in_array($status, [429, 503], true) && $attempt < $this->maxRetries;
+
+            if (!$shouldRetry) {
+                return $response;
+            }
+
+            $delaySeconds = $attempt; // 1s, 2s...
+            Log::warning('Gemini transient error, retrying', [
+                'status' => $status,
+                'attempt' => $attempt,
+                'next_retry_in_seconds' => $delaySeconds,
+            ]);
+
+            sleep($delaySeconds);
+        }
+
+        return $response;
     }
 
     /**
@@ -147,7 +191,7 @@ class AILessonGeneratorService
     private function validateAndFormatResponse(array $data): array
     {
         if (!isset($data['title']) || !isset($data['sections'])) {
-            throw new \Exception('AI response missing required fields');
+            throw new \RuntimeException('AI response missing required fields', 502);
         }
 
         return [

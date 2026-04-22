@@ -114,17 +114,17 @@ export default function CreateWithAI({ auth, difficulties }) {
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {/* Header */}
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900">
+                        <h1 className="text-3xl font-bold text-white drop-shadow-sm">
                             Create Lesson with AI
                         </h1>
-                        <p className="mt-2 text-gray-600">
+                        <p className="mt-2 text-blue-100/90">
                             Let AI help you generate lesson content. Review and edit before saving.
                         </p>
                     </div>
 
                     {/* Error Message */}
                     {error && (
-                        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                        <div className="mb-6 bg-red-50/95 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm">
                             {error}
                         </div>
                     )}

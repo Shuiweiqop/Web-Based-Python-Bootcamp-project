@@ -53,16 +53,30 @@ class AILessonController extends Controller
                 'data' => $lessonData,
                 'message' => 'Lesson content generated successfully! Review and edit before saving.',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            $status = (int) $e->getCode();
+            if ($status < 400 || $status > 599) {
+                $status = 500;
+            }
+
+            $message = match ($status) {
+                429 => 'AI is currently busy. Please wait a moment and try again.',
+                503 => 'AI service is under high demand right now. Please try again in a minute.',
+                default => str_contains(strtolower($e->getMessage()), 'not configured')
+                    ? 'AI service is not configured. Please check GEMINI_API_KEY in your environment.'
+                    : 'Failed to generate lesson. Please try again later.',
+            };
+
             Log::error('AI Generation Error', [
                 'error' => $e->getMessage(),
                 'user_id' => Auth::id(),
+                'status' => $status,
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate lesson. Please try again later.',
-            ], 500);
+                'message' => $message,
+            ], $status);
         }
     }
 
