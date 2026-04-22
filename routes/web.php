@@ -500,48 +500,50 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// ==================== 测试路由 ====================
-Route::get('/test-gemini', function () {
-    try {
-        $apiKey = config('services.gemini.key');
+// ==================== 测试路由（仅限本地管理员）====================
+if (app()->environment('local')) {
+    Route::middleware(['auth', 'role:administrator'])->get('/test-gemini', function () {
+        try {
+            $apiKey = config('services.gemini.key');
 
-        if (!$apiKey) {
-            return response()->json(['error' => 'API key not found']);
-        }
+            if (!$apiKey) {
+                return response()->json(['error' => 'API key not found']);
+            }
 
-        $response = \Illuminate\Support\Facades\Http::timeout(30)->post(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={$apiKey}",
-            [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => 'Say hello in one sentence']
+            $response = \Illuminate\Support\Facades\Http::timeout(30)->post(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={$apiKey}",
+                [
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => 'Say hello in one sentence']
+                            ]
                         ]
                     ]
                 ]
-            ]
-        );
+            );
 
-        if ($response->failed()) {
+            if ($response->failed()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $response->json()
+                ]);
+            }
+
+            $data = $response->json();
+
+            return response()->json([
+                'success' => true,
+                'message' => $data['candidates'][0]['content']['parts'][0]['text'] ?? 'No response',
+                'model_used' => 'gemini-2.5-flash'
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => $response->json()
+                'error' => $e->getMessage()
             ]);
         }
-
-        $data = $response->json();
-
-        return response()->json([
-            'success' => true,
-            'message' => $data['candidates'][0]['content']['parts'][0]['text'] ?? 'No response',
-            'model_used' => 'gemini-2.5-flash'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ]);
-    }
-});
+    });
+}
 
 require __DIR__ . '/auth.php';

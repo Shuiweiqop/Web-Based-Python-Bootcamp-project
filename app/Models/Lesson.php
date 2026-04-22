@@ -553,8 +553,8 @@ class Lesson extends Model
 
         // When lesson is updated, check if we need to recalculate progress
         static::updated(function ($lesson) {
-            // If exercises or tests requirements changed, recalculate all progress
-            if ($lesson->isDirty(['required_exercises', 'required_tests'])) {
+            // Use wasChanged() in updated hook because dirty state is already synced after save.
+            if ($lesson->wasChanged(['required_exercises', 'required_tests'])) {
                 $lesson->recalculateAllProgress();
             }
         });

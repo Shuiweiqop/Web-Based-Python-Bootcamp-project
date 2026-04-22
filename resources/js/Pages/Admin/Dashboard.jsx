@@ -60,10 +60,10 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                         <p className="text-slate-600 mt-1">Welcome back, {user?.name}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                            All systems operational
-                        </span>
+                        <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 text-sm font-medium rounded-lg border border-green-200 dark:border-green-700">
+    <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full animate-pulse" />
+    All systems operational
+</span>
                     </div>
                 </div>
             }

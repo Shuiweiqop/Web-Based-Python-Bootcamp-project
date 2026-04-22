@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\QuestionOption;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class QuestionImportController extends Controller
 {
@@ -16,20 +17,43 @@ class QuestionImportController extends Controller
      */
     public function preview(Request $request, $testId)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:json,csv,txt,xlsx,xls|max:10240', // 10MB max
+        // 添加调试日志
+        Log::info('=== Import Preview Started ===', [
+            'testId' => $testId,
+            'hasFile' => $request->hasFile('file'),
+            'allFiles' => $request->allFiles(),
+            'method' => $request->method(),
+            'contentType' => $request->header('Content-Type'),
         ]);
 
-        $test = PlacementTest::findOrFail($testId);
-        $file = $request->file('file');
-        $extension = $file->getClientOriginalExtension();
-
         try {
+            $request->validate([
+                'file' => 'required|file|mimes:json,csv,txt,xlsx,xls|max:10240', // 10MB max
+            ]);
+
+            $test = PlacementTest::findOrFail($testId);
+            $file = $request->file('file');
+            $extension = $file->getClientOriginalExtension();
+
+            Log::info('File validated', [
+                'filename' => $file->getClientOriginalName(),
+                'extension' => $extension,
+                'size' => $file->getSize(),
+            ]);
+
             // 根据文件类型解析
             $questions = $this->parseFile($file, $extension);
 
+            Log::info('File parsed', [
+                'questionCount' => count($questions),
+            ]);
+
             // 验证所有题目
             $validatedQuestions = $this->validateQuestions($questions);
+
+            Log::info('Questions validated', [
+                'validatedCount' => count($validatedQuestions),
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -37,7 +61,19 @@ class QuestionImportController extends Controller
                 'count' => count($validatedQuestions),
                 'message' => 'File parsed successfully. Review the questions before importing.',
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed', [
+                'errors' => $e->errors(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation failed: ' . implode(', ', $e->errors()['file'] ?? ['Unknown error']),
+            ], 422);
         } catch (\Exception $e) {
+            Log::error('Preview failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -50,6 +86,11 @@ class QuestionImportController extends Controller
      */
     public function import(Request $request, $testId)
     {
+        Log::info('=== Import Started ===', [
+            'testId' => $testId,
+            'questionCount' => count($request->input('questions', [])),
+        ]);
+
         $request->validate([
             'questions' => 'required|array',
             'questions.*.type' => 'required|in:mcq,coding,true_false,short_answer',
@@ -73,10 +114,19 @@ class QuestionImportController extends Controller
                         'question' => $questionData['question_text'] ?? 'Unknown',
                         'error' => $e->getMessage(),
                     ];
+                    Log::error('Question creation failed', [
+                        'index' => $index,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
 
             DB::commit();
+
+            Log::info('Import completed', [
+                'imported' => $importedCount,
+                'errors' => count($errors),
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -86,6 +136,9 @@ class QuestionImportController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Import transaction failed', [
+                'error' => $e->getMessage(),
+            ]);
             return response()->json([
                 'success' => false,
                 'error' => 'Import failed: ' . $e->getMessage(),

@@ -1,409 +1,461 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  ArrowUpIcon, 
-  ArrowDownIcon, 
-  ArrowLeftIcon, 
-  ArrowRightIcon,
-  PlayIcon,
-  StopIcon,
-  ArrowPathIcon,
-  SparklesIcon,
-  CodeBracketIcon
-} from '@heroicons/react/24/outline';
+import { Trophy, Heart, Coins, Timer, RotateCcw, AlertCircle } from 'lucide-react';
 
-/**
- * 迷宫游戏组件 - 使用编程逻辑导航迷宫
- * 文件位置：resources/js/Components/Games/MazeGame.jsx
- */
-const MazeGame = ({ 
-  exercise, 
-  onScoreUpdate,
-  isTimeUp = false 
-}) => {
-  const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 0 });
-  const [isRunning, setIsRunning] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [collectedItems, setCollectedItems] = useState(new Set());
-  const [commandSequence, setCommandSequence] = useState([]);
-  const [gameComplete, setGameComplete] = useState(false);
-  const [executionSpeed, setExecutionSpeed] = useState(500);
+export default function MazeGame({ exercise, onScoreUpdate, onComplete, isTimeUp }) {
+  const config = exercise.content || {};
+  const gridSize = config.gridSize || { rows: 5, cols: 5 };
+  const startPos = config.startPosition || { row: 0, col: 0 };
+  const endPos = config.endPosition || { row: gridSize.rows - 1, col: gridSize.cols - 1 };
+  const walls = config.walls || [];
+  const obstacles = config.obstacles || [];
+  const collectibles = config.collectibles || [];
+  
+  const [playerPos, setPlayerPos] = useState(startPos);
+  const [health, setHealth] = useState(100);
+  const [coinsCollected, setCoinsCollected] = useState(0);
+  const [collectedItems, setCollectedItems] = useState([]);
+  const [gameStatus, setGameStatus] = useState('playing'); // playing, won, lost
+  const [moves, setMoves] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const [lastDamage, setLastDamage] = useState(null);
 
-  // 默认迷宫配置（如果 exercise.content 没有提供）
-  const defaultMaze = {
-    grid: [
-      ['S', '.', '#', '.', 'G'],
-      ['.', '.', '#', '.', '#'],
-      ['#', '.', '.', '.', '#'],
-      ['.', '*', '#', '*', '.'],
-      ['.', '.', '.', '.', '.']
-    ],
-    start: { x: 0, y: 0 },
-    goal: { x: 4, y: 0 },
-    collectibles: [{ x: 1, y: 3 }, { x: 3, y: 3 }]
-  };
+  // Check if position has a wall
+  const hasWall = useCallback((row, col) => {
+    return walls.some(w => w.row === row && w.col === col);
+  }, [walls]);
 
-  const maze = exercise.content?.maze || defaultMaze;
-  const availableCommands = exercise.content?.available_commands || [
-    { name: 'move_right', icon: ArrowRightIcon, code: 'player.move_right()' },
-    { name: 'move_left', icon: ArrowLeftIcon, code: 'player.move_left()' },
-    { name: 'move_up', icon: ArrowUpIcon, code: 'player.move_up()' },
-    { name: 'move_down', icon: ArrowDownIcon, code: 'player.move_down()' }
-  ];
+  // Check if position has obstacle
+  const getObstacle = useCallback((row, col) => {
+    return obstacles.find(o => o.row === row && o.col === col);
+  }, [obstacles]);
 
-  // 初始化玩家位置
-  useEffect(() => {
-    setPlayerPosition(maze.start);
-  }, [maze.start]);
-
-  // 检查位置是否有效
-  const isValidPosition = useCallback((x, y) => {
-    if (x < 0 || y < 0 || y >= maze.grid.length || x >= maze.grid[0].length) {
-      return false;
-    }
-    return maze.grid[y][x] !== '#';
-  }, [maze.grid]);
-
-  // 执行单个命令
-  const executeCommand = useCallback((command, position) => {
-    let newX = position.x;
-    let newY = position.y;
-
-    switch (command.name) {
-      case 'move_right':
-        newX += 1;
-        break;
-      case 'move_left':
-        newX -= 1;
-        break;
-      case 'move_up':
-        newY -= 1;
-        break;
-      case 'move_down':
-        newY += 1;
-        break;
-      default:
-        return position;
-    }
-
-    return isValidPosition(newX, newY) ? { x: newX, y: newY } : position;
-  }, [isValidPosition]);
-
-  // 检查是否收集到物品
-  const checkCollectibles = useCallback((position) => {
-    const collectibleKey = `${position.x}-${position.y}`;
-    const hasCollectible = maze.collectibles?.some(item => 
-      item.x === position.x && item.y === position.y
+  // Check if position has collectible
+  const getCollectible = useCallback((row, col) => {
+    return collectibles.find(c => 
+      c.row === row && c.col === col && 
+      !collectedItems.some(item => item.row === row && item.col === col)
     );
-    
-    if (hasCollectible && !collectedItems.has(collectibleKey)) {
-      setCollectedItems(prev => new Set([...prev, collectibleKey]));
-      return true;
+  }, [collectibles, collectedItems]);
+
+  // Move player
+  const movePlayer = useCallback((direction) => {
+    if (gameStatus !== 'playing') return;
+
+    let newRow = playerPos.row;
+    let newCol = playerPos.col;
+
+    switch (direction) {
+      case 'up': newRow--; break;
+      case 'down': newRow++; break;
+      case 'left': newCol--; break;
+      case 'right': newCol++; break;
+      default: return;
     }
-    return false;
-  }, [maze.collectibles, collectedItems]);
 
-  // 运行命令序列
-  const runSequence = useCallback(() => {
-    if (commandSequence.length === 0 || isRunning) return;
+    // Check boundaries
+    if (newRow < 0 || newRow >= gridSize.rows || newCol < 0 || newCol >= gridSize.cols) {
+      return;
+    }
 
-    setIsRunning(true);
-    setCurrentStep(0);
-    setPlayerPosition(maze.start);
-    setCollectedItems(new Set());
+    // Check walls
+    if (hasWall(newRow, newCol)) {
+      return;
+    }
 
-    let currentPos = maze.start;
-    let step = 0;
+    // Move successful
+    setPlayerPos({ row: newRow, col: newCol });
+    setMoves(prev => prev + 1);
 
-    const executeNextCommand = () => {
-      if (step >= commandSequence.length) {
-        setIsRunning(false);
-        calculateFinalScore(currentPos);
-        return;
+    // Check for collectible
+    const collectible = getCollectible(newRow, newCol);
+    if (collectible) {
+      setCoinsCollected(prev => prev + (collectible.points || 10));
+      setCollectedItems(prev => [...prev, { row: newRow, col: newCol }]);
+    }
+
+    // Check for obstacle (trap)
+    const obstacle = getObstacle(newRow, newCol);
+    if (obstacle) {
+      const damage = obstacle.damage || 10;
+      setHealth(prev => Math.max(0, prev - damage));
+      setLastDamage({ row: newRow, col: newCol, amount: damage });
+      setTimeout(() => setLastDamage(null), 1000);
+    }
+
+    // Check for goal
+    if (newRow === endPos.row && newCol === endPos.col) {
+      setGameStatus('won');
+    }
+  }, [playerPos, gameStatus, gridSize, hasWall, getCollectible, getObstacle, endPos, collectedItems]);
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (gameStatus !== 'playing') return;
+
+      switch (e.key.toLowerCase()) {
+        case 'w':
+        case 'arrowup':
+          e.preventDefault();
+          movePlayer('up');
+          break;
+        case 's':
+        case 'arrowdown':
+          e.preventDefault();
+          movePlayer('down');
+          break;
+        case 'a':
+        case 'arrowleft':
+          e.preventDefault();
+          movePlayer('left');
+          break;
+        case 'd':
+        case 'arrowright':
+          e.preventDefault();
+          movePlayer('right');
+          break;
       }
-
-      const command = commandSequence[step];
-      const newPos = executeCommand(command, currentPos);
-      
-      setPlayerPosition(newPos);
-      setCurrentStep(step + 1);
-      checkCollectibles(newPos);
-
-      currentPos = newPos;
-      step++;
-
-      // 检查是否到达目标
-      if (newPos.x === maze.goal.x && newPos.y === maze.goal.y) {
-        setGameComplete(true);
-        setIsRunning(false);
-        calculateFinalScore(newPos);
-        return;
-      }
-
-      setTimeout(executeNextCommand, executionSpeed);
     };
 
-    executeNextCommand();
-  }, [commandSequence, executeCommand, checkCollectibles, maze.start, maze.goal, executionSpeed, isRunning]);
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [movePlayer, gameStatus]);
 
-  // 计算最终分数
-  const calculateFinalScore = (finalPosition) => {
-    let score = 0;
-    const maxScore = exercise.max_score;
-
-    // 到达目标的分数 (60%)
-    if (finalPosition.x === maze.goal.x && finalPosition.y === maze.goal.y) {
-      score += Math.floor(maxScore * 0.6);
+  // Check for game over
+  useEffect(() => {
+    if (health <= 0 && gameStatus === 'playing') {
+      setGameStatus('lost');
     }
+  }, [health, gameStatus]);
 
-    // 收集物品的分数 (30%)
-    const collectibleScore = (collectedItems.size / (maze.collectibles?.length || 1)) * (maxScore * 0.3);
-    score += Math.floor(collectibleScore);
+  // Check for time up
+  useEffect(() => {
+    if (isTimeUp && gameStatus === 'playing') {
+      setGameStatus('lost');
+    }
+  }, [isTimeUp, gameStatus]);
 
-    // 效率分数 (10%) - 基于命令数量
-    const optimalSteps = Math.abs(maze.goal.x - maze.start.x) + Math.abs(maze.goal.y - maze.start.y);
-    const efficiency = Math.max(0, 1 - ((commandSequence.length - optimalSteps) / optimalSteps));
-    score += Math.floor(efficiency * maxScore * 0.1);
+  // Calculate and submit score when game ends
+  useEffect(() => {
+    if (gameStatus === 'won' || gameStatus === 'lost') {
+      const maxScore = exercise.max_score || 100;
+      let score = 0;
 
-    onScoreUpdate(score);
-    return score;
-  };
+      if (gameStatus === 'won') {
+        // Base score for completing
+        score = 50;
+        
+        // Bonus for health remaining
+        score += Math.floor(health * 0.2);
+        
+        // Bonus for coins collected
+        score += coinsCollected;
+        
+        // Penalty for moves (efficiency)
+        const optimalMoves = Math.abs(endPos.row - startPos.row) + Math.abs(endPos.col - startPos.col);
+        const extraMoves = Math.max(0, moves - optimalMoves);
+        score -= Math.floor(extraMoves * 0.5);
+        
+        // Ensure score doesn't exceed max
+        score = Math.min(score, maxScore);
+      }
 
-  // 添加命令
-  const addCommand = (command) => {
-    if (isRunning || isTimeUp) return;
-    setCommandSequence(prev => [...prev, command]);
-  };
+      score = Math.max(0, score);
 
-  // 移除命令
-  const removeCommand = (index) => {
-    if (isRunning) return;
-    setCommandSequence(prev => prev.filter((_, i) => i !== index));
-  };
+      if (onScoreUpdate) {
+        onScoreUpdate(score);
+      }
 
-  // 清空命令序列
-  const clearCommands = () => {
-    if (isRunning) return;
-    setCommandSequence([]);
-  };
+      setTimeout(() => {
+        if (onComplete) {
+          onComplete(score);
+        }
+      }, 2000);
+    }
+  }, [gameStatus, health, coinsCollected, moves, exercise.max_score, onScoreUpdate, onComplete, endPos, startPos]);
 
-  // 重置游戏
+  // Reset game
   const resetGame = () => {
-    setPlayerPosition(maze.start);
-    setIsRunning(false);
-    setCurrentStep(0);
-    setCollectedItems(new Set());
-    setGameComplete(false);
+    setPlayerPos(startPos);
+    setHealth(100);
+    setCoinsCollected(0);
+    setCollectedItems([]);
+    setGameStatus('playing');
+    setMoves(0);
+    setLastDamage(null);
   };
 
-  // 渲染迷宫单元格
-  const renderCell = (cell, x, y) => {
-    const isPlayer = playerPosition.x === x && playerPosition.y === y;
-    const isGoal = maze.goal.x === x && maze.goal.y === y;
-    const collectibleKey = `${x}-${y}`;
-    const hasCollectible = maze.collectibles?.some(item => item.x === x && item.y === y);
-    const isCollected = collectedItems.has(collectibleKey);
-
-    let cellClass = "w-8 h-8 flex items-center justify-center text-sm font-bold border ";
-    let content = '';
-
-    if (cell === '#') {
-      cellClass += "bg-gray-800 text-gray-600 border-gray-700";
-      content = '⬛';
-    } else if (isPlayer) {
-      cellClass += "bg-blue-500 text-white border-blue-400 animate-pulse";
-      content = '🤖';
-    } else if (isGoal) {
-      cellClass += gameComplete 
-        ? "bg-green-500 text-white border-green-400 animate-bounce" 
-        : "bg-yellow-400 text-yellow-800 border-yellow-300";
-      content = gameComplete ? '🏆' : '🎯';
-    } else if (hasCollectible && !isCollected) {
-      cellClass += "bg-purple-100 text-purple-600 border-purple-200";
-      content = '💎';
-    } else {
-      cellClass += "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200";
-      content = '·';
+  // Get cell content
+  const getCellContent = (row, col) => {
+    // Player
+    if (playerPos.row === row && playerPos.col === col) {
+      return (
+        <div className="w-full h-full bg-green-500 rounded-full flex items-center justify-center text-white font-bold animate-bounce shadow-lg">
+          👤
+        </div>
+      );
     }
 
-    return (
-      <div key={`${x}-${y}`} className={cellClass}>
-        {content}
-      </div>
-    );
+    // Start position
+    if (startPos.row === row && startPos.col === col) {
+      return (
+        <div className="w-full h-full bg-green-200 flex items-center justify-center text-2xl">
+          🚀
+        </div>
+      );
+    }
+
+    // End position (goal)
+    if (endPos.row === row && endPos.col === col) {
+      return (
+        <div className="w-full h-full bg-blue-500 flex items-center justify-center text-2xl animate-pulse">
+          🏁
+        </div>
+      );
+    }
+
+    // Wall
+    if (hasWall(row, col)) {
+      return (
+        <div className="w-full h-full bg-gray-800"></div>
+      );
+    }
+
+    // Obstacle (trap)
+    const obstacle = getObstacle(row, col);
+    if (obstacle) {
+      return (
+        <div className="w-full h-full bg-red-500/30 flex items-center justify-center text-xl">
+          ⚠️
+        </div>
+      );
+    }
+
+    // Collectible (coin)
+    const collectible = getCollectible(row, col);
+    if (collectible) {
+      return (
+        <div className="w-full h-full bg-yellow-400/30 flex items-center justify-center text-xl animate-spin-slow">
+          💰
+        </div>
+      );
+    }
+
+    return null;
   };
+
+  // Calculate cell size based on grid
+  const cellSize = Math.min(64, Math.floor(500 / Math.max(gridSize.rows, gridSize.cols)));
 
   return (
-    <div className="p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* 游戏标题 */}
-        <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
-            🧩 Code Your Way Through the Maze
-          </h3>
-          <p className="text-gray-600">
-            Program the robot to navigate through the maze, collect gems, and reach the goal!
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 左侧：迷宫 */}
-          <div className="space-y-4">
-            <h4 className="font-bold text-lg text-gray-800">🗺️ Maze</h4>
-            
-            <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${maze.grid[0].length}, minmax(0, 1fr))` }}>
-                {maze.grid.map((row, y) =>
-                  row.map((cell, x) => renderCell(cell, x, y))
-                )}
+    <div className="min-h-[600px] bg-gradient-to-br from-purple-50 to-blue-50 p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Stats */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="grid grid-cols-4 gap-4">
+            {/* Health */}
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-red-100 rounded-lg">
+                <Heart className={`w-6 h-6 ${health > 50 ? 'text-red-500' : 'text-red-700'}`} />
               </div>
-            </div>
-
-            {/* 游戏状态 */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Position:</span>
-                  <span className="ml-2 font-mono">({playerPosition.x}, {playerPosition.y})</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Gems:</span>
-                  <span className="ml-2">{collectedItems.size}/{maze.collectibles?.length || 0}</span>
+              <div>
+                <div className="text-sm text-gray-600">Health</div>
+                <div className="text-2xl font-bold text-red-600">{health}%</div>
+                <div className="w-24 h-2 bg-gray-200 rounded-full mt-1">
+                  <div 
+                    className={`h-full rounded-full transition-all ${
+                      health > 50 ? 'bg-green-500' : health > 25 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${health}%` }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* 完成提示 */}
-            {gameComplete && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                <SparklesIcon className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                <p className="text-green-800 font-semibold">Congratulations! You reached the goal!</p>
+            {/* Coins */}
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Coins className="w-6 h-6 text-yellow-600" />
               </div>
-            )}
+              <div>
+                <div className="text-sm text-gray-600">Coins</div>
+                <div className="text-2xl font-bold text-yellow-600">{coinsCollected}</div>
+              </div>
+            </div>
+
+            {/* Moves */}
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Trophy className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Moves</div>
+                <div className="text-2xl font-bold text-blue-600">{moves}</div>
+              </div>
+            </div>
+
+            {/* Controls Help */}
+            <div className="flex items-center justify-end">
+              <button
+                onClick={() => setShowHint(!showHint)}
+                className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold rounded-lg transition-colors"
+              >
+                {showHint ? 'Hide' : 'Show'} Controls
+              </button>
+            </div>
           </div>
 
-          {/* 右侧：编程控制 */}
-          <div className="space-y-6">
-            <h4 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-              <CodeBracketIcon className="w-5 h-5" />
-              Program Commands
-            </h4>
+          {/* Damage Indicator */}
+          {lastDamage && (
+            <div className="mt-4 p-3 bg-red-100 border-2 border-red-300 rounded-lg animate-pulse">
+              <div className="flex items-center gap-2 text-red-700 font-semibold">
+                <AlertCircle className="w-5 h-5" />
+                <span>Ouch! You took {lastDamage.amount} damage from a trap!</span>
+              </div>
+            </div>
+          )}
 
-            {/* 可用命令 */}
-            <div>
-              <h5 className="font-semibold text-gray-700 mb-3">Available Commands:</h5>
-              <div className="grid grid-cols-2 gap-2">
-                {availableCommands.map((command, index) => (
-                  <button
-                    key={index}
-                    onClick={() => addCommand(command)}
-                    disabled={isRunning || isTimeUp}
-                    className="p-3 bg-blue-50 hover:bg-blue-100 disabled:bg-gray-100 disabled:opacity-50 border border-blue-200 rounded-lg transition-all duration-200 text-sm"
+          {/* Controls Hint */}
+          {showHint && (
+            <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-2">🎮 How to Play</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Use <kbd className="px-2 py-1 bg-white rounded border">W A S D</kbd> or <kbd className="px-2 py-1 bg-white rounded border">Arrow Keys</kbd> to move</li>
+                <li>• Collect 💰 coins to earn points</li>
+                <li>• Avoid ⚠️ traps - they damage your health!</li>
+                <li>• Reach the 🏁 goal to win</li>
+                <li>• Use fewer moves for a higher score!</li>
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Game Board */}
+        <div className="bg-white rounded-xl shadow-2xl p-8 flex justify-center">
+          <div className="inline-block">
+            {Array.from({ length: gridSize.rows }).map((_, row) => (
+              <div key={row} className="flex">
+                {Array.from({ length: gridSize.cols }).map((_, col) => (
+                  <div
+                    key={`${row}-${col}`}
+                    className="border border-gray-300 relative transition-all"
+                    style={{ width: cellSize, height: cellSize }}
                   >
-                    <div className="flex items-center gap-2">
-                      <command.icon className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium">{command.name.replace('_', ' ')}</span>
-                    </div>
-                    <code className="text-xs text-gray-600 block mt-1">{command.code}</code>
-                  </button>
+                    {getCellContent(row, col)}
+                  </div>
                 ))}
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            {/* 命令序列 */}
-            <div>
-              <h5 className="font-semibold text-gray-700 mb-3">Your Program:</h5>
-              <div className="bg-gray-900 text-green-400 rounded-lg p-4 min-h-[200px] font-mono text-sm">
-                {commandSequence.length > 0 ? (
-                  <div className="space-y-1">
-                    {commandSequence.map((command, index) => (
-                      <div 
-                        key={index}
-                        className={`flex items-center justify-between p-2 rounded ${
-                          index === currentStep - 1 && isRunning ? 'bg-yellow-600 bg-opacity-20' : ''
-                        }`}
-                      >
-                        <span>{index + 1}. {command.code}</span>
-                        {!isRunning && (
-                          <button
-                            onClick={() => removeCommand(index)}
-                            className="text-red-400 hover:text-red-300 ml-2"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-gray-500 text-center py-8">
-                    No commands yet. Add some commands above!
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 控制按钮 */}
-            <div className="flex gap-3">
+        {/* Mobile Controls */}
+        <div className="mt-6 bg-white rounded-xl shadow-lg p-6 lg:hidden">
+          <h4 className="font-semibold text-gray-900 mb-4 text-center">Mobile Controls</h4>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => movePlayer('up')}
+              className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
+            >
+              ↑
+            </button>
+            <div className="flex gap-2">
               <button
-                onClick={runSequence}
-                disabled={commandSequence.length === 0 || isRunning || isTimeUp}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                onClick={() => movePlayer('left')}
+                className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
               >
-                {isRunning ? (
-                  <>
-                    <StopIcon className="w-4 h-4" />
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <PlayIcon className="w-4 h-4" />
-                    Run Program
-                  </>
-                )}
+                ←
               </button>
-
               <button
-                onClick={resetGame}
-                disabled={isRunning}
-                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200"
+                onClick={() => movePlayer('down')}
+                className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
               >
-                <ArrowPathIcon className="w-4 h-4" />
+                ↓
               </button>
-
               <button
-                onClick={clearCommands}
-                disabled={isRunning}
-                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200"
+                onClick={() => movePlayer('right')}
+                className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
               >
-                Clear
+                →
               </button>
-            </div>
-
-            {/* 执行速度控制 */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Execution Speed:
-              </label>
-              <input
-                type="range"
-                min="100"
-                max="1000"
-                step="100"
-                value={executionSpeed}
-                onChange={(e) => setExecutionSpeed(parseInt(e.target.value))}
-                disabled={isRunning}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>Fast</span>
-                <span>Slow</span>
-              </div>
             </div>
           </div>
         </div>
+
+        {/* Game Over Overlay */}
+        {gameStatus !== 'playing' && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 animate-scaleIn">
+              <div className="text-center">
+                {gameStatus === 'won' ? (
+                  <>
+                    <div className="text-6xl mb-4">🎉</div>
+                    <h2 className="text-3xl font-bold text-green-600 mb-2">You Win!</h2>
+                    <p className="text-gray-600 mb-4">
+                      You reached the goal in {moves} moves!
+                    </p>
+                    <div className="bg-green-50 rounded-lg p-4 mb-6">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <div className="text-gray-600">Health Remaining</div>
+                          <div className="font-bold text-green-600">{health}%</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-600">Coins Collected</div>
+                          <div className="font-bold text-yellow-600">{coinsCollected}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-6xl mb-4">😢</div>
+                    <h2 className="text-3xl font-bold text-red-600 mb-2">Game Over</h2>
+                    <p className="text-gray-600 mb-6">
+                      {health <= 0 ? 'Your health reached zero!' : 'Time ran out!'}
+                    </p>
+                  </>
+                )}
+
+                <button
+                  onClick={resetGame}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s ease-out;
+        }
+        .animate-spin-slow {
+          animation: spin 3s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        kbd {
+          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+      `}</style>
     </div>
   );
-};
-
-export default MazeGame;
+}

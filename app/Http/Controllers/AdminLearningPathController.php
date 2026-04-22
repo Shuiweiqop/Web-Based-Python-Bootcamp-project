@@ -322,19 +322,19 @@ class AdminLearningPathController extends Controller
         try {
             $path->update([
                 'title' => $validated['title'],
-                'description' => $validated['description'],
-                'learning_outcomes' => $validated['learning_outcomes'],
-                'prerequisites' => $validated['prerequisites'],
+                'description' => $validated['description'] ?? null,
+                'learning_outcomes' => $validated['learning_outcomes'] ?? null,
+                'prerequisites' => $validated['prerequisites'] ?? null,
                 'difficulty_level' => $validated['difficulty_level'],
-                'estimated_duration_hours' => $validated['estimated_duration_hours'],
+                'estimated_duration_hours' => $validated['estimated_duration_hours'] ?? null,
                 'min_score_required' => $validated['min_score_required'],
                 'max_score_required' => $validated['max_score_required'],
-                'icon' => $validated['icon'],
-                'color' => $validated['color'],
-                'banner_image' => $validated['banner_image'],
+                'icon' => $validated['icon'] ?? $path->icon,
+                'color' => $validated['color'] ?? $path->color,
+                'banner_image' => $validated['banner_image'] ?? $path->banner_image,
                 'is_active' => $request->boolean('is_active'),
                 'is_featured' => $request->boolean('is_featured'),
-                'display_order' => $validated['display_order'],
+                'display_order' => $validated['display_order'] ?? $path->display_order,
                 'updated_by' => Auth::user()->user_Id,
             ]);
 

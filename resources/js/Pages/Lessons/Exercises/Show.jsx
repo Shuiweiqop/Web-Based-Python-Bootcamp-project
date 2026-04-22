@@ -14,7 +14,8 @@ import GameContainer from './components/GameContainer';
 import DragDropGame from './components/DragDropGame';
 import AdventureGame from './components/AdventureGame';
 import MazeGame from './components/MazeGame';
-import CodingExercise from './components/CodingExercise'; // 🔥 编程练习
+import CodingExercise from './components/CodingExercise';
+import FillBlankExercise from './components/FillBlankExercise';
 import DefaultGamePlaceholder from './components/DefaultGamePlaceholder';
 
 // 导入 hooks
@@ -28,13 +29,15 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
 
-  // 🔥 检查是否是 Coding Exercise
+  // 🔥 检查 exercise 类型
   const isCodingExercise = exercise.exercise_type === 'coding' || exercise.type === 'coding';
+  const isFillBlankExercise = exercise.exercise_type === 'fill_blank' || exercise.type === 'fill_blank';
 
   const timer = useTimer(
     exercise.time_limit, 
     gameStarted,
     () => {
+      // Time's up callback - use current score
       handleGameComplete();
     }
   );
@@ -55,14 +58,18 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     score.resetScore();
   };
 
-  const handleGameComplete = async () => {
+  const handleGameComplete = async (providedScore) => {
     if (gameCompleted || isSubmitting) return;
 
     setIsSubmitting(true);
     const timeTaken = exercise.time_limit_sec 
       ? exercise.time_limit_sec - timer.timeLeft 
       : timer.timeLeft;
-    const achievedScore = score.currentScore;
+    
+    // 🔥 Use provided score if available, otherwise use hook's score
+    const achievedScore = providedScore !== undefined ? providedScore : score.currentScore;
+    
+    console.log('🏆 Completing with score:', achievedScore, '(provided:', providedScore, ', current:', score.currentScore, ')');
 
     setFinalScore(achievedScore);
     setGameCompleted(true);
@@ -75,7 +82,11 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
       const { data } = await axios.post(
         route('lessons.exercises.api.submit', { lesson: lessonId, exercise: exerciseId }),
         {
-          answer: { completed: true, score: achievedScore },
+          answer: {
+            completed: true,
+            score: achievedScore,  // 🔥 确保分数在 answer 里
+          },
+          score: achievedScore,  // 🔥 也在顶层传递
           time_spent: timeTaken,
         }
       );
@@ -98,7 +109,6 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   };
 
   const handleReturnToLesson = () => {
-    // 设置刷新标记
     sessionStorage.setItem('refresh_lesson_progress', 'true');
     router.visit(`/lessons/${lesson.lesson_id}`);
   };
@@ -106,11 +116,17 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const renderGameContent = () => {
     const gameProps = {
       exercise,
+      lesson,
       onScoreUpdate: score.updateScore,
       onComplete: handleGameComplete,
       isTimeUp: timer.isTimeUp,
       timeLeft: timer.timeLeft,
     };
+
+    // 🔥 Fill-in-the-Blank 直接渲染，不需要 gameStarted
+    if (isFillBlankExercise) {
+      return <FillBlankExercise {...gameProps} />;
+    }
 
     // 🔥 Coding Exercise 独立渲染
     if (isCodingExercise) {
@@ -262,7 +278,17 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     );
   }
 
-  // 🎮 传统游戏类型的布局（带侧边栏）
+  // 🔥 Fill-in-the-Blank 使用 StudentLayout，直接显示不需要 Start 按钮
+  if (isFillBlankExercise) {
+    return (
+      <StudentLayout user={auth.user}>
+        <Head title={`${exercise.title} - ${lesson.title}`} />
+        {gameCompleted ? renderCompletionScreen() : renderGameContent()}
+      </StudentLayout>
+    );
+  }
+
+  // 🎮 传统游戏类型的布局（带侧边栏和 Start 按钮）
   return (
     <StudentLayout user={auth.user}>
       <Head title={`${exercise.title} - ${lesson.title}`} />

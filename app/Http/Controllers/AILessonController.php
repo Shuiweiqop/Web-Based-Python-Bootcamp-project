@@ -61,7 +61,7 @@ class AILessonController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate lesson: ' . $e->getMessage(),
+                'message' => 'Failed to generate lesson. Please try again later.',
             ], 500);
         }
     }
@@ -129,7 +129,7 @@ class AILessonController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to save lesson: ' . $e->getMessage(),
+                'message' => 'Failed to save lesson. Please try again later.',
             ], 500);
         }
     }

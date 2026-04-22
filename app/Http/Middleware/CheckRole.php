@@ -56,11 +56,11 @@ class CheckRole
         }
 
         // 无权限：AJAX 返回 403 JSON；浏览器则 abort 或定向到无权限页
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Forbidden.'], 403);
+        if ($request->expectsJson() || $request->header('X-Inertia')) {
+            abort(403);
         }
 
-        // 你可以改成 redirect()->route('no-permission') 指向自定义页面
-        abort(403, 'Unauthorized access.');
+        // 纯浏览器请求（非 Inertia）
+        return redirect()->route('login');
     }
 }

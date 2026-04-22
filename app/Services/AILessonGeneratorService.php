@@ -7,24 +7,24 @@ use Illuminate\Support\Facades\Log;
 
 class AILessonGeneratorService
 {
-    private string $apiKey;
-    private string $model = 'gemini-2.5-flash'; // 使用 Gemini Flash 模型
+    private ?string $apiKey;
+    private string $model = 'gemini-2.5-flash'; // ä½¿ç”¨ Gemini Flash æ¨¡åž‹
 
     public function __construct()
     {
         $this->apiKey = config('services.gemini.key');
-
-        if (!$this->apiKey) {
-            throw new \Exception('Gemini API key not configured');
-        }
     }
 
     /**
-     * 根据标题和视频URL生成课程内容
+     * æ ¹æ®æ ‡é¢˜å’Œè§†é¢‘URLç”Ÿæˆè¯¾ç¨‹å†…å®¹
      */
     public function generateLesson(string $title, ?string $videoUrl = null, string $difficulty = 'beginner'): array
     {
         try {
+            if (empty($this->apiKey)) {
+                throw new \Exception('Gemini API key not configured');
+            }
+
             $prompt = $this->buildPrompt($title, $videoUrl, $difficulty);
 
             $response = Http::timeout(60)->post(
@@ -56,37 +56,37 @@ class AILessonGeneratorService
 
             $data = $response->json();
 
-            // 检查是否有错误
+            // æ£€æŸ¥æ˜¯å¦æœ‰é”™è¯¯
             if (isset($data['error'])) {
                 Log::error('Gemini API Error', ['error' => $data['error']]);
                 throw new \Exception('API Error: ' . ($data['error']['message'] ?? 'Unknown error'));
             }
 
-            // 检查是否有候选回复
+            // æ£€æŸ¥æ˜¯å¦æœ‰å€™é€‰å›žå¤
             if (!isset($data['candidates']) || empty($data['candidates'])) {
                 Log::error('No candidates in response', ['data' => $data]);
-                throw new \Exception('AI 没有生成回复');
+                throw new \Exception('AI æ²¡æœ‰ç”Ÿæˆå›žå¤');
             }
 
             $candidate = $data['candidates'][0];
 
-            // 检查 finishReason
+            // æ£€æŸ¥ finishReason
             if (isset($candidate['finishReason']) && $candidate['finishReason'] === 'MAX_TOKENS') {
                 Log::warning('Response truncated due to MAX_TOKENS');
             }
 
-            // 提取文本
+            // æå–æ–‡æœ¬
             if (!isset($candidate['content']['parts'][0]['text'])) {
                 Log::error('No text in response', [
                     'candidate' => $candidate,
                     'finishReason' => $candidate['finishReason'] ?? 'unknown'
                 ]);
-                throw new \Exception('AI 没有生成文本内容');
+                throw new \Exception('AI æ²¡æœ‰ç”Ÿæˆæ–‡æœ¬å†…å®¹');
             }
 
             $content = $candidate['content']['parts'][0]['text'];
 
-            // 清理可能的 markdown 代码块标记
+            // æ¸…ç†å¯èƒ½çš„ markdown ä»£ç å—æ ‡è®°
             $content = preg_replace('/```json\s*|\s*```/', '', $content);
             $content = trim($content);
 
@@ -111,7 +111,7 @@ class AILessonGeneratorService
     }
 
     /**
-     * 构建 AI 提示词
+     * æž„å»º AI æç¤ºè¯
      */
     private function buildPrompt(string $title, ?string $videoUrl, string $difficulty): string
     {
@@ -144,16 +144,16 @@ class AILessonGeneratorService
     }
 
     /**
-     * 验证并格式化 AI 返回的数据
+     * éªŒè¯å¹¶æ ¼å¼åŒ– AI è¿”å›žçš„æ•°æ®
      */
     private function validateAndFormatResponse(array $data): array
     {
-        // 确保必需字段存在
+        // ç¡®ä¿å¿…éœ€å­—æ®µå­˜åœ¨
         if (!isset($data['title']) || !isset($data['sections'])) {
             throw new \Exception('AI response missing required fields');
         }
 
-        // 添加默认值
+        // æ·»åŠ é»˜è®¤å€¼
         return [
             'title' => $data['title'] ?? 'Untitled Lesson',
             'content' => $data['content'] ?? '',
@@ -163,12 +163,15 @@ class AILessonGeneratorService
     }
 
     /**
-     * 测试 API 连接
+     * æµ‹è¯• API è¿žæŽ¥
      */
     public function testConnection(): bool
     {
         try {
-            // Gemini API 没有直接的模型列表端点，我们用一个简单的请求来测试
+            if (empty($this->apiKey)) {
+                return false;
+            }
+            // Gemini API æ²¡æœ‰ç›´æŽ¥çš„æ¨¡åž‹åˆ—è¡¨ç«¯ç‚¹ï¼Œæˆ‘ä»¬ç”¨ä¸€ä¸ªç®€å•çš„è¯·æ±‚æ¥æµ‹è¯•
             $response = Http::timeout(10)->post(
                 "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}",
                 [
@@ -192,3 +195,4 @@ class AILessonGeneratorService
         }
     }
 }
+

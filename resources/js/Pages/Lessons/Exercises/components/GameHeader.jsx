@@ -78,4 +78,4 @@ const GameHeader = ({
   );
 };
 
-export default GameHeader;
+export default GameHeader; 

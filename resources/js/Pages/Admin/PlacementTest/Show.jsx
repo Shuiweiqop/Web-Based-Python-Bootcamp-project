@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { 
     ArrowLeft, 
     Edit, 
@@ -21,6 +21,7 @@ import {
 import { cn } from '@/utils/cn';
 
 export default function Show({ test, questions, stats }) {
+    const { props } = usePage();
     const [isDark, setIsDark] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
@@ -64,16 +65,49 @@ export default function Show({ test, questions, stats }) {
         formData.append('file', importFile);
 
         try {
+            console.log('Sending preview request to:', route('admin.placement-tests.questions.import.preview', test.test_id));
+            console.log('File:', importFile.name, 'Size:', importFile.size);
+            
+            // 方法1: 从 Inertia props 获取
+            const csrfToken = props.csrf_token || 
+                             // 方法2: 从 meta 标签获取
+                             document.querySelector('meta[name="csrf-token"]')?.content ||
+                             // 方法3: 从 cookie 获取 (Laravel Sanctum)
+                             document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
+            
+            if (!csrfToken) {
+                throw new Error('CSRF token not found. Please refresh the page.');
+            }
+            
+            console.log('CSRF Token found');
+            
             const response = await fetch(
                 route('admin.placement-tests.questions.import.preview', test.test_id),
                 {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: formData,
+                    credentials: 'same-origin',
                 }
             );
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+            // Check if response is actually JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Received non-JSON response:');
+                console.error('Status:', response.status);
+                console.error('Content-Type:', contentType);
+                console.error('Body:', text.substring(0, 500));
+                throw new Error(`Server returned ${response.status} error. Check console for details.`);
+            }
 
             const data = await response.json();
 
@@ -84,7 +118,8 @@ export default function Show({ test, questions, stats }) {
                 setImportError(data.error || 'Failed to parse file');
             }
         } catch (error) {
-            setImportError('Network error: ' + error.message);
+            console.error('Import preview error:', error);
+            setImportError(error.message || 'Failed to preview file. Please check the console for details.');
         } finally {
             setIsPreviewing(false);
         }

@@ -418,6 +418,9 @@ class ForumController extends Controller
     /**
      * 回复帖子
      */
+    /**
+     * 回复帖子
+     */
     public function reply(Request $request, $id)
     {
         if (!auth()->check() || !ForumHelper::canAccessForum()) {
@@ -437,20 +440,34 @@ class ForumController extends Controller
 
         try {
             $currentUser = auth()->user();
+            $userId = $currentUser->user_Id; // ✅ 使用正确的主键
 
+            Log::info('=== Creating Reply ===', [
+                'user_id' => $userId,
+                'post_id' => $post->post_id,
+                'parent_reply_id' => $validated['parent_reply_id'] ?? null,
+                'content_length' => strlen($validated['content']),
+            ]);
+
+            // ✅ 创建回复，使用正确的 user_id 字段
             $reply = ForumReply::create([
                 'post_id' => $post->post_id,
-                'user_id' => $currentUser->id,
+                'user_id' => $userId, // ✅ 改用 user_Id
                 'parent_reply_id' => $validated['parent_reply_id'] ?? null,
                 'content' => ForumHelper::sanitizeContent($validated['content']),
             ]);
 
+            Log::info('✅ Reply created successfully', [
+                'reply_id' => $reply->reply_id,
+                'post_id' => $post->post_id,
+                'user_id' => $userId,
+            ]);
 
+            // ✅ 发送通知
             if ($validated['parent_reply_id']) {
-
                 $parentReply = ForumReply::find($validated['parent_reply_id']);
 
-                if ($parentReply && $parentReply->user_id !== $currentUser->id) {
+                if ($parentReply && $parentReply->user_id !== $userId) {
                     Notification::create([
                         'user_Id' => $parentReply->user_id,
                         'type' => 'community',
@@ -477,8 +494,7 @@ class ForumController extends Controller
                     ]);
                 }
             } else {
-                // 场景 2: 回复帖子（顶层回复）
-                if ($post->user_id !== $currentUser->id) {
+                if ($post->user_id !== $userId) {
                     Notification::create([
                         'user_Id' => $post->user_id,
                         'type' => 'community',
@@ -506,15 +522,77 @@ class ForumController extends Controller
                 }
             }
 
+            // ✅ 更新学生活跃度
             if (ForumHelper::isStudent()) {
                 $student = ForumHelper::getCurrentStudentProfile();
                 $student?->updateStreak();
             }
 
-            return back()->with('success', 'Reply posted successfully!');
+            // ✅ 重新加载完整的帖子数据（包括新回复）
+            $post = ForumPost::with([
+                'user.studentProfile',
+                'studentProfile',
+                'user.studentProfile.rewardInventory' => function ($query) {
+                    $query->where('is_equipped', true)
+                        ->whereHas('reward', function ($q) {
+                            $q->where('reward_type', 'avatar_frame');
+                        })
+                        ->with('reward');
+                },
+                'replies' => function ($query) {
+                    $query->topLevel()
+                        ->with([
+                            'user.studentProfile',
+                            'studentProfile',
+                            'user.studentProfile.rewardInventory' => function ($q) {
+                                $q->where('is_equipped', true)
+                                    ->whereHas('reward', function ($r) {
+                                        $r->where('reward_type', 'avatar_frame');
+                                    })
+                                    ->with('reward');
+                            },
+                            'childReplies.user.studentProfile',
+                            'childReplies.studentProfile',
+                            'childReplies.user.studentProfile.rewardInventory' => function ($q) {
+                                $q->where('is_equipped', true)
+                                    ->whereHas('reward', function ($r) {
+                                        $r->where('reward_type', 'avatar_frame');
+                                    })
+                                    ->with('reward');
+                            },
+                            'childReplies.childReplies.user.studentProfile',
+                            'childReplies.childReplies.studentProfile',
+                            'childReplies.childReplies.user.studentProfile.rewardInventory' => function ($q) {
+                                $q->where('is_equipped', true)
+                                    ->whereHas('reward', function ($r) {
+                                        $r->where('reward_type', 'avatar_frame');
+                                    })
+                                    ->with('reward');
+                            }
+                        ])
+                        ->orderBy('is_solution', 'desc')
+                        ->orderBy('created_at', 'asc');
+                }
+            ])->findOrFail($id);
+
+            Log::info('✅ Reply process completed', [
+                'reply_id' => $reply->reply_id,
+                'total_replies' => $post->replies->count(),
+            ]);
+
+            return back()->with([
+                'success' => 'Reply posted successfully!',
+                'post' => $post, // ✅ 返回更新后的帖子数据
+            ]);
         } catch (\Exception $e) {
-            Log::error('Forum reply creation failed: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to post reply.']);
+            Log::error('=== Forum reply creation FAILED ===', [
+                'post_id' => $id,
+                'user_id' => $currentUser->user_Id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to post reply: ' . $e->getMessage()]);
         }
     }
     /**
@@ -597,8 +675,9 @@ class ForumController extends Controller
 
         $reply = ForumReply::findOrFail($replyId);
         $currentUser = auth()->user();
+        $userId = $currentUser->user_Id; // ✅ 使用正确的主键
 
-        if (!$reply->canMarkAsSolution($currentUser->id)) {
+        if (!$reply->canMarkAsSolution($userId)) { // ✅ 改用 $userId
             abort(403, 'Only the post author can mark solutions.');
         }
 
@@ -609,8 +688,7 @@ class ForumController extends Controller
             } else {
                 $reply->markAsSolution();
 
-
-                if ($reply->user_id !== $currentUser->id) {
+                if ($reply->user_id !== $userId) { // ✅ 改用 $userId
                     $post = ForumPost::find($reply->post_id);
 
                     Notification::create([

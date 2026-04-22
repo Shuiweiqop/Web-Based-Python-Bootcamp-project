@@ -9,11 +9,12 @@ import {
 
 /**
  * 冒险游戏组件 - 互动式编程故事
- * 文件位置：resources/js/Components/Games/AdventureGame.jsx
+ * 文件位置: resources/js/Components/Games/AdventureGame.jsx
  */
 const AdventureGame = ({ 
   exercise, 
   onScoreUpdate,
+  onComplete, // 🔥 添加 onComplete prop
   isTimeUp = false 
 }) => {
   const [currentScenario, setCurrentScenario] = useState(0);
@@ -37,7 +38,14 @@ const AdventureGame = ({
       }
     });
     
-    onScoreUpdate(totalScore);
+    console.log('📊 Adventure Game Score Calculation:', {
+      totalScenarios: exercise.content.scenarios.length,
+      answeredScenarios: newAnswers.filter(a => a !== undefined).length,
+      pointsPerScenario,
+      totalScore,
+      answers: newAnswers
+    });
+    
     return totalScore;
   };
 
@@ -50,7 +58,19 @@ const AdventureGame = ({
     setAnswers(newAnswers);
     
     // 计算新分数
-    calculateScore(newAnswers);
+    const score = calculateScore(newAnswers);
+    
+    console.log('✅ Choice made:', {
+      scenario: currentScenario,
+      choiceIndex,
+      isCorrect: exercise.content.scenarios[currentScenario].choices[choiceIndex].correct,
+      currentScore: score
+    });
+    
+    // 🔥 立即更新父组件的分数
+    if (onScoreUpdate) {
+      onScoreUpdate(score);
+    }
     
     // 显示解释
     setShowExplanation(true);
@@ -61,7 +81,14 @@ const AdventureGame = ({
         setCurrentScenario(currentScenario + 1);
         setShowExplanation(false);
       } else {
+        // 🔥 游戏完成 - 调用 onComplete 并传递最终分数
         setIsComplete(true);
+        if (onComplete) {
+          console.log('🏁 Game complete, calling onComplete with score:', score);
+          setTimeout(() => {
+            onComplete(score);
+          }, 1500);
+        }
       }
     }, 3000);
   };
@@ -80,8 +107,22 @@ const AdventureGame = ({
     setAnswers([]);
     setShowExplanation(false);
     setIsComplete(false);
-    onScoreUpdate(0);
+    if (onScoreUpdate) {
+      onScoreUpdate(0);
+    }
   };
+
+  // 🔥 自动处理时间到期
+  useEffect(() => {
+    if (isTimeUp && !isComplete) {
+      const finalScore = calculateScore();
+      setIsComplete(true);
+      if (onComplete) {
+        console.log('⏰ Time up, calling onComplete with score:', finalScore);
+        onComplete(finalScore);
+      }
+    }
+  }, [isTimeUp]);
 
   const scenario = exercise.content?.scenarios?.[currentScenario];
   

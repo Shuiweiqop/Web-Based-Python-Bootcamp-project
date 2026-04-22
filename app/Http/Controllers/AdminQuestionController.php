@@ -379,7 +379,9 @@ class AdminQuestionController extends Controller
         return redirect()->route('admin.lessons.tests.questions.index', [
             'lesson' => $lesson->lesson_id,
             'test' => $test->test_id
-        ])->with('success', 'Question deleted successfully.');
+        ])
+            ->setStatusCode(303)
+            ->with('success', 'Question deleted successfully.');
     }
 
     // POST admin/lessons/{lesson}/tests/{test}/questions/bulk-update
@@ -891,6 +893,7 @@ class AdminQuestionController extends Controller
         $question->delete();
 
         return redirect()->route('admin.placement-tests.questions.index', $test->test_id)
+            ->setStatusCode(303)
             ->with('success', 'Question deleted successfully.');
     }
 

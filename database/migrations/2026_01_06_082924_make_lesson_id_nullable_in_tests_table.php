@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Modify the tests table to allow lesson_id to be nullable
         Schema::table('tests', function (Blueprint $table) {
-            //
+            // Make lesson_id nullable for placement tests
+            $table->unsignedBigInteger('lesson_id')->nullable()->change();
         });
     }
 
@@ -22,7 +24,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tests', function (Blueprint $table) {
-            //
+            // Revert back if needed (but check if there are placement tests first)
+            $table->unsignedBigInteger('lesson_id')->nullable(false)->change();
         });
     }
 };

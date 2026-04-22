@@ -86,6 +86,10 @@ export default function CreateWithAI({ auth, difficulties }) {
         setError(null);
 
         try {
+            const normalizedEstimatedDuration = Number.isInteger(generatedData?.estimated_duration)
+                ? generatedData.estimated_duration
+                : null;
+
             const response = await fetch(route('admin.ai-lessons.store'), {
                 method: 'POST',
                 headers: {
@@ -94,6 +98,7 @@ export default function CreateWithAI({ auth, difficulties }) {
                 },
                 body: JSON.stringify({
                     ...generatedData,
+                    estimated_duration: normalizedEstimatedDuration,
                     difficulty: formData.difficulty,
                     video_url: formData.video_url,
                     ai_source_url: formData.video_url,
@@ -267,7 +272,16 @@ export default function CreateWithAI({ auth, difficulties }) {
                                 <input
                                     type="number"
                                     value={generatedData.estimated_duration}
-                                    onChange={(e) => handleGeneratedDataChange('estimated_duration', parseInt(e.target.value))}
+                                    onChange={(e) => {
+                                        const { value } = e.target;
+                                        if (value === '') {
+                                            handleGeneratedDataChange('estimated_duration', '');
+                                            return;
+                                        }
+
+                                        const parsed = Number.parseInt(value, 10);
+                                        handleGeneratedDataChange('estimated_duration', Number.isNaN(parsed) ? '' : parsed);
+                                    }}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
