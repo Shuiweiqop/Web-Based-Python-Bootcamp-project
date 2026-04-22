@@ -111,7 +111,7 @@ export default function StudentDashboard({
 
     const dashboardHeader = (
         <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 text-center shadow-2xl">
-            <div className="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/40 rounded-full px-6 py-3 mb-6 backdrop-blur-sm animate-fadeIn">
+            <div data-sfx className="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/40 rounded-full px-6 py-3 mb-6 backdrop-blur-sm animate-fadeIn">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mr-3 animate-pulse"></div>
                 <span className="text-blue-300 text-sm font-medium drop-shadow-lg">Active Learning Session</span>
                 <div className="w-2 h-2 bg-blue-400 rounded-full mx-3"></div>
@@ -140,6 +140,7 @@ export default function StudentDashboard({
                 {stats.map((stat, index) => (
                     <div 
                         key={index} 
+                        data-sfx
                         className={cn(
                             "text-center bg-black/70 backdrop-blur-md rounded-2xl p-6",
                             "border border-white/30 hover:bg-black/80 hover:border-white/50",
@@ -172,7 +173,7 @@ export default function StudentDashboard({
                 "bg-black/70 backdrop-blur-md rounded-2xl p-8",
                 "border border-white/30 hover:bg-black/80 hover:border-white/50",
                 "transition-all mb-12 shadow-2xl animate-slideDown"
-            )}>
+            )} data-sfx>
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
                         <TrendingUp className="w-6 h-6 text-blue-400 mr-3 drop-shadow-lg" />
@@ -200,7 +201,7 @@ export default function StudentDashboard({
             <div className={cn(
                 "bg-black/70 backdrop-blur-md rounded-3xl p-8",
                 "border border-white/30 mb-12 shadow-2xl animate-fadeIn"
-            )}>
+            )} data-sfx>
                 <div className="text-center">
                     <div className="inline-flex items-center bg-gradient-to-r from-purple-500/30 to-blue-500/30 border border-purple-500/50 rounded-full px-6 py-3 mb-6 backdrop-blur-sm">
                         <Zap className="w-5 h-5 text-purple-300 mr-3 drop-shadow-lg animate-pulse-slow" />
@@ -249,7 +250,7 @@ export default function StudentDashboard({
             <div className={cn(
                 "bg-black/70 backdrop-blur-md rounded-3xl p-8",
                 "border border-white/30 mb-12 shadow-2xl animate-slideDown"
-            )}>
+            )} data-sfx>
                 <div className="flex items-center mb-6">
                     <Sparkles className="w-6 h-6 text-purple-400 mr-3 drop-shadow-lg" />
                     <h3 className="text-2xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
@@ -355,7 +356,7 @@ export default function StudentDashboard({
             <div className={cn(
                 "bg-black/70 backdrop-blur-md rounded-3xl p-8",
                 "border border-white/30 shadow-2xl animate-fadeIn"
-            )}>
+            )} data-sfx>
                 <div className="text-center">
                     <div className="inline-flex items-center bg-gradient-to-r from-blue-500/30 to-purple-500/30 border border-blue-500/50 rounded-full px-6 py-3 mb-8 backdrop-blur-sm">
                         <Users className="w-5 h-5 text-blue-200 mr-3 drop-shadow-lg" />

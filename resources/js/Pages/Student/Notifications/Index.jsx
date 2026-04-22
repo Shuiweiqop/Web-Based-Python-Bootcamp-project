@@ -26,6 +26,7 @@ import axios from 'axios';
 export default function NotificationIndex({ auth, notifications, stats, filters, notificationTypes }) {
     const [selectedIds, setSelectedIds] = useState([]);
     const [processing, setProcessing] = useState(false);
+    const notifyBellSync = () => window.dispatchEvent(new Event('notifications:changed'));
 
     // 选择/取消选择通知
     const toggleSelect = (id) => {
@@ -49,6 +50,7 @@ export default function NotificationIndex({ auth, notifications, stats, filters,
     const markAsRead = async (notificationId) => {
         try {
             await axios.post(`/student/notifications/${notificationId}/read`);
+            notifyBellSync();
             router.reload({ only: ['notifications', 'stats'] });
         } catch (error) {
             console.error('Failed to mark as read:', error);
@@ -62,6 +64,7 @@ export default function NotificationIndex({ auth, notifications, stats, filters,
         setProcessing(true);
         try {
             await axios.post('/student/notifications/read-all');
+            notifyBellSync();
             router.reload({ only: ['notifications', 'stats'] });
         } catch (error) {
             console.error('Failed to mark all as read:', error);
@@ -79,6 +82,7 @@ export default function NotificationIndex({ auth, notifications, stats, filters,
             await axios.post('/student/notifications/read-multiple', {
                 notification_ids: selectedIds
             });
+            notifyBellSync();
             setSelectedIds([]);
             router.reload({ only: ['notifications', 'stats'] });
         } catch (error) {
@@ -94,6 +98,7 @@ export default function NotificationIndex({ auth, notifications, stats, filters,
         
         try {
             await axios.delete(`/student/notifications/${notificationId}`);
+            notifyBellSync();
             router.reload({ only: ['notifications', 'stats'] });
         } catch (error) {
             console.error('Failed to delete notification:', error);
@@ -110,6 +115,7 @@ export default function NotificationIndex({ auth, notifications, stats, filters,
             await axios.delete('/student/notifications/bulk/delete', {
                 data: { notification_ids: selectedIds }
             });
+            notifyBellSync();
             setSelectedIds([]);
             router.reload({ only: ['notifications', 'stats'] });
         } catch (error) {
@@ -126,6 +132,7 @@ export default function NotificationIndex({ auth, notifications, stats, filters,
         setProcessing(true);
         try {
             await axios.delete('/student/notifications/clear/read');
+            notifyBellSync();
             router.reload({ only: ['notifications', 'stats'] });
         } catch (error) {
             console.error('Failed to clear read notifications:', error);

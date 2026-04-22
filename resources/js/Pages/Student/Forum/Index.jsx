@@ -251,7 +251,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                         </div>
                     </Link>
 
-                    <div className="
+                    <div data-sfx className="
                         bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 
                         rounded-3xl shadow-2xl shadow-purple-500/50
                         p-6

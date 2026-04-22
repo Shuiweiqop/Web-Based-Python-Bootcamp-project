@@ -276,7 +276,7 @@ function StatCard({ icon: Icon, title, value, color }) {
   };
 
   return (
-    <div className={`
+    <div data-sfx className={`
       bg-black/70 backdrop-blur-md rounded-2xl p-5 shadow-2xl 
       border-2 border-white/30 
       relative overflow-hidden

@@ -1,18 +1,28 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
-// 🎵 创建音效上下文
 const SFXContext = createContext();
 
-// 🎯 Web Audio API 音效生成器
-const generateSFX = (type) => {
+let sharedAudioContext = null;
+
+const getAudioContext = async () => {
+  if (!sharedAudioContext) {
+    sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (sharedAudioContext.state === 'suspended') {
+    await sharedAudioContext.resume();
+  }
+  return sharedAudioContext;
+};
+
+const generateSFX = async (type) => {
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioContext = await getAudioContext();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
+
     const effects = {
       click: { freq: 800, duration: 50, type: 'sine' },
       hover: { freq: 600, duration: 30, type: 'sine' },
@@ -23,71 +33,99 @@ const generateSFX = (type) => {
       error: { freq: 300, duration: 150, type: 'sawtooth' },
       nav: { freq: 1000, duration: 60, type: 'triangle' },
       dropdown: { freq: 700, duration: 80, type: 'square' },
-      points: { freq: 1400, duration: 120, type: 'sine' }
+      points: { freq: 1400, duration: 120, type: 'sine' },
     };
-    
+
     const effect = effects[type] || effects.click;
-    
+
     oscillator.frequency.value = effect.freq;
     oscillator.type = effect.type;
-    
+
     gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + effect.duration / 1000);
-    
+
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + effect.duration / 1000);
   } catch (error) {
+    // Keep silent in production UX; failing audio should never block UI.
     console.warn(`SFX generation failed for ${type}:`, error);
   }
 };
 
-// 🎮 SFX Provider Component
+const isInteractiveElement = (target) => {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest(
+      'button, a, [role="button"], input[type="button"], input[type="submit"], [data-sfx], .sfx-click, .card-hover-effect'
+    )
+  );
+};
+
 export function SFXProvider({ children }) {
   const [sfxEnabled, setSfxEnabled] = useState(() => {
-    // 从内存读取设置（生产环境可以用localStorage）
     const stored = sessionStorage.getItem('sfxEnabled');
     return stored !== null ? JSON.parse(stored) : true;
   });
 
-  // 💾 保存设置到内存
+  const lastManualPlayAtRef = useRef(0);
+
   useEffect(() => {
     sessionStorage.setItem('sfxEnabled', JSON.stringify(sfxEnabled));
   }, [sfxEnabled]);
 
-  // 🔊 播放音效的函数
-  const playSFX = useCallback((type = 'click') => {
-    if (sfxEnabled) {
-      generateSFX(type);
-    }
-  }, [sfxEnabled]);
+  const playSFX = useCallback(
+    (type = 'click') => {
+      if (sfxEnabled) {
+        lastManualPlayAtRef.current = Date.now();
+        generateSFX(type);
+      }
+    },
+    [sfxEnabled]
+  );
 
-  // 🎚️ 切换音效开关
   const toggleSFX = useCallback(() => {
-    setSfxEnabled(prev => {
-      const newValue = !prev;
-      // 如果开启音效，播放一个成功音效作为反馈
-      if (newValue) {
+    setSfxEnabled((prev) => {
+      const next = !prev;
+      if (next) {
         setTimeout(() => generateSFX('success'), 100);
       }
-      return newValue;
+      return next;
     });
   }, []);
+
+  // Global fallback binding so nav bars, links, and interactive cards always have click SFX.
+  useEffect(() => {
+    if (!sfxEnabled) return undefined;
+
+    const onPointerDown = (e) => {
+      // If a manual play just happened on this interaction, skip fallback to avoid double sound.
+      if (Date.now() - lastManualPlayAtRef.current < 120) {
+        return;
+      }
+
+      if (isInteractiveElement(e.target)) {
+        playSFX('click');
+      }
+    };
+
+    // pointerdown fires before navigation, so users hear sound even when route changes immediately.
+    document.addEventListener('pointerdown', onPointerDown, true);
+
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+    };
+  }, [playSFX, sfxEnabled]);
 
   const value = {
     sfxEnabled,
     setSfxEnabled,
     toggleSFX,
-    playSFX
+    playSFX,
   };
 
-  return (
-    <SFXContext.Provider value={value}>
-      {children}
-    </SFXContext.Provider>
-  );
+  return <SFXContext.Provider value={value}>{children}</SFXContext.Provider>;
 }
 
-// 🎯 Hook to use SFX
 export function useSFX() {
   const context = useContext(SFXContext);
   if (!context) {

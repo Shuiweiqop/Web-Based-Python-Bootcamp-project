@@ -1,6 +1,6 @@
 // resources/js/hooks/useNotifications.js
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 
 /**
@@ -30,7 +30,7 @@ export function useNotifications(options = {}) {
     /**
      * 拉取未读通知（稳定函数，不进依赖）
      */
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         if (isFetchingRef.current) return;
 
         isFetchingRef.current = true;
@@ -53,7 +53,7 @@ export function useNotifications(options = {}) {
             isFetchingRef.current = false;
             setLoading(false);
         }
-    };
+    }, [limit]);
 
     /**
      * 仅在首次 mount 时加载一次
@@ -63,8 +63,7 @@ export function useNotifications(options = {}) {
         mountedRef.current = true;
 
         fetchNotifications();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchNotifications]);
 
     /**
      * 自动刷新（明确、可控）
@@ -77,7 +76,31 @@ export function useNotifications(options = {}) {
         }, refreshInterval);
 
         return () => clearInterval(id);
-    }, [autoRefresh, refreshInterval]);
+    }, [autoRefresh, refreshInterval, fetchNotifications]);
+
+    /**
+     * Keep bell count in sync when user returns to tab
+     * or when another page notifies a notification change.
+     */
+    useEffect(() => {
+        const handleFocus = () => fetchNotifications();
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                fetchNotifications();
+            }
+        };
+        const handleNotificationChanged = () => fetchNotifications();
+
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('notifications:changed', handleNotificationChanged);
+
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('notifications:changed', handleNotificationChanged);
+        };
+    }, [fetchNotifications]);
 
     /**
      * 标记单条已读

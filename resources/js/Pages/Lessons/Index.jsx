@@ -132,7 +132,7 @@ const FilterBar = ({
   ];
 
   return (
-    <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl p-6 mb-8 shadow-2xl">
+    <div data-sfx className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl p-6 mb-8 shadow-2xl">
       {/* Search Bar */}
       <div className="relative mb-6">
         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -255,7 +255,7 @@ const EmptyState = ({ hasFilters, onClearFilters }) => {
 // CTA Section Component
 const CTASection = () => {
   return (
-    <div className="bg-gradient-to-r from-blue-500/20 to-purple-600/20 backdrop-blur-xl border border-white/20 rounded-3xl p-8 text-center">
+      <div data-sfx className="bg-gradient-to-r from-blue-500/20 to-purple-600/20 backdrop-blur-xl border border-white/20 rounded-3xl p-8 text-center">
       <div className="flex justify-center mb-6">
         <div className="flex items-center space-x-2">
           <Trophy className="w-8 h-8 text-yellow-400" />

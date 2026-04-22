@@ -6,6 +6,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { router } from '@inertiajs/react';
+import { SFXProvider } from '@/Contexts/SFXContext';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 router.on('error', (event) => {
     if (event.detail?.status === 419) {
@@ -31,7 +32,11 @@ createInertiaApp({
         
         // ✅ 关键：不要在这里包裹 Providers
         // 因为 EquipProvider 需要 usePage()，必须在 App 内部
-        root.render(<App {...props} />);
+        root.render(
+            <SFXProvider>
+                <App {...props} />
+            </SFXProvider>
+        );
     },
     progress: {
         progress: false, 
