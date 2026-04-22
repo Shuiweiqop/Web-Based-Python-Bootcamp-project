@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 class AILessonGeneratorService
 {
     private ?string $apiKey;
-    private string $model = 'gemini-2.5-flash'; // ä½¿ç”¨ Gemini Flash æ¨¡åž‹
+    private string $model = 'gemini-2.5-flash';
 
     public function __construct()
     {
@@ -16,7 +16,7 @@ class AILessonGeneratorService
     }
 
     /**
-     * æ ¹æ®æ ‡é¢˜å’Œè§†é¢‘URLç”Ÿæˆè¯¾ç¨‹å†…å®¹
+     * Generate lesson content from title, optional video URL, and difficulty.
      */
     public function generateLesson(string $title, ?string $videoUrl = null, string $difficulty = 'beginner'): array
     {
@@ -34,59 +34,57 @@ class AILessonGeneratorService
                         [
                             'parts' => [
                                 [
-                                    'text' => "You are an expert programming instructor. Generate structured lesson content in JSON format only. Do not include any markdown formatting or code blocks.\n\n" . $prompt
-                                ]
-                            ]
-                        ]
+                                    'text' => "You are an expert programming instructor. Generate structured lesson content in JSON format only. Do not include any markdown formatting or code blocks.\n\n" . $prompt,
+                                ],
+                            ],
+                        ],
                     ],
                     'generationConfig' => [
                         'temperature' => 0.7,
                         'maxOutputTokens' => 8000,
-                    ]
+                    ],
                 ]
             );
 
             if ($response->failed()) {
                 Log::error('Gemini API Error', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
                 throw new \Exception('AI service unavailable: ' . $response->body());
             }
 
             $data = $response->json();
 
-            // æ£€æŸ¥æ˜¯å¦æœ‰é”™è¯¯
+            // API-level error object returned by Gemini.
             if (isset($data['error'])) {
                 Log::error('Gemini API Error', ['error' => $data['error']]);
                 throw new \Exception('API Error: ' . ($data['error']['message'] ?? 'Unknown error'));
             }
 
-            // æ£€æŸ¥æ˜¯å¦æœ‰å€™é€‰å›žå¤
+            // Response must contain at least one candidate.
             if (!isset($data['candidates']) || empty($data['candidates'])) {
                 Log::error('No candidates in response', ['data' => $data]);
-                throw new \Exception('AI æ²¡æœ‰ç”Ÿæˆå›žå¤');
+                throw new \Exception('AI did not generate a valid response');
             }
 
             $candidate = $data['candidates'][0];
 
-            // æ£€æŸ¥ finishReason
             if (isset($candidate['finishReason']) && $candidate['finishReason'] === 'MAX_TOKENS') {
                 Log::warning('Response truncated due to MAX_TOKENS');
             }
 
-            // æå–æ–‡æœ¬
             if (!isset($candidate['content']['parts'][0]['text'])) {
                 Log::error('No text in response', [
                     'candidate' => $candidate,
-                    'finishReason' => $candidate['finishReason'] ?? 'unknown'
+                    'finishReason' => $candidate['finishReason'] ?? 'unknown',
                 ]);
-                throw new \Exception('AI æ²¡æœ‰ç”Ÿæˆæ–‡æœ¬å†…å®¹');
+                throw new \Exception('AI did not generate lesson text content');
             }
 
             $content = $candidate['content']['parts'][0]['text'];
 
-            // æ¸…ç†å¯èƒ½çš„ markdown ä»£ç å—æ ‡è®°
+            // Remove accidental markdown code fences before JSON decode.
             $content = preg_replace('/```json\s*|\s*```/', '', $content);
             $content = trim($content);
 
@@ -95,7 +93,7 @@ class AILessonGeneratorService
             if (json_last_error() !== JSON_ERROR_NONE) {
                 Log::error('JSON Parse Error', [
                     'content' => $content,
-                    'error' => json_last_error_msg()
+                    'error' => json_last_error_msg(),
                 ]);
                 throw new \Exception('Failed to parse AI response: ' . json_last_error_msg());
             }
@@ -111,7 +109,7 @@ class AILessonGeneratorService
     }
 
     /**
-     * æž„å»º AI æç¤ºè¯
+     * Build prompt for structured lesson generation.
      */
     private function buildPrompt(string $title, ?string $videoUrl, string $difficulty): string
     {
@@ -144,16 +142,14 @@ class AILessonGeneratorService
     }
 
     /**
-     * éªŒè¯å¹¶æ ¼å¼åŒ– AI è¿”å›žçš„æ•°æ®
+     * Validate and normalize AI response payload.
      */
     private function validateAndFormatResponse(array $data): array
     {
-        // ç¡®ä¿å¿…éœ€å­—æ®µå­˜åœ¨
         if (!isset($data['title']) || !isset($data['sections'])) {
             throw new \Exception('AI response missing required fields');
         }
 
-        // æ·»åŠ é»˜è®¤å€¼
         return [
             'title' => $data['title'] ?? 'Untitled Lesson',
             'content' => $data['content'] ?? '',
@@ -163,7 +159,7 @@ class AILessonGeneratorService
     }
 
     /**
-     * æµ‹è¯• API è¿žæŽ¥
+     * Validate API connectivity with a minimal request.
      */
     public function testConnection(): bool
     {
@@ -171,20 +167,20 @@ class AILessonGeneratorService
             if (empty($this->apiKey)) {
                 return false;
             }
-            // Gemini API æ²¡æœ‰ç›´æŽ¥çš„æ¨¡åž‹åˆ—è¡¨ç«¯ç‚¹ï¼Œæˆ‘ä»¬ç”¨ä¸€ä¸ªç®€å•çš„è¯·æ±‚æ¥æµ‹è¯•
+
             $response = Http::timeout(10)->post(
                 "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}",
                 [
                     'contents' => [
                         [
                             'parts' => [
-                                ['text' => 'Hello']
-                            ]
-                        ]
+                                ['text' => 'Hello'],
+                            ],
+                        ],
                     ],
                     'generationConfig' => [
                         'maxOutputTokens' => 10,
-                    ]
+                    ],
                 ]
             );
 
@@ -195,4 +191,3 @@ class AILessonGeneratorService
         }
     }
 }
-
