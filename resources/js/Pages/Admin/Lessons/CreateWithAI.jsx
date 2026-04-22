@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import axios from 'axios';
 
 export default function CreateWithAI({ auth, difficulties }) {
     const [formData, setFormData] = useState({
@@ -31,16 +32,7 @@ export default function CreateWithAI({ auth, difficulties }) {
         setIsGenerating(true);
 
         try {
-            const response = await fetch(route('admin.ai-lessons.generate'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify(formData),
-            });
-
-            const data = await response.json();
+            const { data } = await axios.post(route('admin.ai-lessons.generate'), formData);
 
             if (data.success) {
                 setGeneratedData(data.data);
@@ -48,7 +40,8 @@ export default function CreateWithAI({ auth, difficulties }) {
                 setError(data.message || 'Failed to generate lesson');
             }
         } catch (err) {
-            setError('Network error: ' + err.message);
+            const message = err.response?.data?.message || err.message || 'Failed to generate lesson';
+            setError('Request failed: ' + message);
         } finally {
             setIsGenerating(false);
         }
@@ -90,23 +83,14 @@ export default function CreateWithAI({ auth, difficulties }) {
                 ? generatedData.estimated_duration
                 : null;
 
-            const response = await fetch(route('admin.ai-lessons.store'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify({
-                    ...generatedData,
-                    estimated_duration: normalizedEstimatedDuration,
-                    difficulty: formData.difficulty,
-                    video_url: formData.video_url,
-                    ai_source_url: formData.video_url,
-                    status: status,
-                }),
+            const { data } = await axios.post(route('admin.ai-lessons.store'), {
+                ...generatedData,
+                estimated_duration: normalizedEstimatedDuration,
+                difficulty: formData.difficulty,
+                video_url: formData.video_url,
+                ai_source_url: formData.video_url,
+                status: status,
             });
-
-            const data = await response.json();
 
             if (data.success) {
                 // 重定向到编辑页面或列表页面
@@ -115,7 +99,8 @@ export default function CreateWithAI({ auth, difficulties }) {
                 setError(data.message || 'Failed to save lesson');
             }
         } catch (err) {
-            setError('Network error: ' + err.message);
+            const message = err.response?.data?.message || err.message || 'Failed to save lesson';
+            setError('Request failed: ' + message);
         } finally {
             setIsSaving(false);
         }

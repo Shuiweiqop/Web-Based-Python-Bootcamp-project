@@ -73,7 +73,9 @@ export default function RewardCard({ reward, studentPoints, rewardTypes, onOpenP
 
   return (
     <div
+      data-sfx
       className={`
+        sfx-hover
         bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl 
         hover:shadow-2xl transition-all duration-300 
         overflow-hidden border-2 ${rarity.border} 

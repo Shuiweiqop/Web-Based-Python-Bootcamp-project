@@ -56,7 +56,24 @@ const isInteractiveElement = (target) => {
   if (!(target instanceof Element)) return false;
   return Boolean(
     target.closest(
-      'button, a, [role="button"], input[type="button"], input[type="submit"], [data-sfx], .sfx-click, .card-hover-effect'
+      [
+        'button',
+        'a',
+        '[role="button"]',
+        '[role="menuitem"]',
+        '[role="tab"]',
+        'input:not([type="hidden"])',
+        'select',
+        'textarea',
+        'label[for]',
+        'summary',
+        '[tabindex]:not([tabindex="-1"])',
+        '[onclick]',
+        '[data-sfx]',
+        '.sfx-click',
+        '.card-hover-effect',
+        '.cursor-pointer',
+      ].join(', ')
     )
   );
 };
@@ -68,6 +85,9 @@ export function SFXProvider({ children }) {
   });
 
   const lastManualPlayAtRef = useRef(0);
+  const lastHoverTargetRef = useRef(null);
+  const lastHoverAtRef = useRef(0);
+  const hasUserGestureRef = useRef(false);
 
   useEffect(() => {
     sessionStorage.setItem('sfxEnabled', JSON.stringify(sfxEnabled));
@@ -98,6 +118,8 @@ export function SFXProvider({ children }) {
     if (!sfxEnabled) return undefined;
 
     const onPointerDown = (e) => {
+      hasUserGestureRef.current = true;
+
       // If a manual play just happened on this interaction, skip fallback to avoid double sound.
       if (Date.now() - lastManualPlayAtRef.current < 120) {
         return;
@@ -108,11 +130,79 @@ export function SFXProvider({ children }) {
       }
     };
 
+    const handleHoverTarget = (target) => {
+      // Browser autoplay policy: ensure at least one user gesture happened.
+      if (!hasUserGestureRef.current) return;
+      if (!target) return;
+
+      const interactive = target.closest(
+        [
+          'button',
+          'a',
+          '[role="button"]',
+          '[role="menuitem"]',
+          '[role="tab"]',
+          'input:not([type="hidden"])',
+          'select',
+          'textarea',
+          'label[for]',
+          'summary',
+          '[tabindex]:not([tabindex="-1"])',
+          '[onclick]',
+          '[data-sfx]',
+          '.sfx-hover',
+          '.sfx-click',
+          '.card-hover-effect',
+          '.cursor-pointer',
+        ].join(', ')
+      );
+
+      if (!interactive) return;
+      if (Date.now() - lastManualPlayAtRef.current < 120) return;
+
+      const now = Date.now();
+      const sameTarget = interactive === lastHoverTargetRef.current;
+      const tooSoon = now - lastHoverAtRef.current < 180;
+      if (sameTarget && tooSoon) return;
+      if (tooSoon) return;
+
+      lastHoverTargetRef.current = interactive;
+      lastHoverAtRef.current = now;
+      playSFX('hover');
+    };
+
+    const onMouseOver = (e) => {
+      const target = e.target instanceof Element ? e.target : null;
+      handleHoverTarget(target);
+    };
+
+    const onFocusIn = (e) => {
+      // Keyboard/tab navigation should also get hover-like feedback.
+      const target = e.target instanceof Element ? e.target : null;
+      handleHoverTarget(target);
+    };
+
+    const onKeyDown = (e) => {
+      hasUserGestureRef.current = true;
+
+      // Enter/Space on focused interactive controls should also have SFX.
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      if (!isInteractiveElement(e.target)) return;
+      if (Date.now() - lastManualPlayAtRef.current < 120) return;
+      playSFX('click');
+    };
+
     // pointerdown fires before navigation, so users hear sound even when route changes immediately.
     document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('mouseover', onMouseOver, true);
+    document.addEventListener('focusin', onFocusIn, true);
+    document.addEventListener('keydown', onKeyDown, true);
 
     return () => {
       document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('mouseover', onMouseOver, true);
+      document.removeEventListener('focusin', onFocusIn, true);
+      document.removeEventListener('keydown', onKeyDown, true);
     };
   }, [playSFX, sfxEnabled]);
 
