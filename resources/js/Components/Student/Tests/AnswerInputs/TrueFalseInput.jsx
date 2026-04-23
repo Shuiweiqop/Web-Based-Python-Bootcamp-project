@@ -1,96 +1,71 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, Circle } from 'lucide-react';
 
-export default function MCQInput({ options, value = [], onChange, disabled = false }) {
-    const [selectedOptions, setSelectedOptions] = useState(value || []);
+export default function TrueFalseInput({ value = null, onChange, disabled = false }) {
+    const normalize = (v) => {
+        if (v === null || v === undefined) return null;
+        const s = String(v).trim().toLowerCase();
+        if (['true', '1', 'yes'].includes(s)) return 'true';
+        if (['false', '0', 'no'].includes(s)) return 'false';
+        return null;
+    };
+
+    const initialValue = useMemo(() => normalize(value), [value]);
+    const [selected, setSelected] = useState(initialValue);
 
     useEffect(() => {
-        setSelectedOptions(value || []);
-    }, [value]);
+        setSelected(initialValue);
+    }, [initialValue]);
 
-    const handleOptionToggle = (optionId) => {
+    const handleSelect = (nextValue) => {
         if (disabled) return;
-
-        let newSelection;
-        if (selectedOptions.includes(optionId)) {
-            // Deselect
-            newSelection = selectedOptions.filter(id => id !== optionId);
-        } else {
-            // Select
-            newSelection = [...selectedOptions, optionId];
-        }
-
-        setSelectedOptions(newSelection);
+        setSelected(nextValue);
         if (onChange) {
-            onChange(newSelection);
+            onChange(nextValue);
         }
     };
 
-    const isSelected = (optionId) => selectedOptions.includes(optionId);
+    const options = [
+        { id: 'true', label: 'True' },
+        { id: 'false', label: 'False' },
+    ];
 
     return (
         <div className="space-y-3">
             <div className="text-sm font-medium text-gray-700 mb-3">
-                Select your answer(s):
+                Select one answer:
             </div>
-            
+
             {options.map((option) => {
-                const selected = isSelected(option.option_id);
-                
+                const isSelected = selected === option.id;
                 return (
                     <button
-                        key={option.option_id}
+                        key={option.id}
                         type="button"
-                        onClick={() => handleOptionToggle(option.option_id)}
+                        onClick={() => handleSelect(option.id)}
                         disabled={disabled}
                         className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 ${
-                            selected
+                            isSelected
                                 ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200'
                                 : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                        } ${
-                            disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-                        }`}
+                        } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
-                        <div className="flex items-start space-x-3">
-                            {/* Checkbox/Circle */}
-                            <div className="flex-shrink-0 mt-0.5">
-                                {selected ? (
+                        <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                                {isSelected ? (
                                     <CheckCircle className="w-6 h-6 text-indigo-600" />
                                 ) : (
                                     <Circle className="w-6 h-6 text-gray-400" />
                                 )}
                             </div>
-
-                            {/* Option Content */}
-                            <div className="flex-1">
-                                <div className="flex items-center space-x-3 mb-1">
-                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${
-                                        selected
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-100 text-gray-700'
-                                    }`}>
-                                        {option.option_label}
-                                    </span>
-                                </div>
-                                <p className={`text-base ${
-                                    selected ? 'text-gray-900 font-medium' : 'text-gray-700'
-                                }`}>
-                                    {option.option_text}
-                                </p>
-                            </div>
+                            <p className={`text-base ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                                {option.label}
+                            </p>
                         </div>
                     </button>
                 );
             })}
-
-            {/* Selection Counter */}
-            {selectedOptions.length > 0 && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                        {selectedOptions.length} option{selectedOptions.length > 1 ? 's' : ''} selected
-                    </p>
-                </div>
-            )}
         </div>
     );
 }
+

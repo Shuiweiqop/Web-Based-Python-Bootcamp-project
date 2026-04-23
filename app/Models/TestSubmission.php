@@ -171,7 +171,7 @@ class TestSubmission extends Model
             return null;
         }
 
-        $elapsed = Carbon::now()->diffInSeconds($this->started_at);
+        $elapsed = max(0, Carbon::parse($this->started_at)->diffInSeconds(Carbon::now(), false));
         $remaining = ($this->test->time_limit * 60) - $elapsed;
 
         return max(0, $remaining);

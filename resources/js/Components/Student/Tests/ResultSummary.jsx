@@ -3,9 +3,10 @@ import { Trophy, CheckCircle, XCircle, Clock, Award, TrendingUp, AlertCircle } f
 
 export default function ResultSummary({ submission, test, passed }) {
     const formatTime = (seconds) => {
-        if (!seconds) return 'N/A';
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
+        if (seconds === null || seconds === undefined) return 'N/A';
+        const safeSeconds = Math.max(0, Number(seconds) || 0);
+        const mins = Math.floor(safeSeconds / 60);
+        const secs = safeSeconds % 60;
         return `${mins}m ${secs}s`;
     };
 

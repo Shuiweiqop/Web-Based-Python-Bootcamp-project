@@ -501,19 +501,29 @@ class StudentTestController extends Controller
 
             switch ($question->type) {
                 case 'mcq':
-                    $correctOptionIds = $question->options->where('is_correct', true)->pluck('option_id')->toArray();
-                    $studentOptionIds = $answer->selected_options ?? [];
+                    $correctOptionIds = $question->options
+                        ->where('is_correct', true)
+                        ->pluck('option_id')
+                        ->map(fn($id) => (string) $id)
+                        ->values()
+                        ->toArray();
+                    $studentOptionIds = collect($answer->selected_options ?? [])
+                        ->map(fn($id) => (string) $id)
+                        ->values()
+                        ->toArray();
                     sort($correctOptionIds);
                     sort($studentOptionIds);
                     $isCorrect = $correctOptionIds === $studentOptionIds;
                     break;
 
                 case 'true_false':
-                    $isCorrect = strtolower(trim($answer->answer_text)) === strtolower(trim($question->correct_answer));
+                    $isCorrect = $this->normalizeTrueFalseAnswer($answer->answer_text)
+                        === $this->normalizeTrueFalseAnswer($question->correct_answer);
                     break;
 
                 case 'short_answer':
-                    $isCorrect = strtolower(trim($answer->answer_text)) === strtolower(trim($question->correct_answer));
+                    $isCorrect = $this->normalizeShortAnswer($answer->answer_text)
+                        === $this->normalizeShortAnswer($question->correct_answer);
                     break;
 
                 case 'coding':
@@ -543,16 +553,43 @@ class StudentTestController extends Controller
 
         // Calculate time spent
         $startedAt = Carbon::parse($submission->started_at);
-        $timeSpent = now()->diffInSeconds($startedAt);
+        $submittedAt = now();
+        $timeSpent = max(0, $startedAt->diffInSeconds($submittedAt, false));
 
         // Update submission
         $submission->update([
-            'submitted_at' => now(),
-            'status' => 'submitted',
+            'submitted_at' => $submittedAt,
+            'status' => $submission->status === 'timeout' ? 'timeout' : 'submitted',
             'score' => $scorePercentage,
             'correct_answers' => $correctCount,
             'time_spent' => $timeSpent,
         ]);
+    }
+
+    private function normalizeTrueFalseAnswer($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+        if (in_array($normalized, ['true', '1', 'yes'], true)) {
+            return 'true';
+        }
+        if (in_array($normalized, ['false', '0', 'no'], true)) {
+            return 'false';
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeShortAnswer($value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        return preg_replace('/\s+/', ' ', strtolower(trim((string) $value)));
     }
 
     /**
