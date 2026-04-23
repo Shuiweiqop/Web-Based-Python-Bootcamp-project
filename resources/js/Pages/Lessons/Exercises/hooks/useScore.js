@@ -40,7 +40,10 @@ export const useScore = (maxScore = 100, onScoreChange = null) => {
   }, [onScoreChange]);
 
   // 计算分数百分比
-  const scorePercentage = Math.round((currentScore / maxScore) * 100);
+  const safeMaxScore = Number(maxScore) || 0;
+  const scorePercentage = safeMaxScore > 0
+    ? Math.round((currentScore / safeMaxScore) * 100)
+    : 0;
 
   // 分数等级（可用于显示星级等）
   const getScoreRating = () => {

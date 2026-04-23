@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CheckCircle, XCircle, Award, Lightbulb, ArrowLeft } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 
@@ -8,8 +8,9 @@ export default function FillBlankExercise({ exercise, lesson, onScoreUpdate, onC
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState({});
   const [currentScore, setCurrentScore] = useState(0);
+  const contentSignature = useMemo(() => JSON.stringify(sentences), [sentences]);
 
-  // Initialize empty answers for all blanks - only run once
+  // Reinitialize answers when exercise content changes (not just length).
   useEffect(() => {
     const initialAnswers = {};
     sentences.forEach((sentence, sentenceIdx) => {
@@ -19,7 +20,10 @@ export default function FillBlankExercise({ exercise, lesson, onScoreUpdate, onC
       });
     });
     setAnswers(initialAnswers);
-  }, [sentences.length]);
+    setShowResults(false);
+    setResults({});
+    setCurrentScore(0);
+  }, [contentSignature]);
 
   // Auto-submit when time is up
   useEffect(() => {

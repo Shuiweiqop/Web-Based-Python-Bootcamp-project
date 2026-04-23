@@ -154,7 +154,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
 
   // 游戏完成结果展示
   const renderCompletionScreen = () => {
-    const scorePercentage = (finalScore / exercise.max_score) * 100;
+    const maxScore = Number(exercise.max_score) || 0;
+    const scorePercentage = maxScore > 0 ? (finalScore / maxScore) * 100 : 0;
     const isPerfect = scorePercentage === 100;
     const isGood = scorePercentage >= 70;
 
