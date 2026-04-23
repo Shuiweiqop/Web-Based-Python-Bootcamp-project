@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import { ArrowLeft, Play, Send, Clock, Trophy, CheckCircle, XCircle, Loader2, MessageCircle, X } from 'lucide-react';
 import StudentLayout from '@/Layouts/StudentLayout';
+import SafeContentRenderer from '@/Components/SafeContentRenderer';
 import { Head } from '@inertiajs/react';
 
 export default function CodingExercise({ exercise, lessonId, auth }) {
@@ -111,6 +112,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
             const passed = testResults.filter(t => t.passed).length;
             const total = testResults.length;
             const finalScore = total > 0 ? Math.round((passed / total) * (exercise.max_score || 100)) : 0;
+            const isCompleted = total > 0 && passed === total;
             const timeSpent = Math.floor((Date.now() - startTime) / 1000);
 
             // 🔥 安全获取 exercise ID
@@ -128,7 +130,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
                         code: code,
                         test_results: testResults,
                         output: executeResponse.data.output,
-                        completed: passed === total,
+                        completed: isCompleted,
                         score: finalScore,
                     },
                     time_spent: timeSpent,
@@ -345,9 +347,10 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
                                 {/* Instructions Content */}
                                 <div className="prose prose-invert prose-sm max-w-none mb-6">
                                     {exercise.coding_instructions ? (
-                                        <div 
+                                        <SafeContentRenderer
+                                            type="html"
+                                            content={exercise.coding_instructions}
                                             className="text-gray-300 leading-relaxed"
-                                            dangerouslySetInnerHTML={{ __html: exercise.coding_instructions }}
                                         />
                                     ) : exercise.description ? (
                                         <div className="text-gray-300 leading-relaxed">

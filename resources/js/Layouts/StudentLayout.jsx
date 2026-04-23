@@ -289,31 +289,31 @@ function StudentLayoutContent({ header, children }) {
                           </button>
                         </Dropdown.Trigger>
 
-                        <Dropdown.Content className="w-72 bg-gradient-to-br from-gray-900 to-gray-800 backdrop-blur-2xl border border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden">
+                        <Dropdown.Content className="w-72 bg-white/95 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-2xl overflow-hidden">
                           {/* User Info Header */}
-                          <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-900/40 to-pink-900/40">
+                          <div className="p-6 border-b border-white/40 bg-gradient-to-r from-purple-700/80 to-pink-700/70">
                             <div className="flex items-center space-x-4">
                               <AvatarDisplay size="large" className="shadow-xl ring-2 ring-purple-500/50" />
                               <div className="flex-1 min-w-0">
                                 <div className="text-white font-bold text-lg truncate">{user.name}</div>
-                                <div className="text-sm text-gray-300 truncate">{user.email}</div>
+                                <div className="text-sm text-purple-100 truncate">{user.email}</div>
                               </div>
                             </div>
                             
                             {/* Points Badge */}
-                            <div className="mt-4 flex items-center justify-between bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl px-4 py-2">
+                            <div className="mt-4 flex items-center justify-between bg-gradient-to-r from-yellow-100/90 to-orange-100/90 border border-yellow-300/70 rounded-xl px-4 py-2">
                               <div className="flex items-center space-x-2">
                                 <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                                <span className="text-white font-bold text-lg">
+                                <span className="text-amber-900 font-bold text-lg">
                                   {studentPoints.toLocaleString()}
                                 </span>
                               </div>
-                              <span className="text-xs text-yellow-300 font-medium">Points</span>
+                              <span className="text-xs text-amber-700 font-semibold">Points</span>
                             </div>
                             
                             {equipped?.avatar_frame && (
-                              <div className="mt-3 px-3 py-2 bg-purple-600/30 border border-purple-500/40 rounded-lg">
-                                <p className="text-xs text-purple-200 text-center font-medium">
+                              <div className="mt-3 px-3 py-2 bg-purple-100/70 border border-purple-300/70 rounded-lg">
+                                <p className="text-xs text-purple-700 text-center font-medium">
                                   🖼️ {equipped.avatar_frame.name}
                                 </p>
                               </div>
@@ -326,7 +326,7 @@ function StudentLayoutContent({ header, children }) {
                               href={route('student.profile.show')}
                               onMouseEnter={() => playSFX('hover')}
                               onClick={() => playSFX('click')}
-                              className="group flex items-center justify-between px-4 py-3 text-gray-200 hover:text-white hover:bg-gradient-to-r hover:from-purple-600/50 hover:to-pink-600/50 transition-all duration-200 rounded-xl"
+                              className="group flex items-center justify-between px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 rounded-xl"
                             >
                               <div className="flex items-center space-x-3">
                                 <User className="w-5 h-5 flex-shrink-0" />
@@ -339,7 +339,7 @@ function StudentLayoutContent({ header, children }) {
                               href={route('student.inventory.index')}
                               onMouseEnter={() => playSFX('hover')}
                               onClick={() => playSFX('click')}
-                              className="group flex items-center justify-between px-4 py-3 text-gray-200 hover:text-white hover:bg-gradient-to-r hover:from-purple-600/50 hover:to-pink-600/50 transition-all duration-200 rounded-xl"
+                              className="group flex items-center justify-between px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 rounded-xl"
                             >
                               <div className="flex items-center space-x-3">
                                 <Package className="w-5 h-5 flex-shrink-0" />
@@ -348,13 +348,13 @@ function StudentLayoutContent({ header, children }) {
                               <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </Dropdown.Link>
 
-                            <div className="my-2 border-t border-gray-700/50"></div>
+                            <div className="my-2 border-t border-slate-200"></div>
 
                             <Dropdown.Link 
                               href={route('forum.index')}
                               onMouseEnter={() => playSFX('hover')}
                               onClick={() => playSFX('click')}
-                              className="group flex items-center justify-between px-4 py-3 text-gray-200 hover:text-white hover:bg-gradient-to-r hover:from-blue-600/50 hover:to-cyan-600/50 transition-all duration-200 rounded-xl"
+                              className="group flex items-center justify-between px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 transition-all duration-200 rounded-xl"
                             >
                               <div className="flex items-center space-x-3">
                                 <MessageCircle className="w-5 h-5 flex-shrink-0" />
@@ -367,7 +367,7 @@ function StudentLayoutContent({ header, children }) {
                               href={route('student.rewards.index')}
                               onMouseEnter={() => playSFX('hover')}
                               onClick={() => playSFX('click')}
-                              className="group flex items-center justify-between px-4 py-3 text-gray-200 hover:text-white hover:bg-gradient-to-r hover:from-yellow-600/50 hover:to-orange-600/50 transition-all duration-200 rounded-xl"
+                              className="group flex items-center justify-between px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-gradient-to-r hover:from-yellow-50 hover:to-orange-50 transition-all duration-200 rounded-xl"
                             >
                               <div className="flex items-center space-x-3">
                                 <ShoppingBag className="w-5 h-5 flex-shrink-0" />
@@ -376,7 +376,7 @@ function StudentLayoutContent({ header, children }) {
                               <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </Dropdown.Link>
                             
-                            <div className="my-2 border-t border-gray-700/50"></div>
+                            <div className="my-2 border-t border-slate-200"></div>
                             
                             <Dropdown.Link 
                               href={route('logout')} 
@@ -384,7 +384,7 @@ function StudentLayoutContent({ header, children }) {
                               as="button"
                               onMouseEnter={() => playSFX('hover')}
                               onClick={() => playSFX('click')}
-                              className="group flex items-center justify-between px-4 py-3 text-red-400 hover:text-white hover:bg-gradient-to-r hover:from-red-600/50 hover:to-red-700/50 transition-all duration-200 w-full text-left rounded-xl"
+                              className="group flex items-center justify-between px-4 py-3 text-red-500 hover:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-200 w-full text-left rounded-xl"
                             >
                               <div className="flex items-center space-x-3">
                                 <LogOut className="w-5 h-5 flex-shrink-0" />

@@ -58,20 +58,28 @@ class ExerciseController extends Controller
             DB::beginTransaction();
 
             try {
-                // 创建或更新提交记录
-                $submission = ExerciseSubmission::updateOrCreate(
-                    [
-                        'exercise_id' => $exercise->exercise_id,
-                        'student_id' => $student->student_id,
-                    ],
-                    [
-                        'score' => $validated['answer']['score'],
-                        'time_taken' => $validated['time_spent'] ?? 0,
-                        'completed' => $validated['answer']['completed'],
-                        'answer_data' => $validated['answer'],
-                        'submitted_at' => now(),
-                    ]
+                $normalizedScore = (int) round(min(
+                    max($validated['answer']['score'], 0),
+                    $exercise->max_score
+                ));
+                $normalizedCompleted = $this->determineCompletionStatus(
+                    $exercise,
+                    $validated['answer']
                 );
+
+                // Always create a new submission attempt to preserve history.
+                $submission = ExerciseSubmission::create([
+                    'exercise_id' => $exercise->exercise_id,
+                    'student_id' => $student->student_id,
+                    'score' => $normalizedScore,
+                    'time_taken' => $validated['time_spent'] ?? 0,
+                    'completed' => $normalizedCompleted,
+                    'answer_data' => array_merge($validated['answer'], [
+                        'score' => $normalizedScore,
+                        'completed' => $normalizedCompleted,
+                    ]),
+                    'submitted_at' => now(),
+                ]);
 
                 Log::info('Exercise submission saved', [
                     'submission_id' => $submission->submission_id,
@@ -150,6 +158,28 @@ class ExerciseController extends Controller
                 'message' => 'Failed to submit exercise: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Determine completion status with server-side safeguards.
+     * For coding exercises, at least one test must exist and all must pass.
+     */
+    private function determineCompletionStatus(InteractiveExercise $exercise, array $answer): bool
+    {
+        if ($exercise->exercise_type !== 'coding') {
+            return (bool) ($answer['completed'] ?? false);
+        }
+
+        $testResults = $answer['test_results'] ?? null;
+        if (!is_array($testResults) || count($testResults) === 0) {
+            return false;
+        }
+
+        $passedCount = collect($testResults)->filter(function ($result) {
+            return is_array($result) && (($result['passed'] ?? false) === true);
+        })->count();
+
+        return $passedCount === count($testResults);
     }
 
     /**
