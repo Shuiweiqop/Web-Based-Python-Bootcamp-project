@@ -129,10 +129,10 @@ export default function Result({ auth, lesson, test, submission, results, passed
                                 </Link>
                                 <Link
                                     href={`/student/lessons/${lesson?.lesson_id}/tests`}
-                                    className="flex-1 flex items-center justify-center px-6 py-3 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white rounded-xl hover:bg-white/20 font-bold shadow-xl transition-all duration-200"
+                                    className="flex-1 flex items-center justify-center px-6 py-3 bg-white/95 border-2 border-indigo-200 text-indigo-700 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 font-bold shadow-xl transition-all duration-200"
                                 >
                                     <Home className="w-5 h-5 mr-2 drop-shadow-lg" />
-                                    <span className="drop-shadow-lg">Back to Tests</span>
+                                    <span>Back to Tests</span>
                                 </Link>
                             </>
                         )}
@@ -304,10 +304,10 @@ export default function Result({ auth, lesson, test, submission, results, passed
                                 </Link>
                                 <Link
                                     href={`/lessons/${lesson?.lesson_id}`}
-                                    className="flex-1 flex items-center justify-center px-6 py-3 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white rounded-xl hover:bg-white/20 font-bold shadow-xl transition-all duration-200"
+                                    className="flex-1 flex items-center justify-center px-6 py-3 bg-white/95 border-2 border-indigo-200 text-indigo-700 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 font-bold shadow-xl transition-all duration-200"
                                 >
                                     <BookOpen className="w-5 h-5 mr-2 drop-shadow-lg" />
-                                    <span className="drop-shadow-lg">Continue Learning</span>
+                                    <span>Continue Learning</span>
                                 </Link>
                             </>
                         )}
