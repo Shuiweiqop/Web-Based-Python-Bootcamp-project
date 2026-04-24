@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
 import StudentLayout from '@/Layouts/StudentLayout';
@@ -18,6 +18,7 @@ export default function Taking({ auth, lesson, test, submission, questions }) {
     const [isSaving, setIsSaving] = useState(false);
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const autoSaveTimerRef = useRef(null);
 
     // Initialize answers from saved data
     useEffect(() => {
@@ -56,6 +57,31 @@ export default function Taking({ auth, lesson, test, submission, questions }) {
         }
     }, [submission.submission_id]);
 
+    const flushPendingAnswer = useCallback(async () => {
+        if (!currentQuestion) {
+            return true;
+        }
+
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+            autoSaveTimerRef.current = null;
+        }
+
+        const pendingAnswer = answers[currentQuestion.question_id];
+
+        if (!pendingAnswer) {
+            return true;
+        }
+
+        try {
+            await saveAnswer(currentQuestion.question_id, pendingAnswer);
+            return true;
+        } catch (error) {
+            console.error('Failed to flush pending answer before submit:', error);
+            return false;
+        }
+    }, [answers, currentQuestion, saveAnswer]);
+
     // Handle answer change
     const handleAnswerChange = (value) => {
         const questionId = currentQuestion.question_id;
@@ -80,8 +106,11 @@ export default function Taking({ auth, lesson, test, submission, questions }) {
         }));
 
         // Debounced auto-save
-        clearTimeout(window.autoSaveTimer);
-        window.autoSaveTimer = setTimeout(() => {
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+        }
+
+        autoSaveTimerRef.current = setTimeout(() => {
             saveAnswer(questionId, answerData);
         }, 1000);
     };
@@ -99,13 +128,22 @@ export default function Taking({ auth, lesson, test, submission, questions }) {
     };
 
     // Submit test (using Inertia router for redirect)
-    const handleSubmitTest = (isAutoSubmit = false) => {
+    const handleSubmitTest = async (isAutoSubmit = false) => {
         if (!isAutoSubmit && answeredQuestions.length < questions.length) {
             setShowSubmitConfirm(true);
             return;
         }
 
         setIsSubmitting(true);
+
+        const flushed = await flushPendingAnswer();
+
+        if (!flushed) {
+            setIsSubmitting(false);
+            alert('Failed to save your latest answer. Please try submitting again.');
+            return;
+        }
+
         router.post(
             `/student/submissions/${submission.submission_id}/complete`,
             {},
@@ -124,6 +162,14 @@ export default function Taking({ auth, lesson, test, submission, questions }) {
             }
         );
     };
+
+    useEffect(() => {
+        return () => {
+            if (autoSaveTimerRef.current) {
+                clearTimeout(autoSaveTimerRef.current);
+            }
+        };
+    }, []);
 
     // Render answer input based on question type
     const renderAnswerInput = () => {
