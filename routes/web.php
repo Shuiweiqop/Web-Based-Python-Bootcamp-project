@@ -149,18 +149,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // ==================== 测验相关路由 ====================
         Route::middleware(['role:student'])->group(function () {
             // 课程测验列表和详情
-            Route::get('lessons/{lesson}/tests', [TestController::class, 'index'])
+            Route::get('lessons/{lesson}/tests', [StudentTestController::class, 'index'])
                 ->name('lessons.tests.index');
-            Route::get('lessons/{lesson}/tests/{test}', [TestController::class, 'show'])
+            Route::get('lessons/{lesson}/tests/{test}', [StudentTestController::class, 'show'])
                 ->name('lessons.tests.show');
-            Route::post('lessons/{lesson}/tests/{test}/start', [TestController::class, 'start'])
+            Route::post('lessons/{lesson}/tests/{test}/start', [StudentTestController::class, 'start'])
                 ->name('lessons.tests.start');
 
-            // 测验进行中
-            Route::get('tests/{test}/take', [TestController::class, 'take'])
-                ->name('tests.take');
-            Route::get('tests/{test}', [TestController::class, 'showTest'])
-                ->name('tests.show');
 
             // 提交答案
             Route::get('submissions/{submission}', [StudentTestController::class, 'taking'])
