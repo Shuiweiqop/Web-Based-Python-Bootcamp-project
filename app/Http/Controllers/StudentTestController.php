@@ -527,9 +527,8 @@ class StudentTestController extends Controller
                     break;
 
                 case 'coding':
-                    // For coding questions, manual grading might be needed
-                    // For now, just check if code was provided
-                    $isCorrect = !empty($answer->code_answer);
+                    $isCorrect = $this->normalizeCodingAnswer($answer->code_answer)
+                        === $this->normalizeCodingAnswer($question->correct_answer);
                     break;
             }
 
@@ -590,6 +589,18 @@ class StudentTestController extends Controller
         }
 
         return preg_replace('/\s+/', ' ', strtolower(trim((string) $value)));
+    }
+
+    private function normalizeCodingAnswer($value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        $normalized = str_replace(["\r\n", "\r"], "\n", (string) $value);
+        $normalized = preg_replace('/[ \t]+$/m', '', $normalized);
+
+        return trim($normalized);
     }
 
     /**

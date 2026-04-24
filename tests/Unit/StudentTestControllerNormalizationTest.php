@@ -35,5 +35,14 @@ class StudentTestControllerNormalizationTest extends TestCase
         $normalized = $this->invokePrivateMethod('normalizeShortAnswer', "  Hello   World  \n");
         $this->assertSame('hello world', $normalized);
     }
-}
 
+    public function test_coding_normalization_ignores_line_endings_and_trailing_spaces_only(): void
+    {
+        $normalized = $this->invokePrivateMethod(
+            'normalizeCodingAnswer',
+            "for i in range(3):  \r\n    print(i)    \r\n"
+        );
+
+        $this->assertSame("for i in range(3):\n    print(i)", $normalized);
+    }
+}
