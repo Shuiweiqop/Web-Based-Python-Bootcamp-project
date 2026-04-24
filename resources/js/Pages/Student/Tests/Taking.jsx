@@ -123,6 +123,10 @@ export default function Taking({ auth, lesson, test, submission, questions }) {
 
     // Handle time up
     const handleTimeUp = () => {
+        if (isSubmitting) {
+            return;
+        }
+
         alert('Time is up! The test will be submitted automatically.');
         handleSubmitTest(true);
     };

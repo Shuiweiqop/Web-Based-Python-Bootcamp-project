@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock, AlertTriangle } from 'lucide-react';
 
 export default function QuizTimer({ startedAt, timeLimit, onTimeUp }) {
     const [timeRemaining, setTimeRemaining] = useState(null);
     const [isWarning, setIsWarning] = useState(false);
+    const hasTriggeredTimeUpRef = useRef(false);
 
     useEffect(() => {
         if (!timeLimit || !startedAt) return;
+
+        hasTriggeredTimeUpRef.current = false;
 
         const calculateTimeRemaining = () => {
             const started = new Date(startedAt);
@@ -27,7 +30,8 @@ export default function QuizTimer({ startedAt, timeLimit, onTimeUp }) {
             }
 
             // Time's up
-            if (remaining === 0) {
+            if (remaining === 0 && !hasTriggeredTimeUpRef.current) {
+                hasTriggeredTimeUpRef.current = true;
                 if (onTimeUp) {
                     onTimeUp();
                 }
