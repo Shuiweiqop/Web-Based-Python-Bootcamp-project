@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class StudentLearningPath extends Model
@@ -33,8 +34,8 @@ class StudentLearningPath extends Model
         'is_primary',
         'target_completion_date',
         'student_notes',
-        'completion_reward_granted',  // ← 添加这个
-        'last_activity_at',           // ← 添加这个
+        'completion_reward_granted',
+        'last_activity_at',
     ];
 
     protected $casts = [
@@ -47,11 +48,9 @@ class StudentLearningPath extends Model
         'recommendation_score' => 'integer',
         'is_primary' => 'boolean',
         'initial_skill_assessment' => 'array',
-        'completion_reward_granted' => 'boolean',  // ← 添加这个
-        'last_activity_at' => 'datetime',         // ← 添加这个
+        'completion_reward_granted' => 'boolean',
+        'last_activity_at' => 'datetime',
     ];
-
-    // ==================== Relationships ====================
 
     public function student(): BelongsTo
     {
@@ -73,8 +72,6 @@ class StudentLearningPath extends Model
         return $this->belongsTo(User::class, 'assigned_by_user_id', 'user_Id');
     }
 
-    // ==================== Scopes ====================
-
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
@@ -95,53 +92,40 @@ class StudentLearningPath extends Model
         return $query->where('student_id', $studentId);
     }
 
-    // ==================== Progress Calculation ====================
-
-    /**
-     * Calculate overall path progress based on lesson completion
-     */
-    public function calculateProgress(): int
+    public function calculateProgress(?Collection $lessons = null, ?Collection $progressMap = null): int
     {
-        $lessons = $this->learningPath->lessons;
+        $lessons = $lessons ?? $this->getOrderedLessons();
 
         if ($lessons->isEmpty()) {
             return 0;
         }
 
-        $totalLessons = $lessons->count();
-        $completedLessons = 0;
+        $progressMap = $progressMap ?? $this->getLessonProgressMap($lessons);
 
-        foreach ($lessons as $lesson) {
-            $progress = LessonProgress::where('student_id', $this->student_id)
-                ->where('lesson_id', $lesson->lesson_id)
-                ->first();
+        $completedLessons = $lessons->filter(function ($lesson) use ($progressMap) {
+            $progress = $progressMap->get($lesson->lesson_id);
 
-            if ($progress && $progress->status === 'completed') {
-                $completedLessons++;
-            }
-        }
+            return $progress && $progress->status === 'completed';
+        })->count();
 
-        return round(($completedLessons / $totalLessons) * 100);
+        return round(($completedLessons / $lessons->count()) * 100);
     }
 
-    /**
-     * Update path progress and status
-     */
     public function updateProgress(): void
     {
-        $progress = $this->calculateProgress();
+        $lessons = $this->getOrderedLessons();
+        $progressMap = $this->getLessonProgressMap($lessons);
+        $progress = $this->calculateProgress($lessons, $progressMap);
 
         $updates = [
             'progress_percent' => $progress,
             'last_activity_at' => now(),
         ];
 
-        // Mark as started if not already
         if (!$this->started_at && $progress > 0) {
             $updates['started_at'] = now();
         }
 
-        // Mark as completed if 100%
         if ($progress === 100 && $this->status !== 'completed') {
             $updates['status'] = 'completed';
             $updates['completed_at'] = now();
@@ -150,29 +134,20 @@ class StudentLearningPath extends Model
         $this->update($updates);
     }
 
-    /**
-     * Get detailed progress breakdown
-     */
-    public function getProgressDetails(): array
+    public function getProgressDetails(?Collection $lessons = null, ?Collection $progressMap = null): array
     {
-        $lessons = $this->learningPath->lessons;
-        $completed = 0;
-        $inProgress = 0;
-        $notStarted = 0;
+        $lessons = $lessons ?? $this->getOrderedLessons();
+        $progressMap = $progressMap ?? $this->getLessonProgressMap($lessons);
 
-        foreach ($lessons as $lesson) {
-            $progress = LessonProgress::where('student_id', $this->student_id)
-                ->where('lesson_id', $lesson->lesson_id)
-                ->first();
+        $completed = $lessons->filter(function ($lesson) use ($progressMap) {
+            return $progressMap->get($lesson->lesson_id)?->status === 'completed';
+        })->count();
 
-            if (!$progress || $progress->status === 'not_started') {
-                $notStarted++;
-            } elseif ($progress->status === 'completed') {
-                $completed++;
-            } else {
-                $inProgress++;
-            }
-        }
+        $inProgress = $lessons->filter(function ($lesson) use ($progressMap) {
+            return $progressMap->get($lesson->lesson_id)?->status === 'in_progress';
+        })->count();
+
+        $notStarted = $lessons->count() - $completed - $inProgress;
 
         return [
             'total_lessons' => $lessons->count(),
@@ -183,83 +158,130 @@ class StudentLearningPath extends Model
         ];
     }
 
-    /**
-     * Get next lesson to study
-     */
-    public function getNextLesson(): ?Lesson
-    {
-        $lessons = $this->learningPath->lessons;
+    public function getNextLesson(
+        ?Collection $lessons = null,
+        ?Collection $progressMap = null,
+        ?Collection $accessMap = null
+    ): ?Lesson {
+        $lessons = $lessons ?? $this->getOrderedLessons();
+        $progressMap = $progressMap ?? $this->getLessonProgressMap($lessons);
+        $accessMap = $accessMap ?? $this->getLessonAccessMap($lessons, $progressMap);
 
         foreach ($lessons as $lesson) {
-            // Check if lesson is accessible
-            if (!$this->canAccessLesson($lesson->lesson_id)) {
+            if (!$accessMap->get($lesson->lesson_id, false)) {
                 continue;
             }
 
-            $progress = LessonProgress::where('student_id', $this->student_id)
-                ->where('lesson_id', $lesson->lesson_id)
-                ->first();
+            $progress = $progressMap->get($lesson->lesson_id);
 
-            // Return first uncompleted lesson
             if (!$progress || $progress->status !== 'completed') {
                 return $lesson;
             }
         }
 
-        return null; // All lessons completed
+        return null;
     }
 
-    /**
-     * Check if student can access a specific lesson
-     */
-    public function canAccessLesson(int $lessonId): bool
-    {
-        $lesson = $this->learningPath->lessons()
-            ->where('lessons.lesson_id', $lessonId)  // 明确指定表名
-            ->first();
+    public function canAccessLesson(
+        int $lessonId,
+        ?Collection $lessons = null,
+        ?Collection $progressMap = null,
+        ?Collection $accessMap = null
+    ): bool {
+        $lessons = $lessons ?? $this->getOrderedLessons();
+        $progressMap = $progressMap ?? $this->getLessonProgressMap($lessons);
+        $accessMap = $accessMap ?? $this->getLessonAccessMap($lessons, $progressMap);
 
-        if (!$lesson) {
-            return false; // Lesson not in this path
-        }
-
-        // If unlock_after_previous is false, always accessible
-        if (!$lesson->pivot->unlock_after_previous) {
-            return true;
-        }
-
-        // Check if previous lesson is completed
-        $previousLesson = $this->learningPath->lessons()
-            ->where('learning_path_lessons.sequence_order', '<', $lesson->pivot->sequence_order)
-            ->orderBy('learning_path_lessons.sequence_order', 'desc')
-            ->first();
-
-        if (!$previousLesson) {
-            return true; // First lesson, always accessible
-        }
-
-        $progress = LessonProgress::where('student_id', $this->student_id)
-            ->where('lesson_id', $previousLesson->lesson_id)
-            ->first();
-
-        return $progress && $progress->status === 'completed';
+        return (bool) $accessMap->get($lessonId, false);
     }
+
     public function getAccessibleLessons()
     {
-        return $this->learningPath->lessons->filter(function ($lesson) {
-            return $this->canAccessLesson($lesson->lesson_id);
+        $lessons = $this->getOrderedLessons();
+        $progressMap = $this->getLessonProgressMap($lessons);
+        $accessMap = $this->getLessonAccessMap($lessons, $progressMap);
+
+        return $lessons->filter(function ($lesson) use ($accessMap) {
+            return $accessMap->get($lesson->lesson_id, false);
         });
     }
 
-    /**
-     * Get locked lessons
-     */
     public function getLockedLessons()
     {
-        return $this->learningPath->lessons->filter(function ($lesson) {
-            return !$this->canAccessLesson($lesson->lesson_id);
+        $lessons = $this->getOrderedLessons();
+        $progressMap = $this->getLessonProgressMap($lessons);
+        $accessMap = $this->getLessonAccessMap($lessons, $progressMap);
+
+        return $lessons->filter(function ($lesson) use ($accessMap) {
+            return !$accessMap->get($lesson->lesson_id, false);
         });
     }
-    // ==================== Helper Methods ====================
+
+    public function getOrderedLessons(): Collection
+    {
+        $path = $this->relationLoaded('learningPath')
+            ? $this->learningPath
+            : $this->learningPath()->first();
+
+        if (!$path) {
+            return collect();
+        }
+
+        if (!$path->relationLoaded('lessons')) {
+            $path->load([
+                'lessons' => function ($query) {
+                    $query->orderBy('learning_path_lessons.sequence_order');
+                }
+            ]);
+        }
+
+        return $path->lessons->sortBy('pivot.sequence_order')->values();
+    }
+
+    public function getLessonProgressMap(?Collection $lessons = null): Collection
+    {
+        $lessons = $lessons ?? $this->getOrderedLessons();
+        $lessonIds = $lessons->pluck('lesson_id')->all();
+
+        if (empty($lessonIds)) {
+            return collect();
+        }
+
+        return LessonProgress::where('student_id', $this->student_id)
+            ->whereIn('lesson_id', $lessonIds)
+            ->get()
+            ->map(function ($progress) {
+                if ($progress->status === 'completed' && (int) $progress->progress_percent < 100) {
+                    $progress->updateProgress(100);
+                    $progress->refresh();
+                }
+
+                return $progress;
+            })
+            ->keyBy('lesson_id');
+    }
+
+    public function getLessonAccessMap(?Collection $lessons = null, ?Collection $progressMap = null): Collection
+    {
+        $lessons = $lessons ?? $this->getOrderedLessons();
+        $progressMap = $progressMap ?? $this->getLessonProgressMap($lessons);
+        $accessMap = collect();
+        $previousLessonId = null;
+
+        foreach ($lessons as $lesson) {
+            $isAccessible = true;
+
+            if ($lesson->pivot->unlock_after_previous && $previousLessonId !== null) {
+                $previousProgress = $progressMap->get($previousLessonId);
+                $isAccessible = $previousProgress && $previousProgress->status === 'completed';
+            }
+
+            $accessMap->put($lesson->lesson_id, $isAccessible);
+            $previousLessonId = $lesson->lesson_id;
+        }
+
+        return $accessMap;
+    }
 
     public function isActiveAttribute(): bool
     {
@@ -279,13 +301,13 @@ class StudentLearningPath extends Model
 
         return $this->started_at->diffInDays(now());
     }
+
     public function getActiveDaysAttribute(): int
     {
         if (!$this->started_at) {
             return 0;
         }
 
-        // 从 lesson_progress 计算有更新的独特日期
         $activeDays = \DB::table('lesson_progress')
             ->join('learning_path_lessons', 'lesson_progress.lesson_id', '=', 'learning_path_lessons.lesson_id')
             ->where('lesson_progress.student_id', $this->student_id)
@@ -299,9 +321,6 @@ class StudentLearningPath extends Model
         return $activeDays;
     }
 
-    /**
-     * Get activity rate (percentage of days with activity)
-     */
     public function getActivityRateAttribute(): float
     {
         $totalDays = $this->days_in_path;
@@ -331,6 +350,7 @@ class StudentLearningPath extends Model
         return $this->status !== 'completed' &&
             now()->isAfter($this->target_completion_date);
     }
+
     public function pause(?string $reason = null): void
     {
         $this->update([
@@ -348,9 +368,6 @@ class StudentLearningPath extends Model
         }
     }
 
-    /**
-     * Resume this learning path
-     */
     public function resume(): void
     {
         $this->update([
@@ -365,9 +382,6 @@ class StudentLearningPath extends Model
         ]);
     }
 
-    /**
-     * Abandon this learning path
-     */
     public function abandon(?string $reason = null): void
     {
         $this->update([
@@ -383,17 +397,12 @@ class StudentLearningPath extends Model
         ]);
     }
 
-    /**
-     * Set this path as primary
-     */
     public function setAsPrimary(): void
     {
-        // Unset other primary paths for this student
         self::where('student_id', $this->student_id)
             ->where('student_path_id', '!=', $this->student_path_id)
             ->update(['is_primary' => false]);
 
-        // Set this as primary
         $this->update(['is_primary' => true]);
     }
 }

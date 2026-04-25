@@ -6,7 +6,6 @@ use App\Models\StudentLearningPath;
 use App\Models\StudentProfile;
 use App\Models\LearningPath;
 use App\Models\Lesson;
-use App\Models\LessonProgress;
 use Illuminate\Support\Facades\Log;
 
 class PathProgressService
@@ -92,7 +91,9 @@ class PathProgressService
     {
         $path = $studentPath->learningPath;
         $student = $studentPath->student;
-        $lessons = $path->lessons;
+        $lessons = $studentPath->getOrderedLessons();
+        $progressMap = $studentPath->getLessonProgressMap($lessons);
+        $accessMap = $studentPath->getLessonAccessMap($lessons, $progressMap);
 
         $lessonDetails = [];
         $totalLessons = 0;
@@ -104,11 +105,8 @@ class PathProgressService
         foreach ($lessons as $lesson) {
             $totalLessons++;
 
-            $progress = LessonProgress::where('student_id', $student->student_id)
-                ->where('lesson_id', $lesson->lesson_id)
-                ->first();
-
-            $isLocked = $lesson->isLockedForStudent($student->student_id, $path->path_id);
+            $progress = $progressMap->get($lesson->lesson_id);
+            $isLocked = !$accessMap->get($lesson->lesson_id, false);
 
             $lessonStatus = 'not_started';
             $lessonProgress = 0;
@@ -165,8 +163,8 @@ class PathProgressService
                 'locked_lessons' => $lockedLessons,
             ],
             'lessons' => $lessonDetails,
-            'next_lesson' => $this->getNextLesson($studentPath),
-            'estimated_time_remaining' => $this->calculateEstimatedTimeRemaining($studentPath),
+            'next_lesson' => $this->getNextLesson($studentPath, $lessons, $progressMap, $accessMap),
+            'estimated_time_remaining' => $this->calculateEstimatedTimeRemaining($studentPath, $lessons, $progressMap),
         ];
     }
 
@@ -176,9 +174,14 @@ class PathProgressService
      * @param StudentLearningPath $studentPath
      * @return array|null
      */
-    private function getNextLesson(StudentLearningPath $studentPath): ?array
+    private function getNextLesson(
+        StudentLearningPath $studentPath,
+        ?\Illuminate\Support\Collection $lessons = null,
+        ?\Illuminate\Support\Collection $progressMap = null,
+        ?\Illuminate\Support\Collection $accessMap = null
+    ): ?array
     {
-        $nextLesson = $studentPath->getNextLesson();
+        $nextLesson = $studentPath->getNextLesson($lessons, $progressMap, $accessMap);
 
         if (!$nextLesson) {
             return null;
@@ -189,10 +192,7 @@ class PathProgressService
             'title' => $nextLesson->title,
             'difficulty' => $nextLesson->difficulty,
             'estimated_duration' => $nextLesson->estimated_duration,
-            'is_locked' => $nextLesson->isLockedForStudent(
-                $studentPath->student_id,
-                $studentPath->path_id
-            ),
+            'is_locked' => !($accessMap?->get($nextLesson->lesson_id, true) ?? true),
         ];
     }
 
@@ -202,16 +202,18 @@ class PathProgressService
      * @param StudentLearningPath $studentPath
      * @return int Minutes
      */
-    private function calculateEstimatedTimeRemaining(StudentLearningPath $studentPath): int
+    private function calculateEstimatedTimeRemaining(
+        StudentLearningPath $studentPath,
+        ?\Illuminate\Support\Collection $lessons = null,
+        ?\Illuminate\Support\Collection $progressMap = null
+    ): int
     {
-        $path = $studentPath->learningPath;
-        $student = $studentPath->student;
+        $lessons = $lessons ?? $studentPath->getOrderedLessons();
+        $progressMap = $progressMap ?? $studentPath->getLessonProgressMap($lessons);
         $remainingMinutes = 0;
 
-        foreach ($path->lessons as $lesson) {
-            $progress = LessonProgress::where('student_id', $student->student_id)
-                ->where('lesson_id', $lesson->lesson_id)
-                ->first();
+        foreach ($lessons as $lesson) {
+            $progress = $progressMap->get($lesson->lesson_id);
 
             // Only count incomplete lessons
             if (!$progress || $progress->status !== 'completed') {

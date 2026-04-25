@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\LearningPath;
 use App\Models\StudentLearningPath;
-use App\Models\LessonProgress;
 use App\Services\PathProgressService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -151,22 +150,19 @@ class LearningPathController extends Controller
             ]);
         }
 
+        $orderedLessons = $studentPath->getOrderedLessons();
+        $progressMap = $studentPath->getLessonProgressMap($orderedLessons);
+        $accessMap = $studentPath->getLessonAccessMap($orderedLessons, $progressMap);
+
         // 🔥 获取进度详情
-        $progressDetails = $studentPath->getProgressDetails();
+        $progressDetails = $studentPath->getProgressDetails($orderedLessons, $progressMap);
 
         // 🔥 获取下一课程
-        $nextLesson = $studentPath->getNextLesson();
+        $nextLesson = $studentPath->getNextLesson($orderedLessons, $progressMap, $accessMap);
 
         // 🔥 格式化课程列表
-        $lessons = $studentPath->learningPath->lessons->map(function ($lesson) use ($student, $studentPath) {
-            $progress = LessonProgress::where('student_id', $student->student_id)
-                ->where('lesson_id', $lesson->lesson_id)
-                ->first();
-
-            if ($progress && $progress->status === 'completed' && (int) $progress->progress_percent < 100) {
-                $progress->updateProgress(100);
-                $progress->refresh();
-            }
+        $lessons = $orderedLessons->map(function ($lesson) use ($progressMap, $accessMap) {
+            $progress = $progressMap->get($lesson->lesson_id);
 
             return [
                 'lesson_id' => $lesson->lesson_id,
@@ -174,7 +170,7 @@ class LearningPathController extends Controller
                 'sequence_order' => $lesson->pivot->sequence_order,
                 'status' => $progress ? $progress->status : 'not_started',
                 'progress_percent' => $progress ? $progress->progress_percent : 0,
-                'is_locked' => !$studentPath->canAccessLesson($lesson->lesson_id),
+                'is_locked' => !$accessMap->get($lesson->lesson_id, false),
                 'estimated_duration_minutes' => $lesson->pivot->estimated_duration_minutes
                     ?? $lesson->estimated_duration
                     ?? 0,
