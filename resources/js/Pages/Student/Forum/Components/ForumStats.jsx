@@ -57,8 +57,8 @@ export default function ForumStats({ totalPosts, totalReplies, activeUsers, cate
                         onClick={() => playSFX('click')}
                         className={`
                             relative overflow-hidden
-                            bg-black/40 backdrop-blur-xl 
-                            border border-white/10
+                            bg-slate-950/72 backdrop-blur-xl 
+                            border border-white/12
                             rounded-2xl shadow-xl ${stat.shadowColor}
                             hover:shadow-2xl hover:scale-105 ${stat.glowColor}
                             hover:ring-2 hover:border-white/20
@@ -79,7 +79,7 @@ export default function ForumStats({ totalPosts, totalReplies, activeUsers, cate
                         <div className="relative p-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-400 mb-2">
+                                    <p className="mb-2 text-sm font-semibold text-gray-200">
                                         {stat.label}
                                     </p>
                                     <p className={`

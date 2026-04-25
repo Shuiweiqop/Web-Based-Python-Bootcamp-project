@@ -33,7 +33,7 @@ export default function ForumFilters({
     };
 
     return (
-        <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-6 mb-8">
+        <div className="bg-slate-950/72 backdrop-blur-xl border border-white/12 rounded-2xl shadow-2xl p-6 mb-8">
             {/* Search Bar */}
             <div className="mb-6">
                 <div className="relative group">
@@ -46,8 +46,8 @@ export default function ForumFilters({
                         placeholder="Search posts by title or content..."
                         className="
                             w-full pl-12 pr-12 py-4 
-                            bg-black/30 backdrop-blur-sm
-                            border border-white/20 
+                            bg-slate-950/78 backdrop-blur-sm
+                            border border-white/16 
                             rounded-xl 
                             text-white placeholder-gray-400
                             focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50
@@ -104,7 +104,7 @@ export default function ForumFilters({
                                 ripple-effect button-press-effect
                                 ${selectedCategory === 'all'
                                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/50 ring-2 ring-blue-400/50 scale-105 animate-glowPulse'
-                                    : 'bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
+                                    : 'bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
                                 }
                             `}
                         >
@@ -125,7 +125,7 @@ export default function ForumFilters({
                                     ripple-effect button-press-effect
                                     ${selectedCategory === key
                                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/50 ring-2 ring-blue-400/50 scale-105 animate-glowPulse'
-                                        : 'bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
+                                        : 'bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
                                     }
                                 `}
                             >
@@ -150,8 +150,8 @@ export default function ForumFilters({
                         onFocus={() => playSFX('hover')}
                         className="
                             w-full px-4 py-3 
-                            bg-black/30 backdrop-blur-sm
-                            border border-white/20 
+                            bg-slate-950/78 backdrop-blur-sm
+                            border border-white/16 
                             rounded-xl 
                             text-white font-medium
                             focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50

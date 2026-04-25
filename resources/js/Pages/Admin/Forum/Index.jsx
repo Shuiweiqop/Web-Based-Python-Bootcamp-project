@@ -231,7 +231,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                     
                     {/* Admin Header */}
                     <div className="mb-8">
-                        <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-6">
+                        <div className="bg-slate-950/72 backdrop-blur-xl border border-white/12 rounded-2xl shadow-2xl p-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-2">
@@ -240,7 +240,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                         </div>
                                         <h1 className="text-3xl font-bold text-white drop-shadow-lg">Forum Management</h1>
                                     </div>
-                                    <p className="text-sm text-gray-400">
+                                    <p className="text-sm text-gray-200">
                                         Manage posts, moderate content, and oversee community discussions
                                     </p>
                                 </div>
@@ -309,7 +309,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                     return (
                                         <div 
                                             key={post.post_id}
-                                            className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
+                                            className="bg-slate-950/72 backdrop-blur-xl border border-white/12 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
                                         >
                                             <div className="p-6">
                                                 <div className="flex gap-4">
@@ -352,7 +352,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                                                 </Link>
 
                                                                 {/* Author Info with Points */}
-                                                                <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
+                                                                <div className="flex items-center gap-2 mt-2 text-sm text-gray-200">
                                                                     <span className="font-medium text-white">{author.name}</span>
                                                                     
                                                                     {author.is_admin && (
@@ -376,14 +376,14 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                                         </div>
 
                                                         {/* Content Preview */}
-                                                        <p className="text-gray-400 line-clamp-2 mb-4">
+                                                        <p className="mb-4 line-clamp-2 text-gray-200">
                                                             {post.content.replace(/<[^>]*>/g, '').substring(0, 200)}
                                                             {post.content.length > 200 && '...'}
                                                         </p>
 
                                                         {/* Footer Stats & Actions */}
                                                         <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-6 text-sm text-gray-500">
+                                                            <div className="flex items-center gap-6 text-sm text-gray-200">
                                                                 <div className="flex items-center gap-2">
                                                                     <Heart className="w-4 h-4" />
                                                                     <span className="font-medium">{post.likes || 0}</span>
@@ -406,7 +406,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                                                         "p-2 rounded-lg transition-all",
                                                                         post.is_pinned
                                                                             ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-yellow-500/50"
-                                                                            : "bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white"
+                                                                            : "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
                                                                     )}
                                                                     title={post.is_pinned ? 'Unpin' : 'Pin'}
                                                                 >
@@ -419,7 +419,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                                                         "p-2 rounded-lg transition-all",
                                                                         post.is_locked
                                                                             ? "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/50"
-                                                                            : "bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white"
+                                                                            : "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
                                                                     )}
                                                                     title={post.is_locked ? 'Unlock' : 'Lock'}
                                                                 >
@@ -463,12 +463,12 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                             )}
                         </>
                     ) : (
-                        <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-12 text-center">
-                            <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                        <div className="bg-slate-950/72 backdrop-blur-xl border border-white/12 rounded-2xl shadow-2xl p-12 text-center">
+                            <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                             <h3 className="text-2xl font-bold text-white mb-2">
                                 No posts found
                             </h3>
-                            <p className="text-gray-400 mb-6">
+                            <p className="mb-6 text-gray-200">
                                 {filters.search || filters.category !== 'all'
                                     ? 'Try adjusting your filters or search query.'
                                     : 'No posts have been created yet.'}
