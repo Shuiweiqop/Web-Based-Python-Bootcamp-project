@@ -35,6 +35,7 @@ class AdminPlacementTestController extends Controller
 
         // 计算统计数据
         $allPlacementTests = PlacementTest::withoutGlobalScopes()->where('test_type', 'placement');
+        $activeTestId = $allPlacementTests->clone()->where('status', 'active')->value('test_id');
         $stats = [
             'total_placement_tests' => $allPlacementTests->count(),
             'active_tests' => $allPlacementTests->clone()->where('status', 'active')->count(),
@@ -42,11 +43,11 @@ class AdminPlacementTestController extends Controller
                 'test_id',
                 $allPlacementTests->pluck('test_id')
             )->whereIn('status', ['submitted', 'timeout'])->count(),
-            'default_test_id' => config('recommendation.default_placement_test_id'),
+            'default_test_id' => $activeTestId,
         ];
 
         // 转换数据
-        $tests->getCollection()->transform(function ($test) {
+        $tests->getCollection()->transform(function ($test) use ($activeTestId) {
             $testStats = $test->getPlacementTestStats();
 
             return [
@@ -59,7 +60,7 @@ class AdminPlacementTestController extends Controller
                 'total_points' => $test->total_points,
                 'total_submissions' => $test->submissions()->count(),
                 'average_score' => $testStats['average_score'] ?? 0,
-                'is_default' => config('recommendation.default_placement_test_id') === $test->test_id,
+                'is_default' => $activeTestId === $test->test_id,
                 'created_at' => $test->created_at->format('M d, Y'),
                 'updated_at' => $test->updated_at->format('M d, Y'),
                 'stats' => $testStats,
@@ -325,6 +326,38 @@ class AdminPlacementTestController extends Controller
                 ];
             }),
         ]);
+    }
+
+    /**
+     * Set a placement test as default by making it the only active test.
+     */
+    public function setAsDefault($testId)
+    {
+        $test = PlacementTest::findOrFail($testId);
+
+        DB::transaction(function () use ($test) {
+            PlacementTest::where('test_id', '!=', $test->test_id)
+                ->where('status', 'active')
+                ->update(['status' => 'inactive']);
+
+            if ($test->status !== 'active') {
+                $test->update(['status' => 'active']);
+            }
+        });
+
+        return redirect()->route('admin.placement-tests.index')
+            ->with('success', "Placement test '{$test->title}' is now the active default test.");
+    }
+
+    /**
+     * Analytics entrypoint (current implementation redirects to details page stats).
+     */
+    public function analytics($testId)
+    {
+        $test = PlacementTest::findOrFail($testId);
+
+        return redirect()->route('admin.placement-tests.show', $test->test_id)
+            ->with('info', 'Analytics are available in the stats cards on the test details page.');
     }
 
     /**

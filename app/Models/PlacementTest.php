@@ -118,8 +118,8 @@ class PlacementTest extends Test
      */
     public function isDefault(): bool
     {
-        // 可以通过配置或数据库字段来标记默认测试
-        return config('recommendation.default_placement_test_id') === $this->test_id;
+        // In current flow, the active placement test is treated as the default onboarding test.
+        return $this->status === 'active';
     }
 
     /**

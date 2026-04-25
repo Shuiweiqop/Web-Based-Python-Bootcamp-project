@@ -189,15 +189,6 @@ class StudentTestController extends Controller
         $studentId = $this->getStudentIdOrFail();
         $this->ensureLessonContentReviewed($lesson, $studentId);
 
-        // Check if student has attempts left
-        $attemptsUsed = TestSubmission::where('test_id', $test->test_id)
-            ->where('student_id', $studentId)
-            ->count();
-
-        if ($test->max_attempts !== null && $attemptsUsed >= $test->max_attempts) {
-            return back()->withErrors(['error' => 'You have used all available attempts for this test.']);
-        }
-
         // Check if there's already an in-progress submission
         $existingSubmission = TestSubmission::where('test_id', $test->test_id)
             ->where('student_id', $studentId)
@@ -208,13 +199,27 @@ class StudentTestController extends Controller
             return redirect()->route('student.submissions.taking', ['submission' => $existingSubmission->submission_id]);
         }
 
+        // Check if student has attempts left (count completed attempts only)
+        $completedAttemptsUsed = TestSubmission::where('test_id', $test->test_id)
+            ->where('student_id', $studentId)
+            ->whereIn('status', ['submitted', 'timeout'])
+            ->count();
+
+        if ($test->max_attempts !== null && $completedAttemptsUsed >= $test->max_attempts) {
+            return back()->withErrors(['error' => 'You have used all available attempts for this test.']);
+        }
+
+        $lastAttemptNumber = (int) TestSubmission::where('test_id', $test->test_id)
+            ->where('student_id', $studentId)
+            ->max('attempt_number');
+
         DB::beginTransaction();
         try {
             // Create new submission
             $submission = TestSubmission::create([
                 'test_id' => $test->test_id,
                 'student_id' => $studentId,
-                'attempt_number' => $attemptsUsed + 1,
+                'attempt_number' => $lastAttemptNumber + 1,
                 'started_at' => now(),
                 'total_questions' => $test->questions_count,
                 'status' => 'in_progress',

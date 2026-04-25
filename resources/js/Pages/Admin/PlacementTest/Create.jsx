@@ -21,60 +21,15 @@ export default function Create({ statusOptions }) {
     description: '',
     instructions: '',
     time_limit: 60,
-    passing_score: 70,
     shuffle_questions: false,
-    show_results_immediately: true,
-    allow_review: true,
     status: 'draft',
   });
 
- const handleSubmit = (e) => {
-    console.log('=== FORM SUBMIT CLICKED ===');
+  const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('✅ Event prevented');
-    
-    // Check if route helper exists
-    if (typeof route === 'undefined') {
-      console.error('❌ Route helper is not defined!');
-      alert('ERROR: Route helper not found. Install Ziggy or check Inertia setup.');
-      return;
-    }
-    console.log('✅ Route helper exists');
-    
-    // Try to get the route
-    let routeUrl;
-    try {
-      routeUrl = route('admin.placement-tests.store');
-      console.log('✅ Route URL:', routeUrl);
-    } catch (error) {
-      console.error('❌ Error getting route:', error);
-      alert('ERROR: Route not registered. Run: php artisan route:clear');
-      return;
-    }
-    
-    if (!routeUrl) {
-      console.error('❌ Route URL is empty');
-      alert('ERROR: Route URL is empty');
-      return;
-    }
-    
-    console.log('📝 Form data:', data);
-    console.log('🚀 Calling post()...');
-    
-    try {
-      post(routeUrl, {
-        preserveScroll: true,
-        onBefore: () => console.log('📤 onBefore'),
-        onStart: () => console.log('🏁 onStart'),
-        onSuccess: (response) => console.log('✅ onSuccess', response),
-        onError: (errors) => console.error('❌ onError', errors),
-        onFinish: () => console.log('🏁 onFinish'),
-      });
-      console.log('✅ post() called');
-    } catch (error) {
-      console.error('❌ Error calling post():', error);
-      alert('ERROR: ' + error.message);
-    }
+    post(route('admin.placement-tests.store'), {
+      preserveScroll: true,
+    });
   };
 
   return (
@@ -84,8 +39,8 @@ export default function Create({ statusOptions }) {
           <Link href={route('admin.placement-tests.index')}>
             <button className={cn(
               "rounded-lg border p-2 transition-all",
-              isDark 
-                ? "border-white/10 hover:bg-white/10" 
+              isDark
+                ? "border-white/10 hover:bg-white/10"
                 : "border-gray-300 hover:bg-gray-100"
             )}>
               <ArrowLeft className="h-5 w-5" />
@@ -113,11 +68,10 @@ export default function Create({ statusOptions }) {
       <div className="py-8">
         <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Info Card */}
             <div className={cn(
               "rounded-lg border p-6 shadow-sm",
-              isDark 
-                ? "glassmorphism-enhanced border-white/10" 
+              isDark
+                ? "glassmorphism-enhanced border-white/10"
                 : "bg-white border-gray-200"
             )}>
               <h3 className={cn(
@@ -128,7 +82,6 @@ export default function Create({ statusOptions }) {
               </h3>
 
               <div className="space-y-4">
-                {/* Title */}
                 <div>
                   <label className={cn(
                     "mb-2 block text-sm font-medium",
@@ -154,7 +107,6 @@ export default function Create({ statusOptions }) {
                   )}
                 </div>
 
-                {/* Description */}
                 <div>
                   <label className={cn(
                     "mb-2 block text-sm font-medium",
@@ -179,7 +131,6 @@ export default function Create({ statusOptions }) {
                   )}
                 </div>
 
-                {/* Instructions */}
                 <div>
                   <label className={cn(
                     "mb-2 block text-sm font-medium",
@@ -206,11 +157,10 @@ export default function Create({ statusOptions }) {
               </div>
             </div>
 
-            {/* Test Settings Card */}
             <div className={cn(
               "rounded-lg border p-6 shadow-sm",
-              isDark 
-                ? "glassmorphism-enhanced border-white/10" 
+              isDark
+                ? "glassmorphism-enhanced border-white/10"
                 : "bg-white border-gray-200"
             )}>
               <h3 className={cn(
@@ -220,8 +170,7 @@ export default function Create({ statusOptions }) {
                 Test Settings
               </h3>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Time Limit */}
+              <div className="space-y-4">
                 <div>
                   <label className={cn(
                     "mb-2 block text-sm font-medium",
@@ -233,7 +182,7 @@ export default function Create({ statusOptions }) {
                     type="number"
                     value={data.time_limit}
                     onChange={(e) => {
-                      const value = e.target.value === '' ? '' : parseInt(e.target.value) || 0;
+                      const value = e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0;
                       setData('time_limit', value);
                     }}
                     className={cn(
@@ -249,38 +198,6 @@ export default function Create({ statusOptions }) {
                   )}
                 </div>
 
-                {/* Passing Score */}
-                <div>
-                  <label className={cn(
-                    "mb-2 block text-sm font-medium",
-                    isDark ? "text-slate-300" : "text-gray-700"
-                  )}>
-                    Passing Score (%)
-                  </label>
-                  <input
-                    type="number"
-                    value={data.passing_score}
-                    onChange={(e) => {
-                      const value = e.target.value === '' ? '' : parseInt(e.target.value) || 0;
-                      setData('passing_score', value);
-                    }}
-                    className={cn(
-                      "w-full rounded-lg border px-4 py-2 transition-all focus:outline-none focus:ring-2",
-                      isDark
-                        ? "bg-white/5 border-white/10 text-white focus:border-cyan-400/50 focus:ring-cyan-400/20"
-                        : "border-gray-300 focus:border-purple-500 focus:ring-purple-500/20"
-                    )}
-                    min="1"
-                    max="100"
-                  />
-                  {errors.passing_score && (
-                    <p className="mt-1 text-sm text-red-600">{errors.passing_score}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Checkboxes */}
-              <div className="mt-4 space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -296,72 +213,44 @@ export default function Create({ statusOptions }) {
                   </span>
                 </label>
 
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={data.show_results_immediately}
-                    onChange={(e) => setData('show_results_immediately', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <span className={cn(
-                    "text-sm",
+                <p className={cn("text-xs", isDark ? "text-slate-400" : "text-gray-600")}>
+                  Placement tests use fixed guided settings: no immediate review and no passing score gate.
+                </p>
+
+                <div>
+                  <label className={cn(
+                    "mb-2 block text-sm font-medium",
                     isDark ? "text-slate-300" : "text-gray-700"
                   )}>
-                    Show Results Immediately
-                  </span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={data.allow_review}
-                    onChange={(e) => setData('allow_review', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <span className={cn(
-                    "text-sm",
-                    isDark ? "text-slate-300" : "text-gray-700"
-                  )}>
-                    Allow Review After Submission
-                  </span>
-                </label>
-              </div>
-
-              {/* Status */}
-              <div className="mt-4">
-                <label className={cn(
-                  "mb-2 block text-sm font-medium",
-                  isDark ? "text-slate-300" : "text-gray-700"
-                )}>
-                  Status
-                </label>
-                <select
-                  value={data.status}
-                  onChange={(e) => setData('status', e.target.value)}
-                  className={cn(
-                    "w-full rounded-lg border px-4 py-2 transition-all focus:outline-none focus:ring-2",
-                    isDark
-                      ? "bg-white/5 border-white/10 text-white focus:border-cyan-400/50 focus:ring-cyan-400/20"
-                      : "border-gray-300 focus:border-purple-500 focus:ring-purple-500/20"
+                    Status
+                  </label>
+                  <select
+                    value={data.status}
+                    onChange={(e) => setData('status', e.target.value)}
+                    className={cn(
+                      "w-full rounded-lg border px-4 py-2 transition-all focus:outline-none focus:ring-2",
+                      isDark
+                        ? "bg-white/5 border-white/10 text-white focus:border-cyan-400/50 focus:ring-cyan-400/20"
+                        : "border-gray-300 focus:border-purple-500 focus:ring-purple-500/20"
+                    )}
+                  >
+                    {Object.entries(statusOptions).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.status && (
+                    <p className="mt-1 text-sm text-red-600">{errors.status}</p>
                   )}
-                >
-                  {Object.entries(statusOptions).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                {errors.status && (
-                  <p className="mt-1 text-sm text-red-600">{errors.status}</p>
-                )}
+                </div>
               </div>
             </div>
 
-            {/* Show all errors if any */}
             {Object.keys(errors).length > 0 && (
               <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
                 <h4 className="font-semibold text-red-900 dark:text-red-200">
-                  ⚠️ Please fix the following errors:
+                  Please fix the following errors:
                 </h4>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-red-800 dark:text-red-300">
                   {Object.entries(errors).map(([field, message]) => (
@@ -373,7 +262,6 @@ export default function Create({ statusOptions }) {
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex justify-end gap-3">
               <Link href={route('admin.placement-tests.index')}>
                 <button
@@ -402,7 +290,6 @@ export default function Create({ statusOptions }) {
             </div>
           </form>
 
-          {/* Info Card */}
           <div className={cn(
             "mt-6 rounded-lg border p-4",
             isDark
@@ -413,7 +300,7 @@ export default function Create({ statusOptions }) {
               "font-semibold",
               isDark ? "text-blue-200" : "text-blue-900"
             )}>
-              💡 Next Steps
+              Next Steps
             </h4>
             <ol className={cn(
               "mt-2 list-decimal space-y-1 pl-5 text-sm",
@@ -422,8 +309,8 @@ export default function Create({ statusOptions }) {
               <li>Create the test (draft mode recommended)</li>
               <li>Add questions to the test</li>
               <li>Preview the test to ensure everything works</li>
-              <li>Set status to "Active" when ready</li>
-              <li>Configure as default placement test if needed</li>
+              <li>Set status to Active when ready</li>
+              <li>Use Set Default (active test) from the list page when needed</li>
             </ol>
           </div>
         </div>
