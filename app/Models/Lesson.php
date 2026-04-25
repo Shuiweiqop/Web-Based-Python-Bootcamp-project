@@ -21,6 +21,7 @@ class Lesson extends Model
     protected $fillable = [
         'title',
         'content',
+        'content_type',
         'difficulty',
         'estimated_duration',
         'video_url',
@@ -35,6 +36,7 @@ class Lesson extends Model
     ];
 
     protected $casts = [
+        'content_type' => 'string',
         'estimated_duration' => 'integer',
         'completion_reward_points' => 'integer',
         'required_exercises' => 'integer',

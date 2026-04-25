@@ -69,6 +69,7 @@ class AdminLessonController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
+            'content_type' => 'required|string|in:text,markdown,html',
             'video_url' => 'nullable|url',
             'difficulty' => 'required|string|in:beginner,intermediate,advanced',
             'estimated_duration' => 'nullable|integer|min:1|max:1440',
@@ -225,6 +226,7 @@ class AdminLessonController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
+            'content_type' => 'required|string|in:text,markdown,html',
             'video_url' => 'nullable|url',
             'difficulty' => 'required|string|in:beginner,intermediate,advanced',
             'estimated_duration' => 'nullable|integer|min:1|max:1440',

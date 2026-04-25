@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Video, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import SafeContentRenderer from '@/Components/SafeContentRenderer';
 
 const LessonContent = ({ lesson, sections = [] }) => {
   const [expandedSections, setExpandedSections] = useState(new Set());
@@ -120,8 +121,12 @@ const LessonContent = ({ lesson, sections = [] }) => {
             </div>
             <h2 className="text-2xl font-bold text-gray-900">Lesson Content</h2>
           </div>
-          <div className="text-gray-700 leading-relaxed whitespace-pre-wrap font-mono text-sm bg-gradient-to-br from-gray-50 to-slate-50 p-6 rounded-xl border border-gray-200 shadow-inner">
-            {lesson.content}
+          <div className="bg-gradient-to-br from-gray-50 to-slate-50 p-6 rounded-xl border border-gray-200 shadow-inner">
+            <SafeContentRenderer
+              content={lesson.content}
+              type={lesson.content_type || 'markdown'}
+              className="text-gray-700 leading-relaxed"
+            />
           </div>
         </div>
       )}
