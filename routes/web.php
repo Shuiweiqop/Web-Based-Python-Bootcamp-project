@@ -128,6 +128,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('paths')->name('paths.')->group(function () {
             Route::get('/', [LearningPathController::class, 'index'])->name('index');
             Route::get('/browse', [LearningPathController::class, 'browse'])->name('browse');
+            Route::get('/catalog/{path}', [LearningPathController::class, 'preview'])->name('preview');
             Route::get('/{path}', [LearningPathController::class, 'show'])->name('show');
             Route::get('/{path}/progress', [LearningPathController::class, 'progress'])->name('progress');
             Route::post('/{path}/enroll', [LearningPathController::class, 'enroll'])->name('enroll');

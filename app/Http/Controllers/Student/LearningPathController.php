@@ -231,6 +231,77 @@ class LearningPathController extends Controller
     }
 
     /**
+     * Preview a learning path before enrollment
+     */
+    public function preview($pathId)
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'student') {
+            return redirect()->route('dashboard')
+                ->with('error', 'Only students can preview learning paths.');
+        }
+
+        $student = $user->studentProfile;
+
+        if (!$student) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Student profile not found.');
+        }
+
+        $path = LearningPath::active()
+            ->with([
+                'lessons' => function ($query) {
+                    $query->orderBy('learning_path_lessons.sequence_order');
+                }
+            ])
+            ->findOrFail($pathId);
+
+        $existingEnrollment = StudentLearningPath::where('student_id', $student->student_id)
+            ->where('path_id', $path->path_id)
+            ->whereIn('status', ['active', 'paused', 'completed'])
+            ->first();
+
+        if ($existingEnrollment) {
+            return redirect()->route('student.paths.show', $existingEnrollment->student_path_id);
+        }
+
+        $lessons = $path->lessons->map(function ($lesson) {
+            return [
+                'lesson_id' => $lesson->lesson_id,
+                'title' => $lesson->title,
+                'sequence_order' => $lesson->pivot->sequence_order,
+                'estimated_duration_minutes' => $lesson->pivot->estimated_duration_minutes
+                    ?? $lesson->estimated_duration
+                    ?? 0,
+                'is_required' => (bool) ($lesson->pivot->is_required ?? true),
+                'unlock_after_previous' => (bool) ($lesson->pivot->unlock_after_previous ?? true),
+            ];
+        });
+
+        return Inertia::render('Student/LearningPath/Preview', [
+            'path' => [
+                'path_id' => $path->path_id,
+                'title' => $path->title,
+                'description' => $path->description,
+                'learning_outcomes' => $path->learning_outcomes,
+                'prerequisites' => $path->prerequisites,
+                'difficulty_level' => $path->difficulty_level,
+                'icon' => $path->icon,
+                'color' => $path->color,
+                'estimated_duration_hours' => $path->calculated_duration_hours ?? 0,
+                'calculated_duration_hours' => $path->calculated_duration_hours ?? 0,
+                'total_lessons' => $path->total_lessons,
+                'required_lessons_count' => $path->required_lessons_count,
+                'enrollment_count' => $path->enrollment_count,
+                'is_featured' => (bool) $path->is_featured,
+            ],
+            'lessons' => $lessons,
+            'hasActivePath' => $student->hasActiveLearningPath(),
+        ]);
+    }
+
+    /**
      * Browse all available learning paths
      */
     public function browse()

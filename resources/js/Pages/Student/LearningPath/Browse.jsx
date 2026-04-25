@@ -191,14 +191,23 @@ export default function Browse({ paths, hasActivePath }) {
                             <ArrowRight className="h-5 w-5" />
                         </Link>
                     ) : (
-                        <button
-                            onClick={handleEnroll}
-                            disabled={isEnrolling}
-                            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl hover:shadow-2xl hover:scale-105"
-                        >
-                            <Sparkles className="h-5 w-5" />
-                            <span>{isEnrolling ? 'Enrolling...' : 'Enroll Now'}</span>
-                        </button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Link
+                                href={route('student.paths.preview', path.path_id)}
+                                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 border border-white/20 hover:border-white/40 transition-all duration-200"
+                            >
+                                <span>View Details</span>
+                                <ArrowRight className="h-5 w-5" />
+                            </Link>
+                            <button
+                                onClick={handleEnroll}
+                                disabled={isEnrolling}
+                                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl hover:shadow-2xl hover:scale-105"
+                            >
+                                <Sparkles className="h-5 w-5" />
+                                <span>{isEnrolling ? 'Enrolling...' : 'Enroll Now'}</span>
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
