@@ -366,6 +366,13 @@ class OnboardingController extends Controller
 
         // Check if already accepted
         if ($submission->hasAcceptedRecommendation()) {
+            $acceptedAssignment = $submission->getAcceptedPathAssignment();
+
+            if ($acceptedAssignment) {
+                return redirect()->route('student.paths.show', $acceptedAssignment->student_path_id)
+                    ->with('info', 'You have already accepted this path.');
+            }
+
             return redirect()->route('student.paths.index')
                 ->with('info', 'You have already accepted this path.');
         }
@@ -396,7 +403,7 @@ class OnboardingController extends Controller
             ]
         );
 
-        return redirect()->route('dashboard')
+        return redirect()->route('student.paths.show', $studentPath->student_path_id)
             ->with('success', "Welcome to {$path->title}! Let's start learning!");
     }
 
@@ -435,7 +442,7 @@ class OnboardingController extends Controller
             ->first();
 
         if ($existingPath) {
-            return redirect()->route('dashboard')
+            return redirect()->route('student.paths.show', $existingPath->student_path_id)
                 ->with('info', 'You are already enrolled in this path.');
         }
 
@@ -450,7 +457,7 @@ class OnboardingController extends Controller
             ]
         );
 
-        return redirect()->route('dashboard')
+        return redirect()->route('student.paths.show', $studentPath->student_path_id)
             ->with('success', "You've chosen {$path->title}. Let's start learning!");
     }
 

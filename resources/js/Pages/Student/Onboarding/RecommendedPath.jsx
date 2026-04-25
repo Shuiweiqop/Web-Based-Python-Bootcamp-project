@@ -20,6 +20,7 @@ export default function RecommendedPath({
 }) {
     const [selectedPath, setSelectedPath] = useState(recommendedPath.path_id);
     const [processing, setProcessing] = useState(false);
+    const canViewAcceptedPath = alreadyAccepted && Boolean(acceptedStudentPathId);
 
     const handleAcceptPath = () => {
         setProcessing(true);
@@ -160,13 +161,23 @@ export default function RecommendedPath({
                                 <p className="text-green-600 font-semibold mb-4">
                                     ✓ You've already enrolled in this path!
                                 </p>
-                                <a
-                                    href={route('student.paths.show', acceptedStudentPathId ?? selectedPath)}
-                                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                    View My Learning Path
-                                    <ArrowRightIcon className="w-5 h-5 ml-2" />
-                                </a>
+                                {canViewAcceptedPath ? (
+                                    <a
+                                        href={route('student.paths.show', acceptedStudentPathId)}
+                                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        View My Learning Path
+                                        <ArrowRightIcon className="w-5 h-5 ml-2" />
+                                    </a>
+                                ) : (
+                                    <a
+                                        href={route('student.paths.index')}
+                                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        Go to My Learning Paths
+                                        <ArrowRightIcon className="w-5 h-5 ml-2" />
+                                    </a>
+                                )}
                             </div>
                         ) : (
                             <>
