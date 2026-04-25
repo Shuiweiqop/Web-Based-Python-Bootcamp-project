@@ -231,23 +231,31 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                     
                     {/* Admin Header */}
                     <div className="mb-8">
-                        <div className="bg-slate-950/72 backdrop-blur-xl border border-white/12 rounded-2xl shadow-2xl p-6">
+                        <div className={cn(
+                            "backdrop-blur-xl border rounded-2xl shadow-2xl p-6",
+                            isDark ? "bg-slate-950/72 border-white/12" : "bg-white/85 border-gray-200"
+                        )}>
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/50">
                                             <Shield className="w-7 h-7 text-white" />
                                         </div>
-                                        <h1 className="text-3xl font-bold text-white drop-shadow-lg">Forum Management</h1>
+                                        <h1 className={cn("text-3xl font-bold drop-shadow-lg", isDark ? "text-white" : "text-gray-900")}>Forum Management</h1>
                                     </div>
-                                    <p className="text-sm text-gray-200">
+                                    <p className={cn("text-sm", isDark ? "text-gray-200" : "text-gray-700")}>
                                         Manage posts, moderate content, and oversee community discussions
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={toggleTheme}
-                                        className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all"
+                                        className={cn(
+                                            "p-2 rounded-lg transition-all",
+                                            isDark
+                                                ? "bg-white/10 hover:bg-white/20 text-white"
+                                                : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                                        )}
                                     >
                                         {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                                     </button>
@@ -269,6 +277,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                         totalReplies={totalReplies}
                         activeUsers={activeUsers}
                         categoryStats={categoryStats}
+                        isDark={isDark}
                     />
 
                     {/* Filters */}
@@ -281,6 +290,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                         onSearch={handleSearch}
                         onCategoryChange={handleCategoryChange}
                         onSortChange={handleSortChange}
+                        isDark={isDark}
                     />
 
                     {/* Posts List */}
@@ -309,7 +319,10 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                     return (
                                         <div 
                                             key={post.post_id}
-                                            className="bg-slate-950/72 backdrop-blur-xl border border-white/12 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
+                                            className={cn(
+                                                "backdrop-blur-xl border rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300",
+                                                isDark ? "bg-slate-950/72 border-white/12" : "bg-white/90 border-gray-200"
+                                            )}
                                         >
                                             <div className="p-6">
                                                 <div className="flex gap-4">
@@ -346,14 +359,17 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                                                     href={route('forum.show', post.post_id)}
                                                                     className="group"
                                                                 >
-                                                                    <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text transition-all line-clamp-2 drop-shadow-lg">
+                                                                    <h3 className={cn(
+                                                                        "text-xl font-bold group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 group-hover:bg-clip-text transition-all line-clamp-2 drop-shadow-lg",
+                                                                        isDark ? "text-white" : "text-gray-900"
+                                                                    )}>
                                                                         {post.title}
                                                                     </h3>
                                                                 </Link>
 
                                                                 {/* Author Info with Points */}
-                                                                <div className="flex items-center gap-2 mt-2 text-sm text-gray-200">
-                                                                    <span className="font-medium text-white">{author.name}</span>
+                                                                <div className={cn("flex items-center gap-2 mt-2 text-sm", isDark ? "text-gray-200" : "text-gray-600")}>
+                                                                    <span className={cn("font-medium", isDark ? "text-white" : "text-gray-900")}>{author.name}</span>
                                                                     
                                                                     {author.is_admin && (
                                                                         <span className="px-2 py-0.5 text-xs font-bold rounded bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30">
@@ -376,14 +392,14 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                                         </div>
 
                                                         {/* Content Preview */}
-                                                        <p className="mb-4 line-clamp-2 text-gray-200">
+                                                        <p className={cn("mb-4 line-clamp-2", isDark ? "text-gray-200" : "text-gray-700")}>
                                                             {post.content.replace(/<[^>]*>/g, '').substring(0, 200)}
                                                             {post.content.length > 200 && '...'}
                                                         </p>
 
                                                         {/* Footer Stats & Actions */}
                                                         <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-6 text-sm text-gray-200">
+                                                            <div className={cn("flex items-center gap-6 text-sm", isDark ? "text-gray-200" : "text-gray-600")}>
                                                                 <div className="flex items-center gap-2">
                                                                     <Heart className="w-4 h-4" />
                                                                     <span className="font-medium">{post.likes || 0}</span>
@@ -406,7 +422,9 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                                                         "p-2 rounded-lg transition-all",
                                                                         post.is_pinned
                                                                             ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-yellow-500/50"
-                                                                            : "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
+                                                                            : isDark
+                                                                                ? "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
+                                                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900"
                                                                     )}
                                                                     title={post.is_pinned ? 'Unpin' : 'Pin'}
                                                                 >
@@ -419,7 +437,9 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                                                                         "p-2 rounded-lg transition-all",
                                                                         post.is_locked
                                                                             ? "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/50"
-                                                                            : "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
+                                                                            : isDark
+                                                                                ? "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
+                                                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900"
                                                                     )}
                                                                     title={post.is_locked ? 'Unlock' : 'Lock'}
                                                                 >
@@ -463,12 +483,15 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                             )}
                         </>
                     ) : (
-                        <div className="bg-slate-950/72 backdrop-blur-xl border border-white/12 rounded-2xl shadow-2xl p-12 text-center">
-                            <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                            <h3 className="text-2xl font-bold text-white mb-2">
+                        <div className={cn(
+                            "backdrop-blur-xl border rounded-2xl shadow-2xl p-12 text-center",
+                            isDark ? "bg-slate-950/72 border-white/12" : "bg-white/90 border-gray-200"
+                        )}>
+                            <AlertTriangle className={cn("w-16 h-16 mx-auto mb-4", isDark ? "text-gray-300" : "text-gray-500")} />
+                            <h3 className={cn("text-2xl font-bold mb-2", isDark ? "text-white" : "text-gray-900")}>
                                 No posts found
                             </h3>
-                            <p className="mb-6 text-gray-200">
+                            <p className={cn("mb-6", isDark ? "text-gray-200" : "text-gray-700")}>
                                 {filters.search || filters.category !== 'all'
                                     ? 'Try adjusting your filters or search query.'
                                     : 'No posts have been created yet.'}

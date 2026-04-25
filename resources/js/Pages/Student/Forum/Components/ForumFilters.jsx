@@ -10,6 +10,7 @@ export default function ForumFilters({
     onSearch,
     onCategoryChange,
     onSortChange,
+    isDark = true,
 }) {
     const { playSFX } = useSFX();
 
@@ -33,7 +34,7 @@ export default function ForumFilters({
     };
 
     return (
-        <div className="bg-slate-950/72 backdrop-blur-xl border border-white/12 rounded-2xl shadow-2xl p-6 mb-8">
+        <div className={`${isDark ? 'bg-slate-950/72 border-white/12' : 'bg-white/85 border-gray-200'} backdrop-blur-xl border rounded-2xl shadow-2xl p-6 mb-8`}>
             {/* Search Bar */}
             <div className="mb-6">
                 <div className="relative group">
@@ -44,18 +45,18 @@ export default function ForumFilters({
                         onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
                         onFocus={() => playSFX('hover')}
                         placeholder="Search posts by title or content..."
-                        className="
+                        className={`
                             w-full pl-12 pr-12 py-4 
-                            bg-slate-950/78 backdrop-blur-sm
-                            border border-white/16 
+                            ${isDark ? 'bg-slate-950/78 border-white/16 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'}
+                            backdrop-blur-sm
+                            border
                             rounded-xl 
-                            text-white placeholder-gray-400
                             focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50
-                            focus:bg-black/40
+                            ${isDark ? 'focus:bg-black/40' : 'focus:bg-white'}
                             transition-all duration-200
                             shadow-lg
                             ripple-effect
-                        "
+                        `}
                     />
                     <Search className="
                         absolute left-4 top-1/2 transform -translate-y-1/2 
@@ -70,14 +71,13 @@ export default function ForumFilters({
                             type="button"
                             onClick={handleClearSearch}
                             onMouseEnter={() => playSFX('hover')}
-                            className="
+                            className={`
                                 absolute right-4 top-1/2 transform -translate-y-1/2 
-                                text-gray-400 hover:text-white
-                                bg-white/10 hover:bg-red-500/30
+                                ${isDark ? 'text-gray-400 hover:text-white bg-white/10 hover:bg-red-500/30' : 'text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-red-100'}
                                 rounded-lg p-1
                                 transition-all duration-200
                                 ripple-effect button-press-effect
-                            "
+                            `}
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -88,7 +88,7 @@ export default function ForumFilters({
             <div className="flex flex-col lg:flex-row gap-6">
                 {/* Category Filter */}
                 <div className="flex-1">
-                    <label className="block text-sm font-bold text-white mb-3 drop-shadow-lg">
+                    <label className={`block text-sm font-bold mb-3 ${isDark ? 'text-white drop-shadow-lg' : 'text-gray-800'}`}>
                         Filter by Category
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -104,7 +104,9 @@ export default function ForumFilters({
                                 ripple-effect button-press-effect
                                 ${selectedCategory === 'all'
                                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/50 ring-2 ring-blue-400/50 scale-105 animate-glowPulse'
-                                    : 'bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
+                                    : isDark
+                                      ? 'bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
+                                      : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-300 hover:scale-105'
                                 }
                             `}
                         >
@@ -125,7 +127,9 @@ export default function ForumFilters({
                                     ripple-effect button-press-effect
                                     ${selectedCategory === key
                                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/50 ring-2 ring-blue-400/50 scale-105 animate-glowPulse'
-                                        : 'bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
+                                        : isDark
+                                          ? 'bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
+                                          : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-300 hover:scale-105'
                                     }
                                 `}
                             >
@@ -138,7 +142,7 @@ export default function ForumFilters({
 
                 {/* Sort Options */}
                 <div className="lg:w-64">
-                    <label className="block text-sm font-bold text-white mb-3 drop-shadow-lg">
+                    <label className={`block text-sm font-bold mb-3 ${isDark ? 'text-white drop-shadow-lg' : 'text-gray-800'}`}>
                         Sort By
                     </label>
                     <select
@@ -148,25 +152,26 @@ export default function ForumFilters({
                             onSortChange(e.target.value);
                         }}
                         onFocus={() => playSFX('hover')}
-                        className="
+                        className={`
                             w-full px-4 py-3 
-                            bg-slate-950/78 backdrop-blur-sm
-                            border border-white/16 
+                            ${isDark ? 'bg-slate-950/78 border-white/16 text-white' : 'bg-white border-gray-300 text-gray-900'}
+                            backdrop-blur-sm
+                            border
                             rounded-xl 
-                            text-white font-medium
+                            font-medium
                             focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50
-                            focus:bg-black/40
+                            ${isDark ? 'focus:bg-black/40' : 'focus:bg-white'}
                             transition-all duration-200
                             shadow-lg
                             cursor-pointer
                             ripple-effect
-                        "
+                        `}
                     >
                         {sortOptions.map((option) => (
                             <option 
                                 key={option.value} 
                                 value={option.value}
-                                className="bg-gray-900 text-white"
+                                className={isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}
                             >
                                 {option.label}
                             </option>

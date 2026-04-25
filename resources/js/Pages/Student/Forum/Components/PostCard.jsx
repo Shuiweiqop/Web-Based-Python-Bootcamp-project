@@ -63,8 +63,11 @@ function getTimeAgo(dateString) {
     return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
 }
 
-export default function PostCard({ post, currentUserId }) {
+export default function PostCard({ post, currentUserId, isDark }) {
     const { playSFX } = useSFX();
+    const resolvedIsDark = typeof isDark === 'boolean'
+        ? isDark
+        : (typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : true);
 
     const getAuthorInfo = (post) => {
         if (post.author) return post.author;
@@ -110,24 +113,24 @@ export default function PostCard({ post, currentUserId }) {
     return (
         <div 
             onMouseEnter={() => playSFX('hover')}
-            className="
+            className={`
                 relative
-                bg-black/40 backdrop-blur-xl 
-                border border-white/10 
+                ${resolvedIsDark ? 'bg-black/40 border-white/10 hover:border-white/20' : 'bg-white border-gray-200 hover:border-gray-300'}
+                backdrop-blur-xl 
+                border
                 rounded-2xl shadow-xl hover:shadow-2xl
-                hover:border-white/20
                 transition-all duration-300
                 overflow-hidden
                 group
                 hover-lift
                 card-hover-effect
-            "
+            `}
         >
             {/* 🔥 整个卡片可点击 - 添加 Link 组件 */}
             <Link 
                 href={route('forum.show', post.post_id)}
                 onClick={() => playSFX('click')}
-                className="block p-6 hover:bg-white/5 transition-colors duration-200"
+                className={`block p-6 transition-colors duration-200 ${resolvedIsDark ? 'hover:bg-white/5' : 'hover:bg-gray-50/80'}`}
             >
                 <div className="flex gap-4">
                     {/* Author Avatar */}
@@ -174,21 +177,21 @@ export default function PostCard({ post, currentUserId }) {
                                 </div>
 
                                 {/* Title - 添加悬停效果 */}
-                                <h3 className="
-                                    text-xl font-bold text-white 
+                                <h3 className={`
+                                    text-xl font-bold ${resolvedIsDark ? 'text-white' : 'text-gray-900'}
                                     group-hover:text-transparent
                                     group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400
                                     group-hover:bg-clip-text
                                     transition-all duration-200 
                                     line-clamp-2
-                                    drop-shadow-lg
-                                ">
+                                    ${resolvedIsDark ? 'drop-shadow-lg' : ''}
+                                `}>
                                     {post.title}
                                 </h3>
 
                                 {/* Author Info */}
-                                <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
-                                    <span className="font-bold text-white">{author.name}</span>
+                                <div className={`flex items-center gap-2 mt-2 text-sm ${resolvedIsDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    <span className={`font-bold ${resolvedIsDark ? 'text-white' : 'text-gray-900'}`}>{author.name}</span>
                                     {author.is_admin && (
                                         <span className="
                                             px-2 py-0.5 
@@ -214,7 +217,7 @@ export default function PostCard({ post, currentUserId }) {
                                     {isAuthor && (
                                         <>
                                             <span>•</span>
-                                            <span className="text-blue-400 font-bold animate-pulse">You</span>
+                                            <span className={`${resolvedIsDark ? 'text-blue-400' : 'text-blue-600'} font-bold animate-pulse`}>You</span>
                                         </>
                                     )}
                                 </div>
@@ -222,36 +225,36 @@ export default function PostCard({ post, currentUserId }) {
                         </div>
 
                         {/* Content Preview */}
-                        <p className="text-gray-300 line-clamp-2 mb-4 leading-relaxed">
+                        <p className={`${resolvedIsDark ? 'text-gray-300' : 'text-gray-700'} line-clamp-2 mb-4 leading-relaxed`}>
                             {post.content.replace(/<[^>]*>/g, '').substring(0, 200)}
                             {post.content.length > 200 && '...'}
                         </p>
 
                         {/* Footer Stats */}
                         <div className="flex items-center gap-6 text-sm">
-                            <div className="
+                            <div className={`
                                 flex items-center gap-2 
-                                text-gray-400 group-hover:text-pink-400 
+                                ${resolvedIsDark ? 'text-gray-400' : 'text-gray-500'} group-hover:text-pink-400
                                 transition-colors duration-200
-                            ">
+                            `}>
                                 <Heart className="w-5 h-5" />
                                 <span className="font-bold">{post.likes || 0}</span>
                             </div>
 
-                            <div className="
+                            <div className={`
                                 flex items-center gap-2 
-                                text-gray-400 group-hover:text-blue-400 
+                                ${resolvedIsDark ? 'text-gray-400' : 'text-gray-500'} group-hover:text-blue-400
                                 transition-colors duration-200
-                            ">
+                            `}>
                                 <MessageSquare className="w-5 h-5 animate-pulse-slow" />
                                 <span className="font-bold">{post.replies_count || 0}</span>
                             </div>
 
-                            <div className="
+                            <div className={`
                                 flex items-center gap-2 
-                                text-gray-400 group-hover:text-purple-400 
+                                ${resolvedIsDark ? 'text-gray-400' : 'text-gray-500'} group-hover:text-purple-400
                                 transition-colors duration-200
-                            ">
+                            `}>
                                 <Eye className="w-5 h-5" />
                                 <span className="font-bold">{post.views || 0}</span>
                             </div>

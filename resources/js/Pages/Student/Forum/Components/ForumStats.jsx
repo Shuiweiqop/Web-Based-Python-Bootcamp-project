@@ -1,7 +1,7 @@
 import { TrendingUp, MessageSquare, Users, Folder } from 'lucide-react';
 import { useSFX } from '@/Contexts/SFXContext';
 
-export default function ForumStats({ totalPosts, totalReplies, activeUsers, categoryStats }) {
+export default function ForumStats({ totalPosts, totalReplies, activeUsers, categoryStats, isDark = true }) {
     // ✅ Make useSFX optional - provide fallback if context not available
     let playSFX = () => {};
     try {
@@ -57,11 +57,12 @@ export default function ForumStats({ totalPosts, totalReplies, activeUsers, cate
                         onClick={() => playSFX('click')}
                         className={`
                             relative overflow-hidden
-                            bg-slate-950/72 backdrop-blur-xl 
-                            border border-white/12
+                            ${isDark ? 'bg-slate-950/72 border-white/12' : 'bg-white/85 border-gray-200'}
+                            backdrop-blur-xl 
+                            border
                             rounded-2xl shadow-xl ${stat.shadowColor}
                             hover:shadow-2xl hover:scale-105 ${stat.glowColor}
-                            hover:ring-2 hover:border-white/20
+                            hover:ring-2 ${isDark ? 'hover:border-white/20' : 'hover:border-gray-300'}
                             transition-all duration-300
                             group
                             cursor-pointer
@@ -79,7 +80,7 @@ export default function ForumStats({ totalPosts, totalReplies, activeUsers, cate
                         <div className="relative p-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
-                                    <p className="mb-2 text-sm font-semibold text-gray-200">
+                                    <p className={`mb-2 text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                                         {stat.label}
                                     </p>
                                     <p className={`
