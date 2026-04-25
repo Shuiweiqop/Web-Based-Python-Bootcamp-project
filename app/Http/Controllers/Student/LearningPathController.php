@@ -125,7 +125,20 @@ class LearningPathController extends Controller
         ])
             ->where('student_path_id', $studentPathId)
             ->where('student_id', $student->student_id)
-            ->firstOrFail();
+            ->first();
+
+        if (!$studentPath) {
+            $studentPathFromPathId = StudentLearningPath::where('path_id', $studentPathId)
+                ->where('student_id', $student->student_id)
+                ->whereIn('status', ['active', 'paused', 'completed'])
+                ->first();
+
+            if ($studentPathFromPathId) {
+                return redirect()->route('student.paths.show', $studentPathFromPathId->student_path_id);
+            }
+
+            abort(404);
+        }
 
         // 🔥 重新计算进度
         try {
@@ -149,6 +162,11 @@ class LearningPathController extends Controller
             $progress = LessonProgress::where('student_id', $student->student_id)
                 ->where('lesson_id', $lesson->lesson_id)
                 ->first();
+
+            if ($progress && $progress->status === 'completed' && (int) $progress->progress_percent < 100) {
+                $progress->updateProgress(100);
+                $progress->refresh();
+            }
 
             return [
                 'lesson_id' => $lesson->lesson_id,
@@ -230,13 +248,14 @@ class LearningPathController extends Controller
             ->get()
             ->map(function ($path) use ($student) {
                 // Check if student is already enrolled
-                $isEnrolled = StudentLearningPath::where('student_id', $student->student_id)
+                $enrollment = StudentLearningPath::where('student_id', $student->student_id)
                     ->where('path_id', $path->path_id)
                     ->whereIn('status', ['active', 'paused'])
-                    ->exists();
+                    ->first();
 
                 return [
                     'path_id' => $path->path_id,
+                    'student_path_id' => $enrollment?->student_path_id,
                     'title' => $path->title,
                     'description' => $path->description,
                     'learning_outcomes' => $path->learning_outcomes,
@@ -247,7 +266,7 @@ class LearningPathController extends Controller
                     'icon' => $path->icon,
                     'color' => $path->color,
                     'is_featured' => $path->is_featured,
-                    'is_enrolled' => $isEnrolled,
+                    'is_enrolled' => (bool) $enrollment,
                     'enrollment_count' => $path->enrollment_count,
                 ];
             });

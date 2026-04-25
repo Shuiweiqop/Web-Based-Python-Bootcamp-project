@@ -119,10 +119,23 @@ class LessonProgress extends Model
      */
     public function updateProgress(int $percent): void
     {
-        $this->update([
-            'progress_percent' => min(100, max(0, $percent)),
+        $percent = min(100, max(0, $percent));
+
+        $updates = [
+            'progress_percent' => $this->status === 'completed' ? 100 : $percent,
             'last_updated_at' => now(),
-        ]);
+        ];
+
+        if ($this->status !== 'completed' && $percent === 100) {
+            $updates['status'] = 'completed';
+            $updates['completed_at'] = $this->completed_at ?? now();
+        }
+
+        if ($this->status === 'completed' && !$this->completed_at) {
+            $updates['completed_at'] = now();
+        }
+
+        $this->update($updates);
     }
 
     /**
@@ -176,7 +189,7 @@ class LessonProgress extends Model
             $testIds = $lesson->tests()->where('status', 'active')->pluck('test_id');
             $completedTests = TestSubmission::where('student_id', $this->student_id)
                 ->whereIn('test_id', $testIds)
-                ->where('status', 'completed')
+                ->whereIn('status', ['submitted', 'timeout', 'completed'])
                 ->where('score', '>=', function ($query) use ($testIds) {
                     $query->select('passing_score')
                         ->from('tests')
@@ -224,7 +237,7 @@ class LessonProgress extends Model
             $testIds = $lesson->tests()->where('status', 'active')->pluck('test_id');
             $passedCount = TestSubmission::where('student_id', $this->student_id)
                 ->whereIn('test_id', $testIds)
-                ->where('status', 'completed')
+                ->whereIn('status', ['submitted', 'timeout', 'completed'])
                 ->whereRaw('score >= (SELECT passing_score FROM tests WHERE test_id = test_submissions.test_id)')
                 ->distinct('test_id')
                 ->count();

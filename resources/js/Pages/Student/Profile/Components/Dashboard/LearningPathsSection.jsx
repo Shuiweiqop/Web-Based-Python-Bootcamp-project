@@ -160,7 +160,7 @@ export default function LearningPathsSection({ learningPaths, profile }) {
             {/* Action Buttons */}
             <div className="flex gap-2">
               <Link
-                href={route('student.paths.show', path.path_id)}
+                href={route('student.paths.show', path.id)}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold hover:scale-105 transition-all shadow-lg"
               >
                 {path.status === 'paused' ? 'Resume' : 
@@ -171,7 +171,7 @@ export default function LearningPathsSection({ learningPaths, profile }) {
 
               {/* Progress Details Button */}
               <Link
-                href={route('student.paths.progress', path.path_id)}
+                href={route('student.paths.progress', path.id)}
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold transition-all border border-white/20"
               >
                 Stats

@@ -114,6 +114,11 @@ class PathProgressService
             $lessonProgress = 0;
 
             if ($progress) {
+                if ($progress->status === 'completed' && (int) $progress->progress_percent < 100) {
+                    $progress->updateProgress(100);
+                    $progress->refresh();
+                }
+
                 $lessonStatus = $progress->status;
                 $lessonProgress = $progress->progress_percent;
 

@@ -133,6 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{path}/enroll', [LearningPathController::class, 'enroll'])->name('enroll');
             Route::post('/{path}/pause', [LearningPathController::class, 'pause'])->name('pause');
             Route::post('/{path}/resume', [LearningPathController::class, 'resume'])->name('resume');
+            Route::post('/{path}/set-primary', [LearningPathController::class, 'setAsPrimary'])->name('set-primary');
         });
 
         // ==================== 学生个人资料路由 ====================

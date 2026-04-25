@@ -181,7 +181,7 @@ export default function Browse({ paths, hasActivePath }) {
                 <div className="p-6 border-t border-white/10">
                     {path.is_enrolled ? (
                         <Link
-                            href={route('student.paths.show', path.path_id)}
+                            href={route('student.paths.show', path.student_path_id)}
                             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 border border-white/20 hover:border-white/40 transition-all duration-200"
                         >
                             <span>View My Progress</span>
