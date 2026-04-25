@@ -9,7 +9,12 @@ return new class extends Migration
 {
     public function up()
     {
-        // ✅ 修改 reward_type 为匹配的 ENUM 值
+        // SQLite does not support MODIFY COLUMN for enum-like changes.
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
+        // 修改 reward_type 为匹配的 ENUM 值
         DB::statement("
             ALTER TABLE reward_catalog 
             MODIFY COLUMN reward_type ENUM(
@@ -25,6 +30,10 @@ return new class extends Migration
 
     public function down()
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         // 回滚到原始值
         DB::statement("
             ALTER TABLE reward_catalog 
