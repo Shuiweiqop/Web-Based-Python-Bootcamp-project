@@ -146,8 +146,15 @@ class LearningPath extends Model
 
     public function getCalculatedDurationHoursAttribute(): float
     {
-        $totalMinutes = $this->lessons()
-            ->sum('learning_path_lessons.estimated_duration_minutes');
+        $lessons = $this->relationLoaded('lessons')
+            ? $this->lessons
+            : $this->lessons()->get(['lessons.lesson_id', 'lessons.estimated_duration']);
+
+        $totalMinutes = $lessons->sum(function ($lesson) {
+            return $lesson->pivot->estimated_duration_minutes
+                ?? $lesson->estimated_duration
+                ?? 0;
+        });
 
         return round($totalMinutes / 60, 1);
     }

@@ -175,7 +175,9 @@ class LearningPathController extends Controller
                 'status' => $progress ? $progress->status : 'not_started',
                 'progress_percent' => $progress ? $progress->progress_percent : 0,
                 'is_locked' => !$studentPath->canAccessLesson($lesson->lesson_id),
-                'estimated_duration_minutes' => $lesson->estimated_duration_minutes,
+                'estimated_duration_minutes' => $lesson->pivot->estimated_duration_minutes
+                    ?? $lesson->estimated_duration
+                    ?? 0,
                 'completed_at' => $progress && $progress->completed_at
                     ? $progress->completed_at->format('M d, Y')
                     : null,
@@ -202,7 +204,8 @@ class LearningPathController extends Controller
             'target_completion_date' => $studentPath->target_completion_date
                 ? $studentPath->target_completion_date->format('M d, Y')
                 : null,
-            'estimated_duration_hours' => $studentPath->learningPath->estimated_duration_hours ?? 0,
+            'estimated_duration_hours' => $studentPath->learningPath->calculated_duration_hours ?? 0,
+            'calculated_duration_hours' => $studentPath->learningPath->calculated_duration_hours ?? 0,
             'days_in_path' => $studentPath->days_in_path ?? 0,
             'activity_rate' => $studentPath->activity_rate ?? 0,
             'is_overdue' => $studentPath->is_overdue ?? false,
@@ -261,7 +264,8 @@ class LearningPathController extends Controller
                     'learning_outcomes' => $path->learning_outcomes,
                     'prerequisites' => $path->prerequisites,
                     'difficulty_level' => $path->difficulty_level,
-                    'estimated_duration_hours' => $path->estimated_duration_hours,
+                    'estimated_duration_hours' => $path->calculated_duration_hours ?? 0,
+                    'calculated_duration_hours' => $path->calculated_duration_hours ?? 0,
                     'total_lessons' => $path->total_lessons,
                     'icon' => $path->icon,
                     'color' => $path->color,

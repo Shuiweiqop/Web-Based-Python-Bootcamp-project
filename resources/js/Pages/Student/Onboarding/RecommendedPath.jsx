@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
+import { formatDurationHours } from '@/utils/duration';
 import { 
     CheckCircleIcon, 
     ClockIcon, 
@@ -14,18 +15,15 @@ export default function RecommendedPath({
     recommendedPath, 
     alternativePaths = [], 
     message,
-    alreadyAccepted = false 
+    alreadyAccepted = false,
+    acceptedStudentPathId = null,
 }) {
     const [selectedPath, setSelectedPath] = useState(recommendedPath.path_id);
     const [processing, setProcessing] = useState(false);
 
     const handleAcceptPath = () => {
-        console.log('Button clicked!');
-        console.log('Selected Path ID:', selectedPath);
-        console.log('Route:', route('student.onboarding.accept-path', selectedPath));
-        
         setProcessing(true);
-        
+
         router.post(
             route('student.onboarding.accept-path', selectedPath),
             {
@@ -34,19 +32,7 @@ export default function RecommendedPath({
             },
             {
                 preserveScroll: true,
-                onSuccess: (page) => {
-                    console.log('Success!', page);
-                    setProcessing(false);
-                },
-                onError: (errors) => {
-                    console.error('Error:', errors);
-                    setProcessing(false);
-                    alert('An error occurred. Please check the console.');
-                },
-                onFinish: () => {
-                    console.log('Request finished');
-                    setProcessing(false);
-                }
+                onFinish: () => setProcessing(false),
             }
         );
     };
@@ -175,7 +161,7 @@ export default function RecommendedPath({
                                     ✓ You've already enrolled in this path!
                                 </p>
                                 <a
-                                    href={route('student.paths.show', selectedPath)}
+                                    href={route('student.paths.show', acceptedStudentPathId ?? selectedPath)}
                                     className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                                 >
                                     View My Learning Path
@@ -212,13 +198,6 @@ export default function RecommendedPath({
                         )}
                     </div>
 
-                    {/* Debug Info - Remove in production */}
-                    <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
-                        <strong>Debug Info:</strong><br/>
-                        Selected Path: {selectedPath}<br/>
-                        Processing: {processing ? 'Yes' : 'No'}<br/>
-                        Already Accepted: {alreadyAccepted ? 'Yes' : 'No'}
-                    </div>
                 </div>
             </div>
         </>
@@ -254,6 +233,9 @@ function PathCard({
     getDifficultyColor,
     getConfidenceColor 
 }) {
+    const durationHours = path.calculated_duration_hours ?? path.estimated_duration_hours ?? 0;
+    const formattedDuration = formatDurationHours(durationHours);
+
     return (
         <div
             onClick={onSelect}
@@ -308,7 +290,7 @@ function PathCard({
                 </div>
                 <div className="flex items-center">
                     <ClockIcon className="w-4 h-4 mr-1" />
-                    ~{path.estimated_duration_hours}h
+                    {formattedDuration}
                 </div>
             </div>
         </div>

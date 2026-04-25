@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { formatDurationHours } from '@/utils/duration';
 import StudentLayout from '@/Layouts/StudentLayout';
 import {
     ArrowLeft,
@@ -28,6 +29,8 @@ export default function Show({
     recentActivity = []
 }) {
     const [actionLoading, setActionLoading] = useState(false);
+    const durationHours = studentPath?.calculated_duration_hours ?? studentPath?.estimated_duration_hours ?? 0;
+    const formattedDuration = formatDurationHours(durationHours);
 
     // Add safety check - if studentPath is not loaded, show loading state
     if (!studentPath) {
@@ -445,7 +448,7 @@ export default function Show({
                                 )}
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-white/90 font-medium">Estimated Duration</span>
-                                    <span className="text-white font-bold">{studentPath.estimated_duration_hours || 0}h</span>
+                                    <span className="text-white font-bold">{formattedDuration}</span>
                                 </div>
                             </div>
                         </div>

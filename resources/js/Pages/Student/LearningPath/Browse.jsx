@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { formatDurationHours } from '@/utils/duration';
 import StudentLayout from '@/Layouts/StudentLayout';
 import { 
     BookOpen,
@@ -92,6 +93,8 @@ export default function Browse({ paths, hasActivePath }) {
 
     const PathCard = ({ path }) => {
         const [isEnrolling, setIsEnrolling] = useState(false);
+        const durationHours = path.calculated_duration_hours ?? path.estimated_duration_hours ?? 0;
+        const formattedDuration = formatDurationHours(durationHours);
 
         const handleEnroll = () => {
             setIsEnrolling(true);
@@ -145,7 +148,7 @@ export default function Browse({ paths, hasActivePath }) {
                     <div className="flex items-center gap-2">
                         <Clock className="h-5 w-5 text-purple-400" />
                         <div>
-                            <div className="font-bold text-white">{path.estimated_duration_hours}h</div>
+                            <div className="font-bold text-white">{formattedDuration}</div>
                             <div className="text-xs text-white/80 font-medium">Duration</div>
                         </div>
                     </div>
@@ -188,23 +191,14 @@ export default function Browse({ paths, hasActivePath }) {
                             <ArrowRight className="h-5 w-5" />
                         </Link>
                     ) : (
-                        <div className="space-y-3">
-                            <button
-                                onClick={handleEnroll}
-                                disabled={isEnrolling}
-                                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl hover:shadow-2xl hover:scale-105"
-                            >
-                                <Sparkles className="h-5 w-5" />
-                                <span>{isEnrolling ? 'Enrolling...' : 'Enroll Now'}</span>
-                            </button>
-                            <Link
-                                href={route('student.paths.show', path.path_id)}
-                                className="w-full inline-flex items-center justify-center gap-2 px-6 py-2 text-white/90 hover:text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-200"
-                            >
-                                <span>View Details</span>
-                                <ArrowRight className="h-4 w-4" />
-                            </Link>
-                        </div>
+                        <button
+                            onClick={handleEnroll}
+                            disabled={isEnrolling}
+                            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl hover:shadow-2xl hover:scale-105"
+                        >
+                            <Sparkles className="h-5 w-5" />
+                            <span>{isEnrolling ? 'Enrolling...' : 'Enroll Now'}</span>
+                        </button>
                     )}
                 </div>
             </div>

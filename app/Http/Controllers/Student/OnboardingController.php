@@ -289,7 +289,8 @@ class OnboardingController extends Controller
         $confidence = $submission->recommendation_confidence;
 
         // Check if already accepted
-        $alreadyAccepted = $submission->hasAcceptedRecommendation();
+        $alreadyAcceptedAssignment = $submission->getAcceptedPathAssignment();
+        $alreadyAccepted = $alreadyAcceptedAssignment !== null;
 
         return Inertia::render('Student/Onboarding/RecommendedPath', [
             'submission' => [
@@ -307,7 +308,8 @@ class OnboardingController extends Controller
                 'learning_outcomes' => $recommendedPath->learning_outcomes,
                 'prerequisites' => $recommendedPath->prerequisites,
                 'difficulty_level' => $recommendedPath->difficulty_level,
-                'estimated_duration_hours' => $recommendedPath->estimated_duration_hours,
+                'estimated_duration_hours' => $recommendedPath->calculated_duration_hours ?? 0,
+                'calculated_duration_hours' => $recommendedPath->calculated_duration_hours ?? 0,
                 'total_lessons' => $recommendedPath->total_lessons,
                 'icon' => $recommendedPath->icon,
                 'color' => $recommendedPath->color,
@@ -319,7 +321,8 @@ class OnboardingController extends Controller
                     'title' => $path->title,
                     'description' => $path->description,
                     'difficulty_level' => $path->difficulty_level,
-                    'estimated_duration_hours' => $path->estimated_duration_hours,
+                    'estimated_duration_hours' => $path->calculated_duration_hours ?? 0,
+                    'calculated_duration_hours' => $path->calculated_duration_hours ?? 0,
                     'total_lessons' => $path->total_lessons,
                     'icon' => $path->icon,
                     'color' => $path->color,
@@ -327,6 +330,7 @@ class OnboardingController extends Controller
             }),
             'message' => $submission->recommendation_message,
             'alreadyAccepted' => $alreadyAccepted,
+            'acceptedStudentPathId' => $alreadyAcceptedAssignment?->student_path_id,
         ]);
     }
 
@@ -376,7 +380,7 @@ class OnboardingController extends Controller
             ->first();
 
         if ($existingPath) {
-            return redirect()->route('student.paths.show', $pathId)
+            return redirect()->route('student.paths.show', $existingPath->student_path_id)
                 ->with('info', 'You are already enrolled in this path.');
         }
 

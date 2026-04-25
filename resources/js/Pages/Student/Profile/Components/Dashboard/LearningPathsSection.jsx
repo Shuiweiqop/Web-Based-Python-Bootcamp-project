@@ -1,20 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from '@inertiajs/react';
 import { Compass, ArrowRight, BookOpen, Clock, Star } from 'lucide-react';
 
 export default function LearningPathsSection({ learningPaths, profile }) {
   // 🔍 调试：查看接收到的数据
-  useEffect(() => {
-    console.log('=== LearningPathsSection Debug ===');
-    console.log('learningPaths:', learningPaths);
-    console.log('learningPaths type:', typeof learningPaths);
-    console.log('learningPaths length:', learningPaths?.length);
-    console.log('Is Array:', Array.isArray(learningPaths));
-    if (learningPaths && learningPaths.length > 0) {
-      console.log('First path:', learningPaths[0]);
-    }
-  }, [learningPaths]);
-
   // 如果没有数据，显示空状态
   if (!learningPaths || learningPaths.length === 0) {
     return (
