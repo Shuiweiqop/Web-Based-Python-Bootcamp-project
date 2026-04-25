@@ -163,6 +163,7 @@ class LessonController extends Controller
                     'status' => $progress->status,
                     'status_label' => $progress->status_label,
                     'progress_percent' => $progress->progress_percent,
+                    'content_completed' => $progress->content_completed,
                     'exercise_completed' => $progress->exercise_completed,
                     'test_completed' => $progress->test_completed,
                     'reward_granted' => $progress->reward_granted,
@@ -221,6 +222,51 @@ class LessonController extends Controller
             'userProgress' => $userProgress,
             'lessonProgress' => $progressData,
         ]);
+    }
+
+    /**
+     * Mark lesson content as reviewed before students can claim completion points.
+     */
+    public function markContentComplete(Lesson $lesson)
+    {
+        $user = Auth::user();
+
+        if (!$user || $user->role !== 'student') {
+            return back()->withErrors(['error' => 'Only students can update lesson progress.']);
+        }
+
+        $studentProfile = StudentProfile::where('user_Id', $user->user_Id)->first();
+
+        if (!$studentProfile) {
+            return back()->withErrors(['error' => 'Student profile not found.']);
+        }
+
+        $registration = LessonRegistration::where('student_id', $studentProfile->student_id)
+            ->where('lesson_id', $lesson->lesson_id)
+            ->where('registration_status', 'active')
+            ->first();
+
+        if (!$registration) {
+            return back()->withErrors(['error' => 'You must register for this lesson first.']);
+        }
+
+        $progress = LessonProgress::firstOrCreate(
+            [
+                'student_id' => $studentProfile->student_id,
+                'lesson_id' => $lesson->lesson_id,
+            ],
+            [
+                'status' => 'in_progress',
+                'started_at' => now(),
+                'last_updated_at' => now(),
+            ]
+        );
+
+        if (!$progress->content_completed) {
+            $progress->markContentCompleted();
+        }
+
+        return back()->with('success', 'Lesson content marked as reviewed.');
     }
 
     /**
@@ -377,6 +423,20 @@ class LessonController extends Controller
         ]);
     }
 
+    /**
+     * Ensure lesson content has been reviewed before exercises/tests are accessible.
+     */
+    private function ensureLessonContentReviewed(int $studentId, int $lessonId): void
+    {
+        $progress = LessonProgress::where('student_id', $studentId)
+            ->where('lesson_id', $lessonId)
+            ->first();
+
+        if (!$progress || !$progress->content_completed) {
+            abort(403, 'Please review the lesson content before accessing exercises or tests.');
+        }
+    }
+
     // ==================== Exercise/Game Related Methods ====================
 
     /**
@@ -387,10 +447,12 @@ class LessonController extends Controller
         // Check if user is registered for the lesson
         $user = Auth::user();
         $isRegistered = false;
+        $studentId = null;
 
         if ($user && $user->role === 'student') {
             $studentProfile = $user->studentProfile;
             if ($studentProfile) {
+                $studentId = $studentProfile->student_id;
                 $registration = LessonRegistration::where('student_id', $studentProfile->student_id)
                     ->where('lesson_id', $lesson->lesson_id)
                     ->where('registration_status', 'active')
@@ -403,6 +465,8 @@ class LessonController extends Controller
             return redirect()->route('lessons.show', $lesson)
                 ->with('error', 'You must register for this lesson first.');
         }
+
+        $this->ensureLessonContentReviewed($studentId, $lesson->lesson_id);
 
         // Get all active exercises
         $exercises = InteractiveExercise::where('lesson_id', $lesson->lesson_id)
@@ -436,10 +500,12 @@ class LessonController extends Controller
         // Check if user is registered for the lesson
         $user = Auth::user();
         $isRegistered = false;
+        $studentId = null;
 
         if ($user && $user->role === 'student') {
             $studentProfile = $user->studentProfile;
             if ($studentProfile) {
+                $studentId = $studentProfile->student_id;
                 $registration = LessonRegistration::where('student_id', $studentProfile->student_id)
                     ->where('lesson_id', $lesson->lesson_id)
                     ->where('registration_status', 'active')
@@ -452,6 +518,8 @@ class LessonController extends Controller
             return redirect()->route('lessons.show', $lesson)
                 ->with('error', 'You must register for this lesson first.');
         }
+
+        $this->ensureLessonContentReviewed($studentId, $lesson->lesson_id);
 
 
         $exerciseData = [
@@ -502,6 +570,11 @@ class LessonController extends Controller
         // Ensure exercise is active
         if (!$exercise->is_active) {
             abort(404, 'Exercise is not available');
+        }
+
+        $user = Auth::user();
+        if ($user && $user->role === 'student' && $user->studentProfile) {
+            $this->ensureLessonContentReviewed($user->studentProfile->student_id, $lesson->lesson_id);
         }
 
         $exerciseData = [
@@ -736,6 +809,11 @@ class LessonController extends Controller
                 return back()->withErrors(['error' => 'You have already received the completion reward.']);
             }
 
+            if (!$progress || !$progress->content_completed) {
+                Log::warning('Lesson content not reviewed before completion claim');
+                return back()->withErrors(['error' => 'Please review the lesson content before claiming completion points.']);
+            }
+
             // Verify exercises
             $exercises = $lesson->interactiveExercises()->where('is_active', true)->get();
             $completedExercises = 0;
@@ -792,6 +870,7 @@ class LessonController extends Controller
                         'lesson_id' => $lesson->lesson_id,
                         'status' => 'completed',
                         'progress_percent' => 100,
+                        'content_completed' => true,
                         'exercise_completed' => true,
                         'test_completed' => true,
                         'reward_granted' => true,

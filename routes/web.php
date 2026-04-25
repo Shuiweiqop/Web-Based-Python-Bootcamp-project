@@ -46,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
     Route::post('/lessons/{lesson}/register', [LessonController::class, 'register'])->name('lessons.register');
     Route::delete('/lessons/{lesson}/cancel-registration', [LessonController::class, 'cancelRegistration'])->name('lessons.cancel-registration');
+    Route::post('/lessons/{lesson}/mark-content-complete', [LessonController::class, 'markContentComplete'])->name('lessons.mark-content-complete');
     Route::post('/lessons/{lesson}/complete', [LessonController::class, 'completeLesson'])->name('lessons.complete');
     Route::get('/my-registrations', [LessonController::class, 'myRegistrations'])->name('lessons.my-registrations');
 

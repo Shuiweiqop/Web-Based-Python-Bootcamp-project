@@ -19,6 +19,7 @@ class LessonProgress extends Model
         'reward_granted',
         'exercise_completed',
         'test_completed',
+        'content_completed',
         'status',
         'progress_percent',
         'started_at',
@@ -30,6 +31,7 @@ class LessonProgress extends Model
         'reward_granted' => 'boolean',
         'exercise_completed' => 'boolean',
         'test_completed' => 'boolean',
+        'content_completed' => 'boolean',
         'progress_percent' => 'integer',
         'started_at' => 'datetime',
         'last_updated_at' => 'datetime',
@@ -98,6 +100,24 @@ class LessonProgress extends Model
     public function hasReward(): bool
     {
         return $this->reward_granted;
+    }
+
+    /**
+     * Mark lesson content as reviewed by the student.
+     */
+    public function markContentCompleted(): void
+    {
+        $updates = [
+            'content_completed' => true,
+            'last_updated_at' => now(),
+        ];
+
+        if ($this->status === 'not_started') {
+            $updates['status'] = 'in_progress';
+            $updates['started_at'] = $this->started_at ?? now();
+        }
+
+        $this->update($updates);
     }
 
     /**

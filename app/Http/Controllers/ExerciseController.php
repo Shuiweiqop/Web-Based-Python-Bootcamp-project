@@ -6,6 +6,7 @@ use App\Models\Lesson;
 use App\Models\InteractiveExercise;
 use App\Models\ExerciseSubmission;
 use App\Models\LessonRegistration;
+use App\Models\LessonProgress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +53,17 @@ class ExerciseController extends Controller
                     'success' => false,
                     'message' => 'Invalid exercise for this lesson.'
                 ], 400);
+            }
+
+            $progress = LessonProgress::where('student_id', $student->student_id)
+                ->where('lesson_id', $lesson->lesson_id)
+                ->first();
+
+            if (!$progress || !$progress->content_completed) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please review the lesson content before starting exercises.'
+                ], 403);
             }
 
             // 开始事务

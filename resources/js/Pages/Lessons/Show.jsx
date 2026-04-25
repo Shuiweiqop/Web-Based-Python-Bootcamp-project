@@ -10,7 +10,7 @@ import LessonContent from './components/LessonContent';
 import ExercisesSection from './components/ExercisesSection';
 import TestsSection from './components/TestsSection';
 import LessonCompletionModal from './components/LessonCompletionModal';
-const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], userProgress = {} }) => {
+const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], userProgress = {}, lessonProgress = null }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const exercisesSectionRef = useRef(null);
@@ -33,6 +33,7 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
   const allExercisesCompleted = completedExercises === totalExercises && totalExercises > 0;
   const allTestsPassed = passedTests === totalTests && totalTests > 0;
   const lessonCompleted = lesson.is_completed || lesson.registration_status === 'completed';
+  const contentCompleted = lessonProgress?.content_completed ?? false;
 
   // Debug logging
   useEffect(() => {
@@ -132,6 +133,11 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
       return;
     }
 
+    if (!contentCompleted) {
+      alert('Please review the lesson content first.');
+      return;
+    }
+
     if (!allExercisesCompleted || !allTestsPassed) {
       alert('Please complete all exercises and pass all tests first.');
       return;
@@ -170,7 +176,13 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
             {/* Lesson Content */}
-            <LessonContent lesson={lesson} sections={sections} />
+            <LessonContent
+              auth={auth}
+              lesson={lesson}
+              sections={sections}
+              isRegistered={isRegistered}
+              contentCompleted={contentCompleted}
+            />
 
             {/* Exercises Section */}
             {isRegistered && exercises.length > 0 && (
@@ -179,6 +191,7 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
                   lesson={lesson}
                   exercises={exercises}
                   userProgress={userProgress}
+                  contentCompleted={contentCompleted}
                 />
               </div>
             )}
@@ -192,6 +205,7 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
                   userProgress={userProgress}
                   passedTests={passedTests}
                   totalTests={totalTests}
+                  contentCompleted={contentCompleted}
                   exercisesCompleted={allExercisesCompleted}
                   totalExercises={totalExercises}
                 />
@@ -235,6 +249,7 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
                 passedTests={passedTests}
                 totalTests={totalTests}
                 exerciseProgress={exerciseProgress}
+                contentCompleted={contentCompleted}
                 onRegister={handleRegister}
                 onUnregister={handleUnregister}
                 scrollToSection={scrollToSection}

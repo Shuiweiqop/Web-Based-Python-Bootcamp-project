@@ -126,7 +126,7 @@ export default function Browse({ paths, hasActivePath }) {
                         {path.is_enrolled && (
                             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 text-green-300 border border-green-500/50 rounded-lg text-xs font-bold">
                                 <CheckCircle className="h-4 w-4" />
-                                <span>Enrolled</span>
+                                <span>In Progress</span>
                             </div>
                         )}
                     </div>
@@ -157,7 +157,7 @@ export default function Browse({ paths, hasActivePath }) {
                 {/* Learning Outcomes */}
                 {path.learning_outcomes && (
                     <div className="px-6 py-4">
-                        <h4 className="text-sm font-bold text-white mb-3">What you'll learn:</h4>
+                        <h4 className="text-sm font-bold text-white mb-3">Path milestones:</h4>
                         <div className="space-y-2">
                             {path.learning_outcomes.split('\n').slice(0, 3).map((outcome, index) => (
                                 outcome.trim() && (
@@ -187,7 +187,7 @@ export default function Browse({ paths, hasActivePath }) {
                             href={route('student.paths.show', path.student_path_id)}
                             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 border border-white/20 hover:border-white/40 transition-all duration-200"
                         >
-                            <span>View My Progress</span>
+                            <span>Continue This Path</span>
                             <ArrowRight className="h-5 w-5" />
                         </Link>
                     ) : (
@@ -196,7 +196,7 @@ export default function Browse({ paths, hasActivePath }) {
                                 href={route('student.paths.preview', path.path_id)}
                                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 border border-white/20 hover:border-white/40 transition-all duration-200"
                             >
-                                <span>View Details</span>
+                                <span>Preview Path</span>
                                 <ArrowRight className="h-5 w-5" />
                             </Link>
                             <button
@@ -205,7 +205,7 @@ export default function Browse({ paths, hasActivePath }) {
                                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl hover:shadow-2xl hover:scale-105"
                             >
                                 <Sparkles className="h-5 w-5" />
-                                <span>{isEnrolling ? 'Enrolling...' : 'Enroll Now'}</span>
+                                <span>{isEnrolling ? 'Joining Path...' : 'Start This Path'}</span>
                             </button>
                         </div>
                     )}
@@ -223,10 +223,10 @@ export default function Browse({ paths, hasActivePath }) {
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl p-8 sm:p-12 text-white shadow-2xl">
                     <div className="text-center">
                         <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-                            Explore Learning Paths
+                            Choose Your Guided Learning Path
                         </h1>
                         <p className="text-xl text-white/95 font-medium max-w-2xl mx-auto">
-                            Choose from our curated learning paths to master new skills
+                            Follow a structured flow: review lessons, unlock practice, pass checks, and build progress with purpose.
                         </p>
                     </div>
                 </div>
@@ -337,10 +337,10 @@ export default function Browse({ paths, hasActivePath }) {
                 {/* Results Count */}
                 <div className="text-white/90 font-medium">
                     <p className="text-lg">
-                        Showing <span className="font-bold text-white">{filteredPaths.length}</span> learning path{filteredPaths.length !== 1 ? 's' : ''}
+                        Showing <span className="font-bold text-white">{filteredPaths.length}</span> guided path{filteredPaths.length !== 1 ? 's' : ''}
                         {enrolledPathIds.length > 0 && (
                             <span className="ml-2">
-                                · You're enrolled in <span className="font-bold text-blue-400">{enrolledPathIds.length}</span> path{enrolledPathIds.length !== 1 ? 's' : ''}
+                                · You are actively following <span className="font-bold text-blue-400">{enrolledPathIds.length}</span> path{enrolledPathIds.length !== 1 ? 's' : ''}
                             </span>
                         )}
                     </p>

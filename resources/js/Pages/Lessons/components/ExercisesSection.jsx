@@ -2,7 +2,7 @@ import React from 'react';
 import { Gamepad2, ChevronRight, Award, Clock, CheckCircle, Play, Lock } from 'lucide-react';
 import { router } from '@inertiajs/react';
 
-const ExercisesSection = ({ lesson, exercises, userProgress }) => {
+const ExercisesSection = ({ lesson, exercises, userProgress, contentCompleted = false }) => {
   /**
    * Get exercise status
    * @param {object} exercise - Exercise object
@@ -11,6 +11,10 @@ const ExercisesSection = ({ lesson, exercises, userProgress }) => {
    */
   const getExerciseStatus = (exercise, index) => {
     const progress = userProgress.exercises?.[exercise.exercise_id];
+
+    if (!contentCompleted) {
+      return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Review lesson content first' };
+    }
     
     // Completed
     if (progress?.completed) {
@@ -31,7 +35,7 @@ const ExercisesSection = ({ lesson, exercises, userProgress }) => {
     }
     
     // Locked
-    return { status: 'locked', icon: Lock, color: 'gray', locked: true };
+    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Finish the previous exercise first' };
   };
 
   /**
@@ -58,12 +62,23 @@ const ExercisesSection = ({ lesson, exercises, userProgress }) => {
           <div className="p-2.5 bg-blue-100 rounded-xl mr-3">
             <Gamepad2 className="h-7 w-7 text-blue-600" />
           </div>
-          Exercises
+          Guided Practice
         </h2>
         <span className="px-4 py-2 bg-blue-100 text-blue-800 font-bold rounded-full text-sm">
           {completedExercises}/{totalExercises}
         </span>
       </div>
+
+      {!contentCompleted && (
+        <div className="mb-6 rounded-xl border-2 border-slate-300 bg-gradient-to-r from-slate-50 to-gray-100 p-5 shadow-sm">
+          <p className="flex items-center font-semibold text-slate-900">
+            <div className="mr-3 rounded-lg bg-slate-200 p-2">
+              <Lock className="w-5 h-5 text-slate-700" />
+            </div>
+            Review the lesson content first to unlock guided practice
+          </p>
+        </div>
+      )}
 
       {/* Timeline Container */}
       <div className="relative">
@@ -104,7 +119,7 @@ const ExercisesSection = ({ lesson, exercises, userProgress }) => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         {/* Title Row */}
-                        <div className="flex items-center space-x-3 mb-3">
+                        <div className="flex items-center space-x-3 mb-3 flex-wrap">
                           <div className={`p-2 rounded-lg bg-${statusInfo.color}-100`}>
                             <StatusIcon className={`w-5 h-5 text-${statusInfo.color}-600`} />
                           </div>
@@ -112,6 +127,11 @@ const ExercisesSection = ({ lesson, exercises, userProgress }) => {
                           {progress?.completed && (
                             <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full border border-emerald-300">
                               ✓ Completed
+                            </span>
+                          )}
+                          {statusInfo.locked && statusInfo.reason && (
+                            <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
+                              {statusInfo.reason}
                             </span>
                           )}
                         </div>

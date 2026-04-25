@@ -9,11 +9,15 @@ import {
   ChevronRight 
 } from 'lucide-react';
 
-const getTestStatus = (test, userProgress, exercisesCompleted, totalExercises) => {
+const getTestStatus = (test, userProgress, exercisesCompleted, totalExercises, contentCompleted) => {
   const progress = userProgress.tests?.[test.test_id];
+
+  if (!contentCompleted) {
+    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Review lesson content first' };
+  }
   
   if (!exercisesCompleted && totalExercises > 0) {
-    return { status: 'locked', icon: Lock, color: 'gray', locked: true };
+    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Complete all exercises first' };
   }
   
   if (progress?.latest_score >= test.passing_score) {
@@ -37,6 +41,7 @@ export default function TestsSection({
   userProgress = {}, 
   passedTests = 0, 
   totalTests = 0,
+  contentCompleted = false,
   exercisesCompleted = false,
   totalExercises = 0 
 }) {
@@ -78,27 +83,38 @@ export default function TestsSection({
           <div className="p-2.5 bg-amber-100 rounded-xl mr-3">
             <Trophy className="h-7 w-7 text-amber-600" />
           </div>
-          Knowledge Tests
+          Guided Checks
         </h2>
         <span className="px-4 py-2 bg-amber-100 text-amber-800 font-bold rounded-full text-sm">
           {passedTests}/{totalTests} Passed
         </span>
       </div>
 
-      {!exercisesCompleted && totalExercises > 0 && (
+      {!contentCompleted && (
+        <div className="bg-gradient-to-r from-slate-50 to-gray-100 border-2 border-slate-300 rounded-xl p-5 mb-6 shadow-sm">
+          <p className="text-slate-900 font-semibold flex items-center">
+            <div className="p-2 bg-slate-200 rounded-lg mr-3">
+              <Lock className="w-5 h-5 text-slate-700" />
+            </div>
+            Review the lesson content and scroll to the bottom to unlock guided checks
+          </p>
+        </div>
+      )}
+
+      {contentCompleted && !exercisesCompleted && totalExercises > 0 && (
         <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-xl p-5 mb-6 shadow-sm">
           <p className="text-amber-900 font-semibold flex items-center">
             <div className="p-2 bg-amber-200 rounded-lg mr-3">
               <Lock className="w-5 h-5 text-amber-700" />
             </div>
-            Complete all exercises to unlock tests
+            Complete all guided practice steps to unlock the checks
           </p>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tests.map((test) => {
-          const statusInfo = getTestStatus(test, userProgress, exercisesCompleted, totalExercises);
+          const statusInfo = getTestStatus(test, userProgress, exercisesCompleted, totalExercises, contentCompleted);
           const StatusIcon = statusInfo.icon;
           const progress = userProgress.tests?.[test.test_id];
 
@@ -155,6 +171,12 @@ export default function TestsSection({
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {statusInfo.locked && statusInfo.reason && (
+                <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm font-medium text-gray-600">
+                  {statusInfo.reason}
                 </div>
               )}
 

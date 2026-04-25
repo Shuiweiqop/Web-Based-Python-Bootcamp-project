@@ -68,34 +68,34 @@ export default function StudentDashboard({
         {
             icon: "📖",
             title: "Continue Learning",
-            description: "Pick up where you left off",
+            description: nextLesson ? `Next: ${nextLesson.title}` : "Pick up where you left off",
             color: "from-blue-500 to-purple-600",
             hoverColor: "hover:from-blue-600 hover:to-purple-700",
-            href: '/lessons'
+            href: nextLesson ? route('lessons.show', nextLesson.lesson_id) : route('student.paths.index')
         },
         {
-            icon: "✏️", 
-            title: "Take a Quiz",
-            description: "Test your knowledge",
+            icon: "🗺️",
+            title: "My Learning Path",
+            description: "Track progress and continue your path",
             color: "from-purple-500 to-indigo-600",
             hoverColor: "hover:from-purple-600 hover:to-indigo-700",
-            href: '/tests'
+            href: route('student.paths.index')
         },
         {
             icon: "💬",
             title: "Join Discussion",
-            description: "Connect with peers",
-            color: "from-indigo-500 to-blue-600", 
+            description: "Connect with peers in the forum",
+            color: "from-indigo-500 to-blue-600",
             hoverColor: "hover:from-indigo-600 hover:to-blue-700",
-            href: '/discussions'
+            href: route('forum.index')
         },
         {
-            icon: "🎯",
-            title: "Practice Problems",
-            description: "Sharpen coding skills",
+            icon: "✨",
+            title: "Browse Paths",
+            description: "Explore other available learning paths",
             color: "from-orange-500 to-red-600",
             hoverColor: "hover:from-orange-600 hover:to-red-700",
-            href: '/practice'
+            href: route('student.paths.browse')
         }
     ];
 

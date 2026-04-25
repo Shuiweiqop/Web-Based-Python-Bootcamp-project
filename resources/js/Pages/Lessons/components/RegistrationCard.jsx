@@ -21,6 +21,7 @@ export default function RegistrationCard({
   passedTests,
   totalTests,
   exerciseProgress,
+  contentCompleted,
   onRegister,
   onUnregister,
   scrollToSection,
@@ -33,7 +34,7 @@ export default function RegistrationCard({
   // 计算完成状态
   const allExercisesCompleted = completedExercises === totalExercises && totalExercises > 0;
   const allTestsPassed = passedTests === totalTests && totalTests > 0;
-  const canCompleteLesson = !lessonCompleted && allExercisesCompleted && allTestsPassed;
+  const canCompleteLesson = !lessonCompleted && contentCompleted && allExercisesCompleted && allTestsPassed;
 
   // 🔥 调试：打印接收到的 props (Hook #1)
   React.useEffect(() => {
@@ -45,8 +46,9 @@ export default function RegistrationCard({
       'totalExercises': totalExercises,
       'passedTests': passedTests,
       'totalTests': totalTests,
+      'contentCompleted': contentCompleted,
     });
-  }, [lessonCompleted, lesson, completedExercises, totalExercises, passedTests, totalTests]);
+  }, [lessonCompleted, lesson, completedExercises, totalExercises, passedTests, totalTests, contentCompleted]);
 
   // 🔥 调试日志 (Hook #2)
   React.useEffect(() => {
@@ -59,10 +61,11 @@ export default function RegistrationCard({
         completedExercises,
         totalExercises,
         passedTests,
-        totalTests
+        totalTests,
+        contentCompleted
       });
     }
-  }, [isRegistered, lessonCompleted, allExercisesCompleted, allTestsPassed, canCompleteLesson, completedExercises, totalExercises, passedTests, totalTests]);
+  }, [isRegistered, lessonCompleted, allExercisesCompleted, allTestsPassed, canCompleteLesson, completedExercises, totalExercises, passedTests, totalTests, contentCompleted]);
 
   // ================== 未登录状态 ==================
   if (!auth?.user) {
@@ -155,10 +158,10 @@ export default function RegistrationCard({
         </div>
         <div>
           <h3 className={`text-xl font-bold ${lessonCompleted ? 'text-amber-900' : 'text-emerald-900'}`}>
-            {lessonCompleted ? 'Completed! 🎉' : "You're Enrolled!"}
+            {lessonCompleted ? 'Guided Flow Complete!' : 'Guided Lesson Flow'}
           </h3>
           {!lessonCompleted && (
-            <p className="text-sm text-emerald-700">Keep going, you're doing great!</p>
+            <p className="text-sm text-emerald-700">Review content first, then practice, then pass the checks.</p>
           )}
         </div>
       </div>
@@ -166,9 +169,19 @@ export default function RegistrationCard({
       {/* 进度卡片 */}
       <div className="mb-5 p-5 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm">
         <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-gray-700">1. Content Reviewed</span>
+            <span className="font-bold text-lg text-gray-900">
+              {contentCompleted ? 'Yes' : 'No'}
+              {contentCompleted && (
+                <span className="ml-2 text-emerald-600">✓</span>
+              )}
+            </span>
+          </div>
+
           {/* 练习进度 */}
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">Exercises</span>
+            <span className="text-sm font-medium text-gray-700">2. Practice Complete</span>
             <span className="font-bold text-lg text-gray-900">
               {completedExercises}/{totalExercises}
               {allExercisesCompleted && (
@@ -179,7 +192,7 @@ export default function RegistrationCard({
 
           {/* 测试进度 */}
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">Tests Passed</span>
+            <span className="text-sm font-medium text-gray-700">3. Checks Passed</span>
             <span className="font-bold text-lg text-gray-900">
               {passedTests}/{totalTests}
               {allTestsPassed && (
@@ -191,7 +204,7 @@ export default function RegistrationCard({
           {/* 总体进度条 */}
           <div className="pt-2">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-semibold text-gray-600">Overall Progress</span>
+              <span className="text-xs font-semibold text-gray-600">Guided Path Progress</span>
               <span className="text-sm font-bold text-gray-900">{exerciseProgress}%</span>
             </div>
             <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
@@ -238,9 +251,12 @@ export default function RegistrationCard({
               🎉 Ready to Complete!
             </h4>
             <p className="text-sm text-green-700 mb-3">
-              You've finished all exercises and passed all tests!
+              You reviewed the lesson, finished practice, and passed every check.
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-green-600 mb-4">
+              <span className="px-3 py-1 bg-green-100 rounded-full font-medium">
+                ✓ Content
+              </span>
               <span className="px-3 py-1 bg-green-100 rounded-full font-medium">
                 ✓ {completedExercises} Exercises
               </span>
@@ -268,6 +284,12 @@ export default function RegistrationCard({
           </button>
         </div>
       )}
+
+      {!lessonCompleted && !contentCompleted && (
+        <div className="mb-5 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm">
+          Follow the guided order: review the lesson, unlock practice, pass the tests, then claim points.
+        </div>
+      )}
       
       {/* 快速导航按钮 */}
       {!lessonCompleted && (
@@ -277,7 +299,7 @@ export default function RegistrationCard({
             className="w-full group inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-xl transform hover:-translate-y-0.5"
           >
             <Gamepad2 className="h-5 w-5 group-hover:rotate-12 transition-transform" />
-            View Exercises
+            Go to Practice
             <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </button>
           <button
@@ -285,7 +307,7 @@ export default function RegistrationCard({
             className="w-full group inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-md hover:shadow-xl transform hover:-translate-y-0.5"
           >
             <Trophy className="h-5 w-5 group-hover:rotate-12 transition-transform" />
-            View Tests
+            Go to Checks
             <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

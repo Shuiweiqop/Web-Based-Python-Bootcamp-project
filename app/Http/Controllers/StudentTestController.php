@@ -11,6 +11,7 @@ use App\Models\Test;
 use App\Models\TestSubmission;
 use App\Models\SubmissionAnswer;
 use App\Models\Question;
+use App\Models\LessonProgress;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -45,12 +46,27 @@ class StudentTestController extends Controller
     }
 
     /**
+     * Ensure lesson content has been reviewed before tests are accessible.
+     */
+    private function ensureLessonContentReviewed(Lesson $lesson, int $studentId): void
+    {
+        $progress = LessonProgress::where('student_id', $studentId)
+            ->where('lesson_id', $lesson->lesson_id)
+            ->first();
+
+        if (!$progress || !$progress->content_completed) {
+            abort(403, 'Please review the lesson content before accessing tests.');
+        }
+    }
+
+    /**
      * Display all available tests for a lesson
      * GET /student/lessons/{lesson}/tests
      */
     public function index(Lesson $lesson)
     {
         $studentId = $this->getStudentIdOrFail();
+        $this->ensureLessonContentReviewed($lesson, $studentId);
 
         $tests = Test::where('lesson_id', $lesson->lesson_id)
             ->where('status', 'active')
@@ -111,6 +127,7 @@ class StudentTestController extends Controller
         }
 
         $studentId = $this->getStudentIdOrFail();
+        $this->ensureLessonContentReviewed($lesson, $studentId);
 
         // Get student's submission history
         $submissions = TestSubmission::where('test_id', $test->test_id)
@@ -170,6 +187,7 @@ class StudentTestController extends Controller
         }
 
         $studentId = $this->getStudentIdOrFail();
+        $this->ensureLessonContentReviewed($lesson, $studentId);
 
         // Check if student has attempts left
         $attemptsUsed = TestSubmission::where('test_id', $test->test_id)
