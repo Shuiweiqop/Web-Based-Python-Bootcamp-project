@@ -14,6 +14,80 @@ use Illuminate\Support\Facades\Log;
 
 class DailyChallengeService
 {
+    public function getDashboardBoard(int $studentId): array
+    {
+        $definitions = DailyChallengeDefinition::query()
+            ->where('is_active', true)
+            ->orderBy('period_type')
+            ->orderBy('display_order')
+            ->get();
+
+        $daily = [];
+        $weekly = [];
+
+        foreach ($definitions as $definition) {
+            [$periodStart, $periodEnd] = $this->resolvePeriodWindow($definition->period_type);
+
+            $progress = DailyChallengeProgress::query()
+                ->where('student_id', $studentId)
+                ->where('challenge_definition_id', $definition->challenge_definition_id)
+                ->whereDate('period_start', $periodStart->toDateString())
+                ->first();
+
+            $currentCount = min($definition->target_count, (int) ($progress?->current_count ?? 0));
+            $targetCount = max(1, (int) $definition->target_count);
+            $isCompleted = (bool) ($progress?->is_completed ?? false);
+            $rewardGranted = (bool) ($progress?->reward_granted ?? false);
+            $remainingCount = max(0, $targetCount - $currentCount);
+
+            $item = [
+                'id' => $definition->challenge_definition_id,
+                'code' => $definition->code,
+                'title' => $definition->title,
+                'description' => $definition->description,
+                'period_type' => $definition->period_type,
+                'action_type' => $definition->action_type,
+                'target_count' => $targetCount,
+                'current_count' => $currentCount,
+                'remaining_count' => $remainingCount,
+                'progress_percent' => (int) round(($currentCount / $targetCount) * 100),
+                'is_completed' => $isCompleted,
+                'reward_granted' => $rewardGranted,
+                'reward_points' => (int) $definition->reward_points,
+                'completed_at' => $progress?->completed_at?->toIso8601String(),
+                'last_event_at' => $progress?->last_event_at?->toIso8601String(),
+                'period_start' => $periodStart->toDateString(),
+                'period_end' => $periodEnd->toDateString(),
+                'period_label' => $definition->period_type === 'weekly' ? 'This Week' : 'Today',
+                'status_label' => $rewardGranted
+                    ? 'Reward sent'
+                    : ($isCompleted ? 'Completed' : ($remainingCount === 0 ? 'Ready' : $remainingCount . ' to go')),
+                'category' => $this->resolveCategory($definition->action_type),
+                'ui' => $this->resolveUiMeta($definition->action_type, $definition->period_type, $isCompleted),
+            ];
+
+            if ($definition->period_type === 'weekly') {
+                $weekly[] = $item;
+            } else {
+                $daily[] = $item;
+            }
+        }
+
+        return [
+            'daily' => $daily,
+            'weekly' => $weekly,
+            'summary' => [
+                'daily_total' => count($daily),
+                'daily_completed' => collect($daily)->where('is_completed', true)->count(),
+                'weekly_total' => count($weekly),
+                'weekly_completed' => collect($weekly)->where('is_completed', true)->count(),
+                'total_points_available' => collect($daily)
+                    ->merge($weekly)
+                    ->sum('reward_points'),
+            ],
+        ];
+    }
+
     public function recordExerciseCompletion(int $studentId, int|string $submissionId): void
     {
         $this->recordAction($studentId, 'exercise_completed', 'exercise_submission', $submissionId);
@@ -159,5 +233,46 @@ class DailyChallengeService
         $end = $now->endOfDay();
 
         return [$start, $end];
+    }
+
+    private function resolveCategory(string $actionType): string
+    {
+        return match ($actionType) {
+            'exercise_completed' => 'Practice',
+            'test_passed' => 'Mastery',
+            'forum_reply_created' => 'Community',
+            default => 'Mission',
+        };
+    }
+
+    private function resolveUiMeta(string $actionType, string $periodType, bool $isCompleted): array
+    {
+        $baseMeta = match ($actionType) {
+            'exercise_completed' => [
+                'icon' => 'zap',
+                'accent' => 'amber',
+                'chip' => 'Practice Loop',
+            ],
+            'test_passed' => [
+                'icon' => 'target',
+                'accent' => 'blue',
+                'chip' => 'Mastery Check',
+            ],
+            'forum_reply_created' => [
+                'icon' => 'messages',
+                'accent' => 'emerald',
+                'chip' => 'Community Quest',
+            ],
+            default => [
+                'icon' => 'sparkles',
+                'accent' => 'slate',
+                'chip' => 'Mission',
+            ],
+        };
+
+        $baseMeta['badge'] = $periodType === 'weekly' ? 'Weekly Quest' : 'Daily Mission';
+        $baseMeta['state'] = $isCompleted ? 'complete' : 'active';
+
+        return $baseMeta;
     }
 }

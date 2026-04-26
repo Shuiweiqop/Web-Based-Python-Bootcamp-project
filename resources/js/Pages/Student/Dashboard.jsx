@@ -5,7 +5,8 @@ import { cn } from '@/utils/cn';
 import { 
   Trophy, BookOpen, Target, Flame, ArrowRight, Play, Users, 
   TrendingUp, Clock, Brain, Code, Zap, CheckCircle, Star, Calendar,
-  MessageCircle, Search, Bell, User, Settings, Sparkles, Lock
+  MessageCircle, Search, Bell, User, Settings, Sparkles, Lock,
+  ScrollText, Gem
 } from 'lucide-react';
 
 export default function StudentDashboard({ 
@@ -14,7 +15,8 @@ export default function StudentDashboard({
     availableLessons = [],
     recentLessons = [],
     learningPathProgress = null,
-    nextLesson = null
+    nextLesson = null,
+    dailyChallengeBoard = { daily: [], weekly: [], summary: {} }
 }) {
     const profile = studentProfile || {
         current_points: 0,
@@ -109,6 +111,107 @@ export default function StudentDashboard({
         return styles[difficulty?.toLowerCase()] || styles.beginner;
     };
 
+    const missionIconMap = {
+        zap: Zap,
+        target: Target,
+        messages: MessageCircle,
+        sparkles: Sparkles,
+    };
+
+    const missionAccentMap = {
+        amber: {
+            shell: "from-amber-500/20 via-orange-500/10 to-transparent border-amber-400/30",
+            icon: "text-amber-300 bg-amber-500/20 border-amber-400/30",
+            bar: "from-amber-400 to-orange-500",
+            chip: "bg-amber-500/15 text-amber-200 border-amber-400/30",
+        },
+        blue: {
+            shell: "from-blue-500/20 via-cyan-500/10 to-transparent border-blue-400/30",
+            icon: "text-blue-300 bg-blue-500/20 border-blue-400/30",
+            bar: "from-blue-400 to-cyan-500",
+            chip: "bg-blue-500/15 text-blue-200 border-blue-400/30",
+        },
+        emerald: {
+            shell: "from-emerald-500/20 via-teal-500/10 to-transparent border-emerald-400/30",
+            icon: "text-emerald-300 bg-emerald-500/20 border-emerald-400/30",
+            bar: "from-emerald-400 to-teal-500",
+            chip: "bg-emerald-500/15 text-emerald-200 border-emerald-400/30",
+        },
+        slate: {
+            shell: "from-slate-500/20 via-slate-400/10 to-transparent border-slate-300/30",
+            icon: "text-slate-200 bg-slate-500/20 border-slate-300/30",
+            bar: "from-slate-300 to-slate-500",
+            chip: "bg-slate-500/15 text-slate-100 border-slate-300/30",
+        },
+    };
+
+    const renderMissionCard = (mission) => {
+        const Icon = missionIconMap[mission.ui?.icon] || Sparkles;
+        const accent = missionAccentMap[mission.ui?.accent] || missionAccentMap.slate;
+
+        return (
+            <div
+                key={mission.id}
+                className={cn(
+                    "rounded-2xl border p-5 shadow-xl backdrop-blur-md bg-gradient-to-br",
+                    accent.shell,
+                    mission.is_completed ? "ring-1 ring-white/20" : ""
+                )}
+            >
+                <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex items-start gap-3">
+                        <div className={cn("p-3 rounded-2xl border", accent.icon)}>
+                            <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                <span className={cn("text-xs px-2.5 py-1 rounded-full border font-medium", accent.chip)}>
+                                    {mission.ui?.badge || mission.period_label}
+                                </span>
+                                <span className="text-xs px-2.5 py-1 rounded-full border border-white/15 bg-white/5 text-gray-200">
+                                    {mission.category}
+                                </span>
+                            </div>
+                            <h4 className="text-lg font-bold text-white drop-shadow-lg">{mission.title}</h4>
+                            <p className="text-sm text-gray-300 mt-1">{mission.description}</p>
+                        </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                        <div className="text-xs uppercase tracking-[0.2em] text-gray-400">Reward</div>
+                        <div className="text-xl font-bold text-white">{mission.reward_points}</div>
+                        <div className="text-xs text-yellow-300">points</div>
+                    </div>
+                </div>
+
+                <div className="mb-3 flex items-center justify-between text-sm">
+                    <span className="text-gray-300">{mission.current_count}/{mission.target_count} completed</span>
+                    <span className={cn(
+                        "font-semibold",
+                        mission.is_completed ? "text-emerald-300" : "text-blue-200"
+                    )}>
+                        {mission.status_label}
+                    </span>
+                </div>
+
+                <div className="w-full bg-black/40 rounded-full h-2.5 border border-white/10 overflow-hidden mb-4">
+                    <div
+                        className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", accent.bar)}
+                        style={{ width: `${mission.progress_percent}%` }}
+                    />
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">
+                        {mission.remaining_count > 0
+                            ? `${mission.remaining_count} more to clear this mission`
+                            : 'Mission cleared'}
+                    </span>
+                    <span className="text-gray-300">{mission.period_label}</span>
+                </div>
+            </div>
+        );
+    };
+
     const dashboardHeader = (
         <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 text-center shadow-2xl">
             <div data-sfx className="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/40 rounded-full px-6 py-3 mb-6 backdrop-blur-sm animate-fadeIn">
@@ -195,6 +298,72 @@ export default function StudentDashboard({
                 <p className="text-gray-100 drop-shadow-lg">
                     You're making excellent progress on your Python journey. Keep up the momentum!
                 </p>
+            </div>
+
+            <div className={cn(
+                "bg-black/70 backdrop-blur-md rounded-3xl p-8",
+                "border border-white/30 mb-12 shadow-2xl animate-fadeIn"
+            )} data-sfx>
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
+                    <div>
+                        <div className="inline-flex items-center bg-gradient-to-r from-amber-500/20 to-blue-500/20 border border-white/15 rounded-full px-4 py-2 mb-4">
+                            <ScrollText className="w-4 h-4 text-amber-300 mr-2" />
+                            <span className="text-sm font-medium text-white">Mission Control</span>
+                        </div>
+                        <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+                            Today's Missions
+                        </h2>
+                        <p className="text-gray-300 max-w-2xl">
+                            Give each session a rhythm: warm up with practice, lock in mastery, and show up for the community.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 min-w-[280px]">
+                        <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                            <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Daily Clear</div>
+                            <div className="text-3xl font-bold text-white">
+                                {dailyChallengeBoard.summary?.daily_completed || 0}
+                                <span className="text-lg text-gray-400">/{dailyChallengeBoard.summary?.daily_total || 0}</span>
+                            </div>
+                            <div className="text-sm text-emerald-300 mt-2">missions completed</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                            <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Quest Pool</div>
+                            <div className="text-3xl font-bold text-white">
+                                {dailyChallengeBoard.summary?.total_points_available || 0}
+                            </div>
+                            <div className="text-sm text-yellow-300 mt-2">points on the board</div>
+                        </div>
+                    </div>
+                </div>
+
+                {dailyChallengeBoard.daily?.length ? (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                        {dailyChallengeBoard.daily.map(renderMissionCard)}
+                    </div>
+                ) : (
+                    <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 p-8 text-center text-gray-300 mb-8">
+                        Daily missions will appear here once challenges are active.
+                    </div>
+                )}
+
+                <div className="flex items-center gap-3 mb-5">
+                    <Gem className="w-5 h-5 text-blue-300" />
+                    <h3 className="text-xl font-bold text-white">Weekly Quest Board</h3>
+                    <span className="text-sm text-gray-400">
+                        {dailyChallengeBoard.summary?.weekly_completed || 0}/{dailyChallengeBoard.summary?.weekly_total || 0} complete
+                    </span>
+                </div>
+
+                {dailyChallengeBoard.weekly?.length ? (
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                        {dailyChallengeBoard.weekly.map(renderMissionCard)}
+                    </div>
+                ) : (
+                    <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 p-6 text-center text-gray-300">
+                        Weekly quests will appear here once they are configured.
+                    </div>
+                )}
             </div>
 
             {/* Quick Actions */}

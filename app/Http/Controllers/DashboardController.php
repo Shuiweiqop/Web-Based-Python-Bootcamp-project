@@ -12,9 +12,14 @@ use App\Models\LessonProgress;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Services\DailyChallengeService;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly DailyChallengeService $dailyChallengeService
+    ) {}
+
     /**
      * Landing Page / Home Page - 公开访问
      */
@@ -125,10 +130,22 @@ class DashboardController extends Controller
         // Get learning path progress
         $learningPathProgress = null;
         $nextLesson = null;
+        $dailyChallengeBoard = [
+            'daily' => [],
+            'weekly' => [],
+            'summary' => [
+                'daily_total' => 0,
+                'daily_completed' => 0,
+                'weekly_total' => 0,
+                'weekly_completed' => 0,
+                'total_points_available' => 0,
+            ],
+        ];
 
         if ($studentProfile) {
             $learningPathProgress = $studentProfile->getLearningPathProgress();
             $nextLessonModel = $studentProfile->getNextPathLesson();
+            $dailyChallengeBoard = $this->dailyChallengeService->getDashboardBoard($studentProfile->student_id);
             if ($nextLessonModel) {
                 $nextLesson = [
                     'lesson_id' => $nextLessonModel->lesson_id,
@@ -221,6 +238,7 @@ class DashboardController extends Controller
             'learningPathProgress' => $learningPathProgress,
             'nextLesson' => $nextLesson,
             'availableLessons' => $availableLessons,
+            'dailyChallengeBoard' => $dailyChallengeBoard,
         ]);
     }
     /**
