@@ -115,15 +115,13 @@ function StudentLayoutContent({ header, children }) {
       href: 'forum.index',
       label: 'Community', 
       icon: MessageCircle,
-      current: 'forum.*',
-      badge: '💬'
+      current: 'forum.*'
     },
     { 
       href: 'student.rewards.index', 
       label: 'Rewards', 
       icon: ShoppingBag,
-      current: 'student.rewards.*',
-      badge: '🆕'
+      current: 'student.rewards.*'
     },
     { 
       href: 'student.inventory.index', 
@@ -191,7 +189,7 @@ function StudentLayoutContent({ header, children }) {
                           overflow-visible
                           ripple-effect button-press-effect
                           ${isActive
-                            ? 'bg-white/30 text-white shadow-xl backdrop-blur-sm ring-2 ring-white/30'
+                            ? 'bg-white/20 text-white border border-white/30 shadow-md backdrop-blur-sm'
                             : 'text-white/95 hover:text-white hover:bg-white/20 glow-on-hover'
                           }
                         `}
@@ -200,32 +198,6 @@ function StudentLayoutContent({ header, children }) {
                         <span className="text-sm whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
                           {item.label}
                         </span>
-                        
-                        {/* ✅ Badge - 只保留 emoji 动画 */}
-                        {item.badge && (
-                          <span className="
-                            absolute -top-1 -right-1 
-                            text-base
-                            drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]
-                            animate-bounce
-                            z-50
-                            pointer-events-none
-                          ">
-                            {item.badge}
-                          </span>
-                        )}
-                        
-                        {/* ✅ Shimmer 底部条 - 青色渐变高对比度 */}
-                        {isActive && (
-                          <span className="
-                            absolute -bottom-1 left-1/2 -translate-x-1/2 
-                            w-16 h-1 
-                            bg-gradient-to-r from-transparent via-cyan-400 to-transparent
-                            rounded-full shadow-xl shadow-cyan-400/50
-                            animate-shimmer
-                            z-10
-                          " />
-                        )}
                       </Link>
                     );
                   })}
@@ -476,18 +448,13 @@ function StudentLayoutContent({ header, children }) {
                           transition-all duration-200 relative
                           ripple-effect
                           ${isActive
-                            ? 'bg-white/30 text-white ring-2 ring-white/30'
+                            ? 'bg-white/20 text-white border border-white/30'
                             : 'text-white/90 hover:bg-white/20'
                           }
                         `}
                       >
                         <Icon className="w-5 h-5" />
                         <span className="font-medium">{item.label}</span>
-                        {item.badge && (
-                          <span className="ml-auto text-base drop-shadow-lg animate-bounce">
-                            {item.badge}
-                          </span>
-                        )}
                       </Link>
                     );
                   })}
