@@ -1,7 +1,7 @@
 import { TrendingUp, MessageSquare, Users, Folder } from 'lucide-react';
 import { useSFX } from '@/Contexts/SFXContext';
 
-export default function ForumStats({ totalPosts, totalReplies, activeUsers, categoryStats, isDark = true }) {
+export default function ForumStats({ totalPosts, totalReplies, activeUsers, categoryStats, isDark }) {
     // ✅ Make useSFX optional - provide fallback if context not available
     let playSFX = () => {};
     try {
@@ -10,6 +10,10 @@ export default function ForumStats({ totalPosts, totalReplies, activeUsers, cate
     } catch (error) {
         // SFXProvider not available, use no-op function
     }
+
+    const resolvedIsDark = typeof isDark === 'boolean'
+        ? isDark
+        : (typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : true);
 
     const stats = [
         {
@@ -57,12 +61,12 @@ export default function ForumStats({ totalPosts, totalReplies, activeUsers, cate
                         onClick={() => playSFX('click')}
                         className={`
                             relative overflow-hidden
-                            ${isDark ? 'bg-slate-950/72 border-white/12' : 'bg-white/85 border-gray-200'}
+                            ${resolvedIsDark ? 'bg-slate-950/72 border-white/12' : 'bg-white/90 border-gray-300'}
                             backdrop-blur-xl 
                             border
                             rounded-2xl shadow-xl ${stat.shadowColor}
                             hover:shadow-2xl hover:scale-105 ${stat.glowColor}
-                            hover:ring-2 ${isDark ? 'hover:border-white/20' : 'hover:border-gray-300'}
+                            hover:ring-2 ${resolvedIsDark ? 'hover:border-white/20' : 'hover:border-gray-400'}
                             transition-all duration-300
                             group
                             cursor-pointer
@@ -80,7 +84,7 @@ export default function ForumStats({ totalPosts, totalReplies, activeUsers, cate
                         <div className="relative p-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
-                                    <p className={`mb-2 text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                                    <p className={`mb-2 text-sm font-semibold ${resolvedIsDark ? 'text-gray-200' : 'text-gray-800'}`}>
                                         {stat.label}
                                     </p>
                                     <p className={`

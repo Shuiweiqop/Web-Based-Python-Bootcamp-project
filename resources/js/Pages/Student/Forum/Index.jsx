@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import StudentLayout from '@/Layouts/StudentLayout';
 import ForumStats from './Components/ForumStats';
 import ForumFilters from './Components/ForumFilters';
@@ -11,6 +11,24 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
     const [sortBy, setSortBy] = useState(filters.sort || 'recent');
+    const [isDark, setIsDark] = useState(() => (
+        typeof document !== 'undefined'
+            ? document.documentElement.classList.contains('dark')
+            : true
+    ));
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return undefined;
+
+        const root = document.documentElement;
+        const updateTheme = () => setIsDark(root.classList.contains('dark'));
+        updateTheme();
+
+        const observer = new MutationObserver(updateTheme);
+        observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+
+        return () => observer.disconnect();
+    }, []);
 
     // Handle search
     const handleSearch = (e) => {
@@ -64,13 +82,13 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-5xl font-bold text-white flex items-center gap-4 drop-shadow-2xl">
+                        <h1 className={`text-5xl font-bold flex items-center gap-4 ${isDark ? 'text-white drop-shadow-2xl' : 'text-gray-900'}`}>
                             <span className="text-6xl animate-bounce">💬</span>
-                            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                            <span className={`bg-gradient-to-r ${isDark ? 'from-blue-400 via-purple-400 to-pink-400' : 'from-blue-700 via-indigo-700 to-fuchsia-700'} bg-clip-text text-transparent`}>
                                 Community Forum
                             </span>
                         </h1>
-                        <p className="mt-3 text-gray-300 text-lg drop-shadow-lg">
+                        <p className={`mt-3 text-lg ${isDark ? 'text-gray-300 drop-shadow-lg' : 'text-gray-700'}`}>
                             Share knowledge, ask questions, and connect with the community
                         </p>
                     </div>
@@ -102,6 +120,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                     totalReplies={totalReplies}
                     activeUsers={activeUsers}
                     categoryStats={categoryStats}
+                    isDark={isDark}
                 />
 
                 {/* Filters & Search */}
@@ -114,6 +133,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
                     onSearch={handleSearch}
                     onCategoryChange={handleCategoryChange}
                     onSortChange={handleSortChange}
+                    isDark={isDark}
                 />
 
                 {/* Posts List */}

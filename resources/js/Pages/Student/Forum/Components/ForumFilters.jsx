@@ -10,9 +10,12 @@ export default function ForumFilters({
     onSearch,
     onCategoryChange,
     onSortChange,
-    isDark = true,
+    isDark,
 }) {
     const { playSFX } = useSFX();
+    const resolvedIsDark = typeof isDark === 'boolean'
+        ? isDark
+        : (typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : true);
 
     const sortOptions = [
         { value: 'recent', label: '🕐 Most Recent' },
@@ -34,7 +37,7 @@ export default function ForumFilters({
     };
 
     return (
-        <div className={`${isDark ? 'bg-slate-950/72 border-white/12' : 'bg-white/85 border-gray-200'} backdrop-blur-xl border rounded-2xl shadow-2xl p-6 mb-8`}>
+        <div className={`${resolvedIsDark ? 'bg-slate-950/72 border-white/12' : 'bg-white/90 border-gray-300'} backdrop-blur-xl border rounded-2xl shadow-2xl p-6 mb-8`}>
             {/* Search Bar */}
             <div className="mb-6">
                 <div className="relative group">
@@ -47,12 +50,12 @@ export default function ForumFilters({
                         placeholder="Search posts by title or content..."
                         className={`
                             w-full pl-12 pr-12 py-4 
-                            ${isDark ? 'bg-slate-950/78 border-white/16 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'}
+                            ${resolvedIsDark ? 'bg-slate-950/78 border-white/16 text-white placeholder-gray-400' : 'bg-white border-gray-400 text-gray-900 placeholder-gray-500'}
                             backdrop-blur-sm
                             border
                             rounded-xl 
                             focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50
-                            ${isDark ? 'focus:bg-black/40' : 'focus:bg-white'}
+                            ${resolvedIsDark ? 'focus:bg-black/40' : 'focus:bg-white'}
                             transition-all duration-200
                             shadow-lg
                             ripple-effect
@@ -73,7 +76,7 @@ export default function ForumFilters({
                             onMouseEnter={() => playSFX('hover')}
                             className={`
                                 absolute right-4 top-1/2 transform -translate-y-1/2 
-                                ${isDark ? 'text-gray-400 hover:text-white bg-white/10 hover:bg-red-500/30' : 'text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-red-100'}
+                                ${resolvedIsDark ? 'text-gray-400 hover:text-white bg-white/10 hover:bg-red-500/30' : 'text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-red-100'}
                                 rounded-lg p-1
                                 transition-all duration-200
                                 ripple-effect button-press-effect
@@ -88,7 +91,7 @@ export default function ForumFilters({
             <div className="flex flex-col lg:flex-row gap-6">
                 {/* Category Filter */}
                 <div className="flex-1">
-                    <label className={`block text-sm font-bold mb-3 ${isDark ? 'text-white drop-shadow-lg' : 'text-gray-800'}`}>
+                    <label className={`block text-sm font-bold mb-3 ${resolvedIsDark ? 'text-white drop-shadow-lg' : 'text-gray-900'}`}>
                         Filter by Category
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -104,7 +107,7 @@ export default function ForumFilters({
                                 ripple-effect button-press-effect
                                 ${selectedCategory === 'all'
                                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/50 ring-2 ring-blue-400/50 scale-105 animate-glowPulse'
-                                    : isDark
+                                    : resolvedIsDark
                                       ? 'bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
                                       : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-300 hover:scale-105'
                                 }
@@ -127,7 +130,7 @@ export default function ForumFilters({
                                     ripple-effect button-press-effect
                                     ${selectedCategory === key
                                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/50 ring-2 ring-blue-400/50 scale-105 animate-glowPulse'
-                                        : isDark
+                                        : resolvedIsDark
                                           ? 'bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white border border-white/20 hover:scale-105'
                                           : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-300 hover:scale-105'
                                     }
@@ -142,7 +145,7 @@ export default function ForumFilters({
 
                 {/* Sort Options */}
                 <div className="lg:w-64">
-                    <label className={`block text-sm font-bold mb-3 ${isDark ? 'text-white drop-shadow-lg' : 'text-gray-800'}`}>
+                    <label className={`block text-sm font-bold mb-3 ${resolvedIsDark ? 'text-white drop-shadow-lg' : 'text-gray-900'}`}>
                         Sort By
                     </label>
                     <select
@@ -154,13 +157,13 @@ export default function ForumFilters({
                         onFocus={() => playSFX('hover')}
                         className={`
                             w-full px-4 py-3 
-                            ${isDark ? 'bg-slate-950/78 border-white/16 text-white' : 'bg-white border-gray-300 text-gray-900'}
+                            ${resolvedIsDark ? 'bg-slate-950/78 border-white/16 text-white' : 'bg-white border-gray-400 text-gray-900'}
                             backdrop-blur-sm
                             border
                             rounded-xl 
                             font-medium
                             focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50
-                            ${isDark ? 'focus:bg-black/40' : 'focus:bg-white'}
+                            ${resolvedIsDark ? 'focus:bg-black/40' : 'focus:bg-white'}
                             transition-all duration-200
                             shadow-lg
                             cursor-pointer
@@ -171,7 +174,7 @@ export default function ForumFilters({
                             <option 
                                 key={option.value} 
                                 value={option.value}
-                                className={isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}
+                                className={resolvedIsDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}
                             >
                                 {option.label}
                             </option>
