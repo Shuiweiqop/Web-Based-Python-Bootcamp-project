@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Models\Notification;
+use App\Services\DailyChallengeService;
 
 class ForumController extends Controller
 {
@@ -526,6 +527,21 @@ class ForumController extends Controller
             if (ForumHelper::isStudent()) {
                 $student = ForumHelper::getCurrentStudentProfile();
                 $student?->updateStreak();
+
+                if ($student) {
+                    try {
+                        app(DailyChallengeService::class)->recordForumReplyCreated(
+                            (int) $student->student_id,
+                            (int) $reply->reply_id
+                        );
+                    } catch (\Throwable $challengeException) {
+                        Log::warning('Failed to record forum-reply daily challenge event', [
+                            'student_id' => $student->student_id,
+                            'reply_id' => $reply->reply_id,
+                            'error' => $challengeException->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             // ✅ 重新加载完整的帖子数据（包括新回复）

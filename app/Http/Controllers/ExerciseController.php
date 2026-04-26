@@ -7,6 +7,7 @@ use App\Models\InteractiveExercise;
 use App\Models\ExerciseSubmission;
 use App\Models\LessonRegistration;
 use App\Models\LessonProgress;
+use App\Services\DailyChallengeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,8 +15,11 @@ use Illuminate\Support\Facades\Log;
 
 class ExerciseController extends Controller
 {
-    public function __construct()
+    private DailyChallengeService $dailyChallengeService;
+
+    public function __construct(?DailyChallengeService $dailyChallengeService = null)
     {
+        $this->dailyChallengeService = $dailyChallengeService ?? app(DailyChallengeService::class);
         $this->middleware(['auth', 'verified']);
     }
 
@@ -100,6 +104,21 @@ class ExerciseController extends Controller
                     'score' => $submission->score,
                     'was_recently_created' => $submission->wasRecentlyCreated,
                 ]);
+
+                if ($submission->completed) {
+                    try {
+                        $this->dailyChallengeService->recordExerciseCompletion(
+                            (int) $student->student_id,
+                            (int) $submission->submission_id
+                        );
+                    } catch (\Throwable $challengeException) {
+                        Log::warning('Failed to record exercise daily challenge event', [
+                            'student_id' => $student->student_id,
+                            'submission_id' => $submission->submission_id,
+                            'error' => $challengeException->getMessage(),
+                        ]);
+                    }
+                }
 
                 // 更新课程进度
                 $registration = LessonRegistration::where('student_id', $student->student_id)

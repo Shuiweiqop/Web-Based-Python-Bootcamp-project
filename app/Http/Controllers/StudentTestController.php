@@ -12,13 +12,17 @@ use App\Models\TestSubmission;
 use App\Models\SubmissionAnswer;
 use App\Models\Question;
 use App\Models\LessonProgress;
+use App\Services\DailyChallengeService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class StudentTestController extends Controller
 {
-    public function __construct()
+    private DailyChallengeService $dailyChallengeService;
+
+    public function __construct(?DailyChallengeService $dailyChallengeService = null)
     {
+        $this->dailyChallengeService = $dailyChallengeService ?? app(DailyChallengeService::class);
         $this->middleware(['auth', 'role:student']);
     }
 
@@ -403,6 +407,22 @@ class StudentTestController extends Controller
         try {
             // Grade the submission
             $this->gradeSubmission($submission);
+            $submission->refresh();
+
+            if ($submission->score >= $submission->test->passing_score) {
+                try {
+                    $this->dailyChallengeService->recordTestPassed(
+                        (int) $studentId,
+                        (int) $submission->submission_id
+                    );
+                } catch (\Throwable $challengeException) {
+                    Log::warning('Failed to record test-passed daily challenge event', [
+                        'student_id' => $studentId,
+                        'submission_id' => $submission->submission_id,
+                        'error' => $challengeException->getMessage(),
+                    ]);
+                }
+            }
 
             DB::commit();
 
