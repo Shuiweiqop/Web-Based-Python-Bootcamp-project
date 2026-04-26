@@ -166,6 +166,10 @@ class LessonProgress extends Model
         $this->update([
             'status' => 'completed',
             'progress_percent' => 100,
+            'content_completed' => true,
+            'exercise_completed' => true,
+            'test_completed' => true,
+            'started_at' => $this->started_at ?? now(),
             'completed_at' => now(),
             'last_updated_at' => now(),
             'reward_granted' => $grantReward,

@@ -33,7 +33,8 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
   const allExercisesCompleted = completedExercises === totalExercises && totalExercises > 0;
   const allTestsPassed = passedTests === totalTests && totalTests > 0;
   const lessonCompleted = lesson.is_completed || lesson.registration_status === 'completed';
-  const contentCompleted = lessonProgress?.content_completed ?? false;
+  // Completed lessons should never be treated as "content not reviewed".
+  const contentCompleted = lessonCompleted || (lessonProgress?.content_completed ?? false);
 
   // Debug logging
   useEffect(() => {
