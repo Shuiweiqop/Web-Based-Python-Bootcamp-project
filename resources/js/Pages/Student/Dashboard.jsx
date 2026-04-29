@@ -337,6 +337,119 @@ export default function StudentDashboard({
                     </div>
                 </div>
 
+                <div className="mb-8 rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-orange-500/10 p-5">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                            <div className="p-3 rounded-2xl border border-amber-400/30 bg-amber-500/15">
+                                <Trophy className="w-5 h-5 text-amber-300" />
+                            </div>
+                            <div>
+                                <div className="text-sm uppercase tracking-[0.2em] text-amber-200/80 mb-1">
+                                    Bonus Objective
+                                </div>
+                                <h3 className="text-xl font-bold text-white">
+                                    {dailyChallengeBoard.summary?.daily_full_clear_bonus_title || 'Full Clear Bonus'}
+                                </h3>
+                                <p className="text-sm text-gray-300 mt-1">
+                                    Clear every daily mission in one day to unlock an extra reward drop.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="text-left md:text-right">
+                            <div className="text-3xl font-bold text-white">
+                                +{dailyChallengeBoard.summary?.daily_full_clear_bonus_points || 0}
+                            </div>
+                            <div className={cn(
+                                "text-sm font-semibold mt-1",
+                                dailyChallengeBoard.summary?.daily_full_clear_bonus_earned
+                                    ? "text-emerald-300"
+                                    : "text-amber-200"
+                            )}>
+                                {dailyChallengeBoard.summary?.daily_full_clear_bonus_earned
+                                    ? "Bonus claimed for today"
+                                    : "Available after full clear"}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mb-8 rounded-2xl border border-blue-400/20 bg-gradient-to-r from-blue-500/10 via-cyan-500/10 to-indigo-500/10 p-5">
+                    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <Flame className="w-5 h-5 text-orange-300" />
+                                <h3 className="text-xl font-bold text-white">Mission Streak</h3>
+                            </div>
+                            <p className="text-sm text-gray-300 max-w-2xl">
+                                Every day you full-clear your missions, this streak grows. Hit milestone days to unlock extra points.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Current</div>
+                                <div className="text-3xl font-bold text-white">
+                                    {dailyChallengeBoard.summary?.mission_streak?.current_streak || 0}
+                                </div>
+                                <div className="text-sm text-orange-300 mt-1">day streak</div>
+                            </div>
+                            <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Best</div>
+                                <div className="text-3xl font-bold text-white">
+                                    {dailyChallengeBoard.summary?.mission_streak?.best_streak || 0}
+                                </div>
+                                <div className="text-sm text-blue-300 mt-1">best run</div>
+                            </div>
+                            <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Next Goal</div>
+                                <div className="text-3xl font-bold text-white">
+                                    {dailyChallengeBoard.summary?.mission_streak?.next_milestone_days || 'Max'}
+                                </div>
+                                <div className="text-sm text-emerald-300 mt-1">
+                                    {dailyChallengeBoard.summary?.mission_streak?.next_milestone_points
+                                        ? `+${dailyChallengeBoard.summary?.mission_streak?.next_milestone_points} pts`
+                                        : 'all tiers cleared'}
+                                </div>
+                            </div>
+                            <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Remaining</div>
+                                <div className="text-3xl font-bold text-white">
+                                    {dailyChallengeBoard.summary?.mission_streak?.days_to_next_milestone || 0}
+                                </div>
+                                <div className="text-sm text-yellow-300 mt-1">days to go</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+                        {(dailyChallengeBoard.summary?.mission_streak?.milestones || []).map((milestone) => (
+                            <div
+                                key={milestone.days}
+                                className={cn(
+                                    "rounded-2xl border p-4",
+                                    milestone.earned
+                                        ? "border-emerald-400/30 bg-emerald-500/10"
+                                        : "border-white/10 bg-white/5"
+                                )}
+                            >
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-lg font-bold text-white">{milestone.days}-Day Run</span>
+                                    <span className={cn(
+                                        "text-xs px-2.5 py-1 rounded-full border",
+                                        milestone.earned
+                                            ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+                                            : "border-white/15 bg-white/5 text-gray-300"
+                                    )}>
+                                        {milestone.earned ? "Unlocked" : "Locked"}
+                                    </span>
+                                </div>
+                                <div className="text-sm text-gray-300">Milestone bonus</div>
+                                <div className="text-2xl font-bold text-white mt-1">+{milestone.points}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {dailyChallengeBoard.daily?.length ? (
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
                         {dailyChallengeBoard.daily.map(renderMissionCard)}

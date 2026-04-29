@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DailyChallengeDefinition;
+use App\Models\DailyChallengeCycleReward;
 use App\Models\DailyChallengeEvent;
 use App\Models\DailyChallengeProgress;
 use App\Models\Notification;
@@ -14,6 +15,14 @@ use Illuminate\Support\Facades\Log;
 
 class DailyChallengeService
 {
+    private const DAILY_FULL_CLEAR_BONUS_CODE = 'daily_full_clear';
+    private const DAILY_FULL_CLEAR_BONUS_POINTS = 90;
+    private const DAILY_STREAK_MILESTONES = [
+        3 => 40,
+        7 => 120,
+        14 => 260,
+    ];
+
     public function getDashboardBoard(int $studentId): array
     {
         $definitions = DailyChallengeDefinition::query()
@@ -73,6 +82,16 @@ class DailyChallengeService
             }
         }
 
+        [$dailyStart, $dailyEnd] = $this->resolvePeriodWindow('daily');
+        $fullClearReward = DailyChallengeCycleReward::query()
+            ->where('student_id', $studentId)
+            ->where('period_type', 'daily')
+            ->whereDate('period_start', $dailyStart->toDateString())
+            ->where('bonus_code', self::DAILY_FULL_CLEAR_BONUS_CODE)
+            ->first();
+
+        $streakSummary = $this->getDailyMissionStreakSummary($studentId);
+
         return [
             'daily' => $daily,
             'weekly' => $weekly,
@@ -84,6 +103,10 @@ class DailyChallengeService
                 'total_points_available' => collect($daily)
                     ->merge($weekly)
                     ->sum('reward_points'),
+                'daily_full_clear_bonus_points' => self::DAILY_FULL_CLEAR_BONUS_POINTS,
+                'daily_full_clear_bonus_earned' => (bool) $fullClearReward,
+                'daily_full_clear_bonus_title' => 'Full Clear Bonus',
+                'mission_streak' => $streakSummary,
             ],
         ];
     }
@@ -214,6 +237,8 @@ class DailyChallengeService
                         'reward_granted_at' => now(),
                     ]);
                 }
+
+                $this->awardDailyFullClearBonus($studentId);
             });
         }
     }
@@ -274,5 +299,218 @@ class DailyChallengeService
         $baseMeta['state'] = $isCompleted ? 'complete' : 'active';
 
         return $baseMeta;
+    }
+
+    private function awardDailyFullClearBonus(int $studentId): void
+    {
+        [$periodStart, $periodEnd] = $this->resolvePeriodWindow('daily');
+
+        $definitions = DailyChallengeDefinition::query()
+            ->where('is_active', true)
+            ->where('period_type', 'daily')
+            ->get(['challenge_definition_id']);
+
+        if ($definitions->isEmpty()) {
+            return;
+        }
+
+        $completedCount = DailyChallengeProgress::query()
+            ->where('student_id', $studentId)
+            ->whereIn('challenge_definition_id', $definitions->pluck('challenge_definition_id'))
+            ->whereDate('period_start', $periodStart->toDateString())
+            ->where('is_completed', true)
+            ->count();
+
+        if ($completedCount !== $definitions->count()) {
+            return;
+        }
+
+        $existingReward = DailyChallengeCycleReward::query()
+            ->where('student_id', $studentId)
+            ->where('period_type', 'daily')
+            ->whereDate('period_start', $periodStart->toDateString())
+            ->where('bonus_code', self::DAILY_FULL_CLEAR_BONUS_CODE)
+            ->lockForUpdate()
+            ->first();
+
+        if ($existingReward) {
+            return;
+        }
+
+        $student = StudentProfile::query()
+            ->where('student_id', $studentId)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$student) {
+            Log::warning('Daily full clear bonus skipped because student profile was missing', [
+                'student_id' => $studentId,
+            ]);
+
+            return;
+        }
+
+        $student->increment('current_points', self::DAILY_FULL_CLEAR_BONUS_POINTS);
+
+        DailyChallengeCycleReward::create([
+            'student_id' => $studentId,
+            'period_type' => 'daily',
+            'period_start' => $periodStart->toDateString(),
+            'period_end' => $periodEnd->toDateString(),
+            'bonus_code' => self::DAILY_FULL_CLEAR_BONUS_CODE,
+            'title' => 'Full Clear Bonus',
+            'reward_points' => self::DAILY_FULL_CLEAR_BONUS_POINTS,
+            'granted_at' => now(),
+            'metadata' => [
+                'completed_definitions' => $definitions->count(),
+            ],
+        ]);
+
+        Notification::createPoints(
+            (int) $student->user_Id,
+            self::DAILY_FULL_CLEAR_BONUS_POINTS,
+            'All daily missions completed'
+        );
+
+        Notification::createAchievement(
+            (int) $student->user_Id,
+            'Daily Full Clear',
+            'You completed every daily mission and earned a bonus reward.'
+        );
+
+        $this->awardMissionStreakMilestones($studentId, $student, $periodStart, $periodEnd);
+    }
+
+    private function awardMissionStreakMilestones(
+        int $studentId,
+        StudentProfile $student,
+        CarbonImmutable $periodStart,
+        CarbonImmutable $periodEnd
+    ): void {
+        $streakSummary = $this->getDailyMissionStreakSummary($studentId, $periodStart);
+        $currentStreak = $streakSummary['current_streak'] ?? 0;
+
+        foreach (self::DAILY_STREAK_MILESTONES as $days => $points) {
+            if ($currentStreak !== $days) {
+                continue;
+            }
+
+            $bonusCode = sprintf('daily_streak_%d', $days);
+            $existingReward = DailyChallengeCycleReward::query()
+                ->where('student_id', $studentId)
+                ->where('period_type', 'daily')
+                ->whereDate('period_start', $periodStart->toDateString())
+                ->where('bonus_code', $bonusCode)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingReward) {
+                continue;
+            }
+
+            $student->increment('current_points', $points);
+
+            DailyChallengeCycleReward::create([
+                'student_id' => $studentId,
+                'period_type' => 'daily',
+                'period_start' => $periodStart->toDateString(),
+                'period_end' => $periodEnd->toDateString(),
+                'bonus_code' => $bonusCode,
+                'title' => sprintf('%d-Day Mission Streak', $days),
+                'reward_points' => $points,
+                'granted_at' => now(),
+                'metadata' => [
+                    'streak_days' => $days,
+                ],
+            ]);
+
+            Notification::createPoints(
+                (int) $student->user_Id,
+                $points,
+                sprintf('%d-day mission streak reward', $days)
+            );
+
+            Notification::createAchievement(
+                (int) $student->user_Id,
+                sprintf('%d-Day Mission Streak', $days),
+                sprintf('You cleared every daily mission for %d days in a row.', $days)
+            );
+        }
+    }
+
+    private function getDailyMissionStreakSummary(int $studentId, ?CarbonImmutable $anchorDate = null): array
+    {
+        $anchor = ($anchorDate ?? CarbonImmutable::now(config('app.timezone')))->startOfDay();
+
+        $rewardDates = DailyChallengeCycleReward::query()
+            ->where('student_id', $studentId)
+            ->where('period_type', 'daily')
+            ->where('bonus_code', self::DAILY_FULL_CLEAR_BONUS_CODE)
+            ->orderByDesc('period_start')
+            ->pluck('period_start')
+            ->map(fn ($date) => CarbonImmutable::parse($date, config('app.timezone'))->toDateString())
+            ->values();
+
+        $rewardDateSet = array_flip($rewardDates->all());
+
+        $currentStreak = 0;
+        $cursor = $anchor;
+
+        while (isset($rewardDateSet[$cursor->toDateString()])) {
+            $currentStreak++;
+            $cursor = $cursor->subDay();
+        }
+
+        $bestStreak = 0;
+        $running = 0;
+        $previousDate = null;
+
+        foreach ($rewardDates->sort()->values() as $dateString) {
+            $currentDate = CarbonImmutable::parse($dateString, config('app.timezone'));
+
+            if ($previousDate && $previousDate->addDay()->toDateString() === $currentDate->toDateString()) {
+                $running++;
+            } else {
+                $running = 1;
+            }
+
+            $bestStreak = max($bestStreak, $running);
+            $previousDate = $currentDate;
+        }
+
+        $nextMilestoneDays = null;
+        $nextMilestonePoints = null;
+
+        foreach (self::DAILY_STREAK_MILESTONES as $days => $points) {
+            if ($currentStreak < $days) {
+                $nextMilestoneDays = $days;
+                $nextMilestonePoints = $points;
+                break;
+            }
+        }
+
+        $latestMilestone = null;
+        foreach (array_keys(self::DAILY_STREAK_MILESTONES) as $days) {
+            if ($currentStreak >= $days) {
+                $latestMilestone = $days;
+            }
+        }
+
+        return [
+            'current_streak' => $currentStreak,
+            'best_streak' => $bestStreak,
+            'next_milestone_days' => $nextMilestoneDays,
+            'next_milestone_points' => $nextMilestonePoints,
+            'days_to_next_milestone' => $nextMilestoneDays ? max(0, $nextMilestoneDays - $currentStreak) : 0,
+            'latest_milestone' => $latestMilestone,
+            'milestones' => collect(self::DAILY_STREAK_MILESTONES)
+                ->map(fn ($points, $days) => [
+                    'days' => (int) $days,
+                    'points' => $points,
+                    'earned' => $currentStreak >= (int) $days,
+                ])
+                ->values()
+                ->all(),
+        ];
     }
 }
