@@ -25,14 +25,26 @@ import {
   Brain
 } from 'lucide-react';
 
-export default function AdminDashboard({ auth = {}, stats = {} }) {
-    console.log('Dashboard Stats:', stats);
-    
+export default function AdminDashboard({ auth = {}, stats = {}, recentActivity = [], performance = [] }) {
     const defaultStats = {
         total_students: stats?.total_students ?? 0,
         total_lessons: stats?.total_lessons ?? 0,
         total_tests: stats?.total_tests ?? 0,
         active_students: stats?.active_students ?? 0,
+    };
+
+    const colorClasses = {
+        green: 'bg-green-500',
+        blue: 'bg-blue-500',
+        purple: 'bg-purple-500',
+        orange: 'bg-orange-500',
+        amber: 'bg-amber-500',
+    };
+
+    const performanceBarClasses = {
+        green: 'bg-green-500',
+        blue: 'bg-blue-500',
+        purple: 'bg-purple-500',
     };
     
     const user = auth?.user;
@@ -174,19 +186,19 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                                 <BarChart3 className="w-5 h-5 text-blue-600" />
                             </div>
-                            <span className="text-sm font-medium text-slate-900">Analytics</span>
+                            <span className="text-sm font-medium text-slate-900">Progress Reports</span>
                         </div>
                     </Link>
                     
                     <Link
-                        href={route('admin.student-paths.index')}
+                        href={route('admin.students.index')}
                         className="group bg-white border border-slate-200 rounded-xl p-4 hover:border-orange-300 hover:shadow-md transition-all"
                     >
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                                 <Users className="w-5 h-5 text-orange-600" />
                             </div>
-                            <span className="text-sm font-medium text-slate-900">Students</span>
+                            <span className="text-sm font-medium text-slate-900">Manage Students</span>
                         </div>
                     </Link>
 
@@ -255,14 +267,14 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                     </div>
                     <div className="space-y-2">
                         <Link
-                            href={route('admin.lessons.index')}
+                            href={route('admin.placement-tests.index')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
                         >
-                            <span>Manage Tests</span>
+                            <span>Placement Tests</span>
                             <Plus className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                         <Link
-                            href={route('admin.lessons.index')}
+                            href={route('admin.exercises.index')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
                         >
                             <span>Manage Exercises</span>
@@ -272,7 +284,7 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                             href={route('admin.progress.index')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
                         >
-                            <span>View Submissions</span>
+                            <span>Learning Progress</span>
                             <CheckCircle className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                     </div>
@@ -291,24 +303,24 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                     </div>
                     <div className="space-y-2">
                         <Link
+                            href={route('admin.students.index')}
+                            className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
+                        >
+                            <span>Manage Students</span>
+                            <UserCheck className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+                        </Link>
+                        <Link
                             href={route('admin.student-paths.index')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
                         >
                             <span>Student Paths</span>
-                            <UserCheck className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+                            <TrendingUp className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                         <Link
                             href={route('admin.progress.index')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
                         >
                             <span>Progress Reports</span>
-                            <TrendingUp className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
-                        </Link>
-                        <Link
-                            href={route('admin.student-paths.analytics')}
-                            className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
-                        >
-                            <span>Learning Analytics</span>
                             <BarChart3 className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                     </div>
@@ -384,10 +396,10 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                             <Eye className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                         <Link
-                            href={route('admin.student-paths.index')}
+                            href={route('admin.student-paths.analytics')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
                         >
-                            <span>Student Progress</span>
+                            <span>Path Analytics</span>
                             <TrendingUp className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                     </div>
@@ -409,21 +421,21 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                             href={route('forum.index')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-white/60 rounded-lg transition-colors group"
                         >
-                            <span>Forum Posts</span>
+                            <span>Moderate Forum</span>
                             <MessageSquare className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                         <Link
                             href={route('admin.forum.reports.index')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-white/60 rounded-lg transition-colors group"
                         >
-                            <span>Reports</span>
+                            <span>Forum Reports</span>
                             <Flag className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                         <Link
                             href={route('admin.ai-logs.index')}
                             className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-white/60 rounded-lg transition-colors group"
                         >
-                            <span>AI Logs</span>
+                            <span>AI Session Logs</span>
                             <Brain className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                     </div>
@@ -438,28 +450,21 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                         <h3 className="font-semibold text-slate-900">Recent Activity</h3>
                         <Activity className="w-5 h-5 text-slate-400" />
                     </div>
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                            <span className="text-sm text-slate-700 flex-1">New student registration</span>
-                            <span className="text-xs text-slate-500">2m ago</span>
+                    {recentActivity.length > 0 ? (
+                        <div className="space-y-3">
+                            {recentActivity.map((item, index) => (
+                                <div key={`${item.type}-${item.timestamp}-${index}`} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colorClasses[item.color] ?? 'bg-slate-400'}`} />
+                                    <span className="text-sm text-slate-700 flex-1">{item.message}</span>
+                                    <span className="text-xs text-slate-500 whitespace-nowrap">{item.time_ago ?? 'Just now'}</span>
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-                            <span className="text-sm text-slate-700 flex-1">Lesson completed</span>
-                            <span className="text-xs text-slate-500">5m ago</span>
+                    ) : (
+                        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                            No real activity yet. Once students start registering, learning, and posting, this feed will update automatically.
                         </div>
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0" />
-                            <span className="text-sm text-slate-700 flex-1">Test submitted</span>
-                            <span className="text-xs text-slate-500">8m ago</span>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                            <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" />
-                            <span className="text-sm text-slate-700 flex-1">New forum post created</span>
-                            <span className="text-xs text-slate-500">10m ago</span>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Performance Stats */}
@@ -468,40 +473,29 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                         <h3 className="font-semibold text-slate-900">Platform Performance</h3>
                         <BarChart3 className="w-5 h-5 text-slate-400" />
                     </div>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-600">Course Completion Rate</span>
-                                <span className="font-medium text-slate-900">68%</span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2">
-                                <div className="bg-green-500 h-2 rounded-full" style={{ width: '68%' }} />
-                            </div>
+                    {performance.length > 0 ? (
+                        <div className="space-y-4">
+                            {performance.map((metric) => (
+                                <div key={metric.label} className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-slate-600">{metric.label}</span>
+                                        <span className="font-medium text-slate-900">{metric.value}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className={`h-2 rounded-full ${performanceBarClasses[metric.color] ?? 'bg-slate-500'}`}
+                                            style={{ width: `${Math.max(0, Math.min(metric.value, 100))}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-slate-500">{metric.hint}</p>
+                                </div>
+                            ))}
                         </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-600">Test Pass Rate</span>
-                                <span className="font-medium text-slate-900">85%</span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2">
-                                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '85%' }} />
-                            </div>
+                    ) : (
+                        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                            No tracked performance metrics yet. This section will populate once lesson progress and test submissions start coming in.
                         </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-600">Student Engagement</span>
-                                <span className="font-medium text-slate-900">
-                                    {((defaultStats.active_students / Math.max(defaultStats.total_students, 1)) * 100).toFixed(0)}%
-                                </span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2">
-                                <div 
-                                    className="bg-purple-500 h-2 rounded-full" 
-                                    style={{ width: `${((defaultStats.active_students / Math.max(defaultStats.total_students, 1)) * 100).toFixed(0)}%` }} 
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -7,8 +7,11 @@ use Inertia\Inertia;
 use App\Models\User;
 use App\Models\Lesson;
 use App\Models\Test;
+use App\Models\ForumPost;
+use App\Models\ForumReply;
 use App\Models\LessonRegistration;
 use App\Models\LessonProgress;
+use App\Models\TestSubmission;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -100,6 +103,9 @@ class DashboardController extends Controller
             'active_students' => $this->getActiveStudents(),
         ];
 
+        $recentActivity = $this->getAdminRecentActivity();
+        $performance = $this->getAdminPerformanceMetrics($stats);
+
         return Inertia::render('Admin/Dashboard', [
             'auth' => [
                 'user' => [
@@ -110,6 +116,8 @@ class DashboardController extends Controller
                 ],
             ],
             'stats' => $stats,
+            'recentActivity' => $recentActivity,
+            'performance' => $performance,
         ]);
     }
 
@@ -278,5 +286,159 @@ class DashboardController extends Controller
 
         // 如果数据库是空的，至少返回0而不是错误
         return $activeCount;
+    }
+
+    private function getAdminRecentActivity(): array
+    {
+        $studentRegistrations = User::query()
+            ->where('role', 'student')
+            ->latest('created_at')
+            ->limit(4)
+            ->get(['user_Id', 'name', 'created_at'])
+            ->map(fn (User $student) => [
+                'type' => 'student_registration',
+                'message' => "{$student->name} joined the platform",
+                'timestamp' => $student->created_at,
+                'time_ago' => $student->created_at?->diffForHumans(),
+                'color' => 'green',
+            ]);
+
+        $lessonCompletions = LessonProgress::query()
+            ->with(['student.user:user_Id,name', 'lesson:lesson_id,title'])
+            ->where('status', 'completed')
+            ->whereNotNull('completed_at')
+            ->latest('completed_at')
+            ->limit(4)
+            ->get()
+            ->map(function (LessonProgress $progress) {
+                $studentName = $progress->student?->user?->name ?? 'A student';
+                $lessonTitle = $progress->lesson?->title ?? 'a lesson';
+                $timestamp = $progress->completed_at ?? $progress->updated_at;
+
+                return [
+                    'type' => 'lesson_completed',
+                    'message' => "{$studentName} completed {$lessonTitle}",
+                    'timestamp' => $timestamp,
+                    'time_ago' => $timestamp?->diffForHumans(),
+                    'color' => 'blue',
+                ];
+            });
+
+        $testSubmissions = TestSubmission::query()
+            ->with(['studentProfile.user:user_Id,name', 'test:test_id,title'])
+            ->whereIn('status', [TestSubmission::STATUS_SUBMITTED, TestSubmission::STATUS_TIMEOUT])
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->limit(4)
+            ->get()
+            ->map(function (TestSubmission $submission) {
+                $studentName = $submission->studentProfile?->user?->name ?? 'A student';
+                $testTitle = $submission->test?->title ?? 'a test';
+                $timestamp = $submission->submitted_at;
+
+                return [
+                    'type' => 'test_submitted',
+                    'message' => "{$studentName} submitted {$testTitle}",
+                    'timestamp' => $timestamp,
+                    'time_ago' => $timestamp?->diffForHumans(),
+                    'color' => 'purple',
+                ];
+            });
+
+        $forumPosts = ForumPost::query()
+            ->with('user:user_Id,name')
+            ->latest('created_at')
+            ->limit(3)
+            ->get()
+            ->map(function (ForumPost $post) {
+                $authorName = $post->user?->name ?? 'A user';
+
+                return [
+                    'type' => 'forum_post',
+                    'message' => "{$authorName} posted in the forum",
+                    'timestamp' => $post->created_at,
+                    'time_ago' => $post->created_at?->diffForHumans(),
+                    'color' => 'orange',
+                ];
+            });
+
+        $forumReplies = ForumReply::query()
+            ->with('user:user_Id,name')
+            ->latest('created_at')
+            ->limit(3)
+            ->get()
+            ->map(function (ForumReply $reply) {
+                $authorName = $reply->user?->name ?? 'A user';
+
+                return [
+                    'type' => 'forum_reply',
+                    'message' => "{$authorName} replied in the forum",
+                    'timestamp' => $reply->created_at,
+                    'time_ago' => $reply->created_at?->diffForHumans(),
+                    'color' => 'amber',
+                ];
+            });
+
+        return collect()
+            ->concat($studentRegistrations)
+            ->concat($lessonCompletions)
+            ->concat($testSubmissions)
+            ->concat($forumPosts)
+            ->concat($forumReplies)
+            ->filter(fn (array $item) => $item['timestamp'] !== null)
+            ->sortByDesc('timestamp')
+            ->take(6)
+            ->values()
+            ->map(fn (array $item) => [
+                ...$item,
+                'timestamp' => $item['timestamp']->toIso8601String(),
+            ])
+            ->all();
+    }
+
+    private function getAdminPerformanceMetrics(array $stats): array
+    {
+        $lessonProgressCount = LessonProgress::query()->count();
+        $completedLessonCount = LessonProgress::query()
+            ->where('status', 'completed')
+            ->count();
+        $courseCompletionRate = $lessonProgressCount > 0
+            ? round(($completedLessonCount / $lessonProgressCount) * 100)
+            : 0;
+
+        $completedSubmissionQuery = TestSubmission::query()
+            ->whereIn('status', [TestSubmission::STATUS_SUBMITTED, TestSubmission::STATUS_TIMEOUT]);
+        $completedSubmissionCount = (clone $completedSubmissionQuery)->count();
+        $passedSubmissionCount = (clone $completedSubmissionQuery)
+            ->whereRaw('score >= (SELECT passing_score FROM tests WHERE test_id = test_submissions.test_id)')
+            ->count();
+        $testPassRate = $completedSubmissionCount > 0
+            ? round(($passedSubmissionCount / $completedSubmissionCount) * 100)
+            : 0;
+
+        $studentEngagement = $stats['total_students'] > 0
+            ? round(($stats['active_students'] / $stats['total_students']) * 100)
+            : 0;
+
+        return [
+            [
+                'label' => 'Course Completion Rate',
+                'value' => $courseCompletionRate,
+                'color' => 'green',
+                'hint' => "{$completedLessonCount} completed out of {$lessonProgressCount} tracked lesson journeys",
+            ],
+            [
+                'label' => 'Test Pass Rate',
+                'value' => $testPassRate,
+                'color' => 'blue',
+                'hint' => "{$passedSubmissionCount} passed out of {$completedSubmissionCount} submitted attempts",
+            ],
+            [
+                'label' => 'Student Engagement',
+                'value' => $studentEngagement,
+                'color' => 'purple',
+                'hint' => "{$stats['active_students']} active students in the last 7 days",
+            ],
+        ];
     }
 }

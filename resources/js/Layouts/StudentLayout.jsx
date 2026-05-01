@@ -27,6 +27,7 @@ import {
   History,
   MessageCircle,
   LogOut,
+  ChevronDown,
   ChevronRight
 } from 'lucide-react';
 import { useEquip } from '@/Contexts/EquipContext';
@@ -145,11 +146,19 @@ function StudentLayoutContent({ header, children }) {
     },
     { 
       href: 'student.paths.index',
-      label: 'Learning Paths', 
+      label: 'Paths', 
       icon: GraduationCap,
       current: 'student.paths.*'
     },
   ];
+
+  const desktopPrimaryNavItems = mainNavItems.filter((item) =>
+    ['dashboard', 'lessons.index', 'forum.index', 'student.missions.index', 'student.paths.index'].includes(item.href)
+  );
+
+  const desktopOverflowNavItems = mainNavItems.filter((item) =>
+    ['student.rewards.index', 'student.inventory.index'].includes(item.href)
+  );
 
   return (
     <>
@@ -173,7 +182,7 @@ function StudentLayoutContent({ header, children }) {
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-xl hover-lift ripple-effect">
                     <ApplicationLogo className="w-6 h-6 text-white drop-shadow-lg" />
                   </div>
-                  <div className="hidden lg:block">
+                  <div className="hidden xl:block">
                     <span className="text-lg font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
                       LearnHub
                     </span>
@@ -185,9 +194,9 @@ function StudentLayoutContent({ header, children }) {
               </div>
               
               {/* Desktop Navigation */}
-              <div className="hidden lg:flex items-center justify-center flex-1 px-8">
-                <div className="flex items-center space-x-1">
-                  {mainNavItems.map((item) => {
+              <div className="hidden xl:flex items-center justify-center flex-1 px-4">
+                <div className="flex items-center space-x-1.5">
+                  {desktopPrimaryNavItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = route().current(item.current);
                     
@@ -198,7 +207,7 @@ function StudentLayoutContent({ header, children }) {
                         onMouseEnter={() => playSFX('hover')}
                         onClick={() => playSFX('nav')}
                         className={`
-                          flex items-center space-x-2 px-4 py-2.5 rounded-xl
+                          flex items-center space-x-2 px-3.5 py-2.5 rounded-xl
                           transition-all duration-200 font-bold relative
                           overflow-visible
                           ripple-effect button-press-effect
@@ -215,11 +224,67 @@ function StudentLayoutContent({ header, children }) {
                       </Link>
                     );
                   })}
+
+                  {desktopOverflowNavItems.length > 0 && (
+                    <Dropdown>
+                      <Dropdown.Trigger>
+                        <button
+                          type="button"
+                          onMouseEnter={() => playSFX('hover')}
+                          onClick={() => playSFX('dropdown')}
+                          className={`
+                            flex items-center space-x-2 px-3.5 py-2.5 rounded-xl
+                            transition-all duration-200 font-bold relative
+                            overflow-visible
+                            ripple-effect button-press-effect
+                            ${desktopOverflowNavItems.some((item) => route().current(item.current))
+                              ? 'bg-white/20 text-white border border-white/30 shadow-md backdrop-blur-sm'
+                              : 'text-white/95 hover:text-white hover:bg-white/20 glow-on-hover'
+                            }
+                          `}
+                        >
+                          <span className="text-sm whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                            More
+                          </span>
+                          <ChevronDown className="w-4 h-4 flex-shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]" />
+                        </button>
+                      </Dropdown.Trigger>
+
+                      <Dropdown.Content className="w-56 bg-white/95 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="p-2">
+                          {desktopOverflowNavItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = route().current(item.current);
+
+                            return (
+                              <Dropdown.Link
+                                key={item.href}
+                                href={route(item.href)}
+                                onMouseEnter={() => playSFX('hover')}
+                                onClick={() => playSFX('nav')}
+                                className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${
+                                  isActive
+                                    ? 'bg-slate-900 text-white'
+                                    : 'text-slate-700 hover:text-slate-900 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <Icon className="w-5 h-5 flex-shrink-0" />
+                                  <span className="font-medium">{item.label}</span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </Dropdown.Link>
+                            );
+                          })}
+                        </div>
+                      </Dropdown.Content>
+                    </Dropdown>
+                  )}
                 </div>
               </div>
 
               {/* Right Side Actions */}
-              <div className="flex items-center space-x-3 flex-shrink-0">
+              <div className="flex items-center space-x-2 flex-shrink-0">
                 
                 {/* Search Bar */}
                 <SearchBar />
@@ -234,7 +299,7 @@ function StudentLayoutContent({ header, children }) {
                       className="
                         flex items-center gap-2 
                         bg-gradient-to-r from-yellow-500 to-orange-500 
-                        px-4 py-2 rounded-lg 
+                        px-3 py-2 rounded-lg 
                         hover:from-yellow-600 hover:to-orange-600 
                         transition-all duration-200 
                         shadow-xl hover:shadow-2xl hover:scale-105
@@ -257,7 +322,7 @@ function StudentLayoutContent({ header, children }) {
                     <GameControlPanel />
 
                     {/* User Avatar Dropdown */}
-                    <div className="hidden lg:block">
+                    <div className="hidden xl:block">
                       <Dropdown>
                         <Dropdown.Trigger>
                           <button
@@ -406,7 +471,7 @@ function StudentLayoutContent({ header, children }) {
 
                 {/* Mobile Menu Button */}
                 <button 
-                  className="lg:hidden text-white p-2 rounded-lg hover:bg-white/25 backdrop-blur-sm transition-all duration-200 flex-shrink-0 shadow-lg ripple-effect button-press-effect"
+                  className="xl:hidden text-white p-2 rounded-lg hover:bg-white/25 backdrop-blur-sm transition-all duration-200 flex-shrink-0 shadow-lg ripple-effect button-press-effect"
                   onClick={() => {
                     playSFX('click');
                     setShowingNavigationDropdown(!showingNavigationDropdown);
@@ -422,7 +487,7 @@ function StudentLayoutContent({ header, children }) {
 
             {/* Mobile Menu */}
             {showingNavigationDropdown && (
-              <div className="lg:hidden bg-black/85 backdrop-blur-xl rounded-2xl my-4 p-4 border border-white/20 shadow-2xl animate-slideDown">
+              <div className="xl:hidden bg-black/85 backdrop-blur-xl rounded-2xl my-4 p-4 border border-white/20 shadow-2xl animate-slideDown">
                 {isAuthenticated && (
                   <div className="mb-4 pb-4 border-b border-white/20">
                     <div className="flex items-center space-x-3">
