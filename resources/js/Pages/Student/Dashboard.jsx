@@ -318,6 +318,14 @@ export default function StudentDashboard({
                         </p>
                     </div>
 
+                    <Link
+                        href={route('student.missions.index')}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+                    >
+                        Open Mission Center
+                        <ArrowRight className="w-4 h-4" />
+                    </Link>
+
                     <div className="grid grid-cols-2 gap-4 min-w-[280px]">
                         <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
                             <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Daily Clear</div>

@@ -118,6 +118,12 @@ function StudentLayoutContent({ header, children }) {
       current: 'forum.*'
     },
     { 
+      href: 'student.missions.index',
+      label: 'Missions',
+      icon: Calendar,
+      current: 'student.missions.*'
+    },
+    { 
       href: 'student.rewards.index', 
       label: 'Rewards', 
       icon: ShoppingBag,

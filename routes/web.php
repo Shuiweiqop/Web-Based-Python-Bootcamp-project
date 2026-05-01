@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Student\OnboardingController;
 use App\Http\Controllers\Student\LearningPathController;
+use App\Http\Controllers\Student\MissionController;
 use App\Http\Controllers\GeminiController;
 use App\Http\Controllers\AdminAILogController;
 use App\Http\Controllers\AdminLearningPathController;
@@ -138,6 +139,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{path}/resume', [LearningPathController::class, 'resume'])->name('resume');
             Route::post('/{path}/set-primary', [LearningPathController::class, 'setAsPrimary'])->name('set-primary');
         });
+
+        Route::get('/missions', [MissionController::class, 'index'])->name('missions.index');
+        Route::get('/missions/history', [MissionController::class, 'history'])->name('missions.history');
+        Route::get('/missions/archive', [MissionController::class, 'archive'])->name('missions.archive');
 
         // ==================== 学生个人资料路由 ====================
         Route::prefix('profile')->name('profile.')->group(function () {
