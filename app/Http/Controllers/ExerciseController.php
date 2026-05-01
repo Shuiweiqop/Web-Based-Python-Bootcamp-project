@@ -105,9 +105,11 @@ class ExerciseController extends Controller
                     'was_recently_created' => $submission->wasRecentlyCreated,
                 ]);
 
+                $missionProgress = null;
+
                 if ($submission->completed) {
                     try {
-                        $this->dailyChallengeService->recordExerciseCompletion(
+                        $missionProgress = $this->dailyChallengeService->recordExerciseCompletion(
                             (int) $student->student_id,
                             (int) $submission->submission_id
                         );
@@ -136,6 +138,7 @@ class ExerciseController extends Controller
                 $response = [
                     'success' => true,
                     'message' => 'Exercise completed successfully!',
+                    'mission_progress' => $missionProgress,
                     'submission' => [
                         'submission_id' => $submission->submission_id,
                         'score' => $submission->score,

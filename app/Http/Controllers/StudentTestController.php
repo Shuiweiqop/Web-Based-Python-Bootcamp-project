@@ -405,13 +405,15 @@ class StudentTestController extends Controller
 
         DB::beginTransaction();
         try {
+            $missionProgress = null;
+
             // Grade the submission
             $this->gradeSubmission($submission);
             $submission->refresh();
 
             if ($submission->score >= $submission->test->passing_score) {
                 try {
-                    $this->dailyChallengeService->recordTestPassed(
+                    $missionProgress = $this->dailyChallengeService->recordTestPassed(
                         (int) $studentId,
                         (int) $submission->submission_id
                     );
@@ -427,7 +429,8 @@ class StudentTestController extends Controller
             DB::commit();
 
             return redirect()->route('student.submissions.result', ['submission' => $submission->submission_id])
-                ->with('success', 'Test submitted successfully!');
+                ->with('success', 'Test submitted successfully!')
+                ->with('missionProgress', $missionProgress);
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Failed to complete test: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);

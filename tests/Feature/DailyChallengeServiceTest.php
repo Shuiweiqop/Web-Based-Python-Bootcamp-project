@@ -29,8 +29,8 @@ class DailyChallengeServiceTest extends TestCase
     {
         $student = $this->createStudent();
 
-        $this->service->recordExerciseCompletion($student->student_id, 501);
-        $this->service->recordExerciseCompletion($student->student_id, 501);
+        $summary = $this->service->recordExerciseCompletion($student->student_id, 501);
+        $duplicateSummary = $this->service->recordExerciseCompletion($student->student_id, 501);
 
         $student->refresh();
 
@@ -41,6 +41,12 @@ class DailyChallengeServiceTest extends TestCase
         $this->assertSame(30, $student->current_points);
         $this->assertSame(3, DailyChallengeProgress::where('student_id', $student->student_id)->count());
         $this->assertSame(3, DailyChallengeEvent::where('student_id', $student->student_id)->count());
+        $this->assertTrue($summary['show_toast']);
+        $this->assertSame(30, $summary['points_earned']);
+        $this->assertCount(3, $summary['missions_updated']);
+        $this->assertFalse($duplicateSummary['show_toast']);
+        $this->assertSame(0, $duplicateSummary['points_earned']);
+        $this->assertCount(0, $duplicateSummary['missions_updated']);
 
         $this->assertProgressState($student->student_id, $focusSprint->challenge_definition_id, 1, true, true);
         $this->assertProgressState($student->student_id, $practiceCombo->challenge_definition_id, 1, false, false);

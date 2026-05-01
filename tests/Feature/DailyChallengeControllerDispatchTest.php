@@ -60,7 +60,16 @@ class DailyChallengeControllerDispatchTest extends TestCase
             ->with(
                 $student->student_id,
                 Mockery::on(fn ($submissionId) => is_int($submissionId) && $submissionId > 0)
-            );
+            )
+            ->andReturn([
+                'show_toast' => true,
+                'points_earned' => 30,
+                'missions_updated' => [
+                    ['title' => 'Focus Sprint', 'current_count' => 1, 'target_count' => 1],
+                ],
+                'missions_completed' => [],
+                'bonuses_earned' => [],
+            ]);
         $this->app->instance(DailyChallengeService::class, $mock);
 
         $response = $this->actingAs($user)->postJson(
@@ -75,7 +84,13 @@ class DailyChallengeControllerDispatchTest extends TestCase
         );
 
         $response->assertOk()
-            ->assertJson(['success' => true]);
+            ->assertJson([
+                'success' => true,
+                'mission_progress' => [
+                    'show_toast' => true,
+                    'points_earned' => 30,
+                ],
+            ]);
     }
 
     public function test_student_test_complete_dispatches_test_passed_challenge(): void
@@ -138,12 +153,20 @@ class DailyChallengeControllerDispatchTest extends TestCase
         $mock = Mockery::mock(DailyChallengeService::class);
         $mock->shouldReceive('recordTestPassed')
             ->once()
-            ->with($student->student_id, $submission->submission_id);
+            ->with($student->student_id, $submission->submission_id)
+            ->andReturn([
+                'show_toast' => true,
+                'points_earned' => 45,
+                'missions_updated' => [],
+                'missions_completed' => [],
+                'bonuses_earned' => [],
+            ]);
         $this->app->instance(DailyChallengeService::class, $mock);
 
         $response = $this->actingAs($user)->post("/student/submissions/{$submission->submission_id}/complete");
 
         $response->assertRedirect("/student/submissions/{$submission->submission_id}/result");
+        $this->assertSame(45, session('missionProgress.points_earned'));
     }
 
     public function test_forum_reply_dispatches_forum_reply_challenge_for_students(): void
@@ -158,8 +181,22 @@ class DailyChallengeControllerDispatchTest extends TestCase
             'category' => 'help',
         ]);
 
-        $spy = Mockery::spy(DailyChallengeService::class);
-        $this->app->instance(DailyChallengeService::class, $spy);
+        $mock = Mockery::mock(DailyChallengeService::class);
+        $mock->shouldReceive('recordForumReplyCreated')
+            ->once()
+            ->withArgs(function ($studentId, $replyId) use ($student) {
+                return $studentId === $student->student_id
+                    && is_int($replyId)
+                    && $replyId > 0;
+            })
+            ->andReturn([
+                'show_toast' => true,
+                'points_earned' => 25,
+                'missions_updated' => [],
+                'missions_completed' => [],
+                'bonuses_earned' => [],
+            ]);
+        $this->app->instance(DailyChallengeService::class, $mock);
 
         $response = $this->actingAs($user)->post("/forum/{$post->post_id}/reply", [
             'content' => 'Loops repeat a block of code.',
@@ -167,13 +204,7 @@ class DailyChallengeControllerDispatchTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $spy->shouldHaveReceived('recordForumReplyCreated')
-            ->once()
-            ->withArgs(function ($studentId, $replyId) use ($student) {
-                return $studentId === $student->student_id
-                    && is_int($replyId)
-                    && $replyId > 0;
-            });
+        $this->assertSame(25, session('missionProgress.points_earned'));
     }
 
     private function createVerifiedStudent(): User

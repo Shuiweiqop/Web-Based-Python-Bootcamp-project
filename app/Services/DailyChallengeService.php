@@ -111,19 +111,19 @@ class DailyChallengeService
         ];
     }
 
-    public function recordExerciseCompletion(int $studentId, int|string $submissionId): void
+    public function recordExerciseCompletion(int $studentId, int|string $submissionId): array
     {
-        $this->recordAction($studentId, 'exercise_completed', 'exercise_submission', $submissionId);
+        return $this->recordAction($studentId, 'exercise_completed', 'exercise_submission', $submissionId);
     }
 
-    public function recordTestPassed(int $studentId, int|string $submissionId): void
+    public function recordTestPassed(int $studentId, int|string $submissionId): array
     {
-        $this->recordAction($studentId, 'test_passed', 'test_submission', $submissionId);
+        return $this->recordAction($studentId, 'test_passed', 'test_submission', $submissionId);
     }
 
-    public function recordForumReplyCreated(int $studentId, int|string $replyId): void
+    public function recordForumReplyCreated(int $studentId, int|string $replyId): array
     {
-        $this->recordAction($studentId, 'forum_reply_created', 'forum_reply', $replyId);
+        return $this->recordAction($studentId, 'forum_reply_created', 'forum_reply', $replyId);
     }
 
     private function recordAction(
@@ -131,7 +131,9 @@ class DailyChallengeService
         string $actionType,
         string $sourceType,
         int|string $sourceId
-    ): void {
+    ): array {
+        $summary = $this->makeMissionProgressSummary($actionType, $sourceType, $sourceId);
+
         $definitions = DailyChallengeDefinition::query()
             ->where('is_active', true)
             ->where('action_type', $actionType)
@@ -139,11 +141,11 @@ class DailyChallengeService
             ->get();
 
         if ($definitions->isEmpty()) {
-            return;
+            return $summary;
         }
 
         foreach ($definitions as $definition) {
-            DB::transaction(function () use ($studentId, $definition, $sourceType, $sourceId): void {
+            DB::transaction(function () use ($studentId, $definition, $sourceType, $sourceId, &$summary): void {
                 [$periodStart, $periodEnd] = $this->resolvePeriodWindow($definition->period_type);
 
                 $progress = DailyChallengeProgress::query()
@@ -194,11 +196,13 @@ class DailyChallengeService
                     throw $exception;
                 }
 
+                $wasCompleted = (bool) $progress->is_completed;
+                $rewardWasGranted = (bool) $progress->reward_granted;
                 $newCount = min($definition->target_count, $progress->current_count + 1);
-                $isCompleted = $progress->is_completed || $newCount >= $definition->target_count;
+                $isCompleted = $wasCompleted || $newCount >= $definition->target_count;
                 $completedAt = $progress->completed_at;
 
-                if (!$progress->is_completed && $isCompleted) {
+                if (!$wasCompleted && $isCompleted) {
                     $completedAt = now();
                 }
 
@@ -209,6 +213,7 @@ class DailyChallengeService
                     'last_event_at' => now(),
                 ]);
 
+                $awardedPoints = 0;
                 if ($isCompleted && !$progress->reward_granted && $definition->reward_points > 0) {
                     $student = StudentProfile::query()
                         ->where('student_id', $studentId)
@@ -220,27 +225,46 @@ class DailyChallengeService
                             'student_id' => $studentId,
                             'challenge_definition_id' => $definition->challenge_definition_id,
                         ]);
+                    } else {
+                        $student->increment('current_points', $definition->reward_points);
+                        $awardedPoints = (int) $definition->reward_points;
 
-                        return;
+                        Notification::createPoints(
+                            (int) $student->user_Id,
+                            (int) $definition->reward_points,
+                            'Challenge complete: ' . $definition->title
+                        );
+
+                        $progress->update([
+                            'reward_granted' => true,
+                            'reward_granted_at' => now(),
+                        ]);
                     }
-
-                    $student->increment('current_points', $definition->reward_points);
-
-                    Notification::createPoints(
-                        (int) $student->user_Id,
-                        (int) $definition->reward_points,
-                        'Challenge complete: ' . $definition->title
-                    );
-
-                    $progress->update([
-                        'reward_granted' => true,
-                        'reward_granted_at' => now(),
-                    ]);
                 }
 
-                $this->awardDailyFullClearBonus($studentId);
+                $progress->refresh();
+
+                $missionUpdate = $this->formatMissionProgressItem(
+                    $definition,
+                    $progress,
+                    !$wasCompleted && $isCompleted,
+                    !$rewardWasGranted && $progress->reward_granted
+                );
+
+                $summary['missions_updated'][] = $missionUpdate;
+                if ($missionUpdate['just_completed']) {
+                    $summary['missions_completed'][] = $missionUpdate;
+                }
+                $summary['points_earned'] += $awardedPoints;
+
+                foreach ($this->awardDailyFullClearBonus($studentId) as $bonus) {
+                    $summary['bonuses_earned'][] = $bonus;
+                    $summary['points_earned'] += (int) ($bonus['points'] ?? 0);
+                }
             });
         }
+
+        return $this->finalizeMissionProgressSummary($summary);
     }
 
     private function resolvePeriodWindow(string $periodType): array
@@ -301,7 +325,7 @@ class DailyChallengeService
         return $baseMeta;
     }
 
-    private function awardDailyFullClearBonus(int $studentId): void
+    private function awardDailyFullClearBonus(int $studentId): array
     {
         [$periodStart, $periodEnd] = $this->resolvePeriodWindow('daily');
 
@@ -311,7 +335,7 @@ class DailyChallengeService
             ->get(['challenge_definition_id']);
 
         if ($definitions->isEmpty()) {
-            return;
+            return [];
         }
 
         $completedCount = DailyChallengeProgress::query()
@@ -322,7 +346,7 @@ class DailyChallengeService
             ->count();
 
         if ($completedCount !== $definitions->count()) {
-            return;
+            return [];
         }
 
         $existingReward = DailyChallengeCycleReward::query()
@@ -334,7 +358,7 @@ class DailyChallengeService
             ->first();
 
         if ($existingReward) {
-            return;
+            return [];
         }
 
         $student = StudentProfile::query()
@@ -347,7 +371,7 @@ class DailyChallengeService
                 'student_id' => $studentId,
             ]);
 
-            return;
+            return [];
         }
 
         $student->increment('current_points', self::DAILY_FULL_CLEAR_BONUS_POINTS);
@@ -378,7 +402,17 @@ class DailyChallengeService
             'You completed every daily mission and earned a bonus reward.'
         );
 
-        $this->awardMissionStreakMilestones($studentId, $student, $periodStart, $periodEnd);
+        $bonuses = [[
+            'code' => self::DAILY_FULL_CLEAR_BONUS_CODE,
+            'type' => 'full_clear',
+            'title' => 'Full Clear Bonus',
+            'points' => self::DAILY_FULL_CLEAR_BONUS_POINTS,
+        ]];
+
+        return array_merge(
+            $bonuses,
+            $this->awardMissionStreakMilestones($studentId, $student, $periodStart, $periodEnd)
+        );
     }
 
     private function awardMissionStreakMilestones(
@@ -386,9 +420,10 @@ class DailyChallengeService
         StudentProfile $student,
         CarbonImmutable $periodStart,
         CarbonImmutable $periodEnd
-    ): void {
+    ): array {
         $streakSummary = $this->getDailyMissionStreakSummary($studentId, $periodStart);
         $currentStreak = $streakSummary['current_streak'] ?? 0;
+        $bonuses = [];
 
         foreach (self::DAILY_STREAK_MILESTONES as $days => $points) {
             if ($currentStreak !== $days) {
@@ -435,7 +470,87 @@ class DailyChallengeService
                 sprintf('%d-Day Mission Streak', $days),
                 sprintf('You cleared every daily mission for %d days in a row.', $days)
             );
+
+            $bonuses[] = [
+                'code' => $bonusCode,
+                'type' => 'streak',
+                'title' => sprintf('%d-Day Mission Streak', $days),
+                'points' => $points,
+                'streak_days' => $days,
+            ];
         }
+
+        return $bonuses;
+    }
+
+    private function makeMissionProgressSummary(string $actionType, string $sourceType, int|string $sourceId): array
+    {
+        return [
+            'show_toast' => false,
+            'action_type' => $actionType,
+            'source_type' => $sourceType,
+            'source_id' => (string) $sourceId,
+            'points_earned' => 0,
+            'missions_updated' => [],
+            'missions_completed' => [],
+            'bonuses_earned' => [],
+        ];
+    }
+
+    private function formatMissionProgressItem(
+        DailyChallengeDefinition $definition,
+        DailyChallengeProgress $progress,
+        bool $justCompleted,
+        bool $justRewarded
+    ): array {
+        $currentCount = min((int) $definition->target_count, (int) $progress->current_count);
+        $targetCount = max(1, (int) $definition->target_count);
+        $remainingCount = max(0, $targetCount - $currentCount);
+
+        return [
+            'id' => $definition->challenge_definition_id,
+            'code' => $definition->code,
+            'title' => $definition->title,
+            'description' => $definition->description,
+            'period_type' => $definition->period_type,
+            'action_type' => $definition->action_type,
+            'current_count' => $currentCount,
+            'target_count' => $targetCount,
+            'remaining_count' => $remainingCount,
+            'progress_percent' => (int) round(($currentCount / $targetCount) * 100),
+            'reward_points' => (int) $definition->reward_points,
+            'is_completed' => (bool) $progress->is_completed,
+            'reward_granted' => (bool) $progress->reward_granted,
+            'just_completed' => $justCompleted,
+            'just_rewarded' => $justRewarded,
+            'status_label' => $progress->reward_granted
+                ? 'Reward sent'
+                : ($progress->is_completed ? 'Completed' : ($remainingCount === 0 ? 'Ready' : $remainingCount . ' to go')),
+            'category' => $this->resolveCategory($definition->action_type),
+            'ui' => $this->resolveUiMeta($definition->action_type, $definition->period_type, (bool) $progress->is_completed),
+        ];
+    }
+
+    private function finalizeMissionProgressSummary(array $summary): array
+    {
+        $summary['missions_updated'] = collect($summary['missions_updated'])
+            ->unique('id')
+            ->values()
+            ->all();
+
+        $summary['missions_completed'] = collect($summary['missions_completed'])
+            ->unique('id')
+            ->values()
+            ->all();
+
+        $summary['bonuses_earned'] = collect($summary['bonuses_earned'])
+            ->unique('code')
+            ->values()
+            ->all();
+
+        $summary['show_toast'] = !empty($summary['missions_updated']) || !empty($summary['bonuses_earned']);
+
+        return $summary;
     }
 
     private function getDailyMissionStreakSummary(int $studentId, ?CarbonImmutable $anchorDate = null): array

@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import { Head } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle, Trophy } from 'lucide-react';
 import axios from 'axios';
+import MissionProgressToast from '@/Components/Student/Missions/MissionProgressToast';
 import StudentLayout from '@/Layouts/StudentLayout';
 
 // 导入拆分后的组件
@@ -28,6 +29,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const [finalScore, setFinalScore] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [missionProgress, setMissionProgress] = useState(null);
 
   // 🔥 检查 exercise 类型
   const isCodingExercise = exercise.exercise_type === 'coding' || exercise.type === 'coding';
@@ -93,6 +95,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
 
       console.log('✅ Submission successful:', data);
       setSubmissionResult(data);
+      setMissionProgress(data.mission_progress ?? null);
 
       // 🎉 课程完成提示
       if (data.lesson_progress?.lesson_completed) {
@@ -284,6 +287,10 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     return (
       <StudentLayout user={auth.user}>
         <Head title={`${exercise.title} - ${lesson.title}`} />
+        <MissionProgressToast
+          payload={missionProgress}
+          onDismiss={() => setMissionProgress(null)}
+        />
         {gameCompleted ? renderCompletionScreen() : renderGameContent()}
       </StudentLayout>
     );
@@ -293,6 +300,10 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   return (
     <StudentLayout user={auth.user}>
       <Head title={`${exercise.title} - ${lesson.title}`} />
+      <MissionProgressToast
+        payload={missionProgress}
+        onDismiss={() => setMissionProgress(null)}
+      />
       
       <div className="max-w-6xl mx-auto p-6">
         {/* 游戏头部 */}

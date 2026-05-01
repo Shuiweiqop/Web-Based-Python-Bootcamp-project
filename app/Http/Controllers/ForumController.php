@@ -524,13 +524,15 @@ class ForumController extends Controller
             }
 
             // ✅ 更新学生活跃度
+            $missionProgress = null;
+
             if (ForumHelper::isStudent()) {
                 $student = ForumHelper::getCurrentStudentProfile();
                 $student?->updateStreak();
 
                 if ($student) {
                     try {
-                        app(DailyChallengeService::class)->recordForumReplyCreated(
+                        $missionProgress = app(DailyChallengeService::class)->recordForumReplyCreated(
                             (int) $student->student_id,
                             (int) $reply->reply_id
                         );
@@ -598,6 +600,7 @@ class ForumController extends Controller
 
             return back()->with([
                 'success' => 'Reply posted successfully!',
+                'missionProgress' => $missionProgress,
                 'post' => $post, // ✅ 返回更新后的帖子数据
             ]);
         } catch (\Exception $e) {

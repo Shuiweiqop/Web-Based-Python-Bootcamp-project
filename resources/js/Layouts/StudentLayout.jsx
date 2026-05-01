@@ -2,11 +2,12 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import BackgroundContainer from './Components/BackgroundContainer';
 import GameControlPanel from '@/Components/GameControlPanel';
+import MissionProgressToast from '@/Components/Student/Missions/MissionProgressToast';
 import SearchBar from '@/Components/SearchBar';
 import NotificationBell from '@/Components/NotificationBell';
 import ProvidersWrapper from './ProvidersWrapper';
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Search, 
   User, 
@@ -87,15 +88,22 @@ function AvatarDisplay({ size = 'default', className = '' }) {
  * 这个组件在 Providers 内部，可以使用所有 Contexts
  */
 function StudentLayoutContent({ header, children }) {
-  const { auth } = usePage().props;
+  const { auth, flash } = usePage().props;
   const { equipped } = useEquip();
   const { playSFX } = useSFX();
   const user = auth?.user;
   
   const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
+  const [activeMissionProgress, setActiveMissionProgress] = useState(null);
 
   const isAuthenticated = Boolean(user && (user.id || user.user_Id));
   const studentPoints = user?.student_profile?.current_points || 0;
+
+  useEffect(() => {
+    if (flash?.missionProgress?.show_toast) {
+      setActiveMissionProgress(flash.missionProgress);
+    }
+  }, [flash?.missionProgress]);
 
   // ✅ Navigation items configuration
   const mainNavItems = [
@@ -509,6 +517,11 @@ function StudentLayoutContent({ header, children }) {
 
       {/* ✅ Layer 3: 内容层（z-0） */}
       <div className="relative z-0 min-h-screen">
+        <MissionProgressToast
+          payload={activeMissionProgress}
+          onDismiss={() => setActiveMissionProgress(null)}
+        />
+
         {/* Header */}
         {header && (
           <header className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
