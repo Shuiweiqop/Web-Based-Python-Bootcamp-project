@@ -12,6 +12,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentProfileController;
 use App\Http\Controllers\AdminRewardController;
+use App\Http\Controllers\AdminDailyChallengeController;
 use App\Http\Controllers\AdminProgressController;
 use App\Http\Controllers\Student\RewardController as StudentRewardController;
 use App\Http\Controllers\Student\InventoryController as StudentInventoryController;
@@ -388,6 +389,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('lessons', AdminLessonController::class);
         Route::resource('exercises', AdminExerciseController::class);
         Route::resource('rewards', AdminRewardController::class)->except(['destroy']);
+        Route::get('daily-challenges', [AdminDailyChallengeController::class, 'index'])
+            ->name('daily-challenges.index');
+        Route::put('daily-challenges/{dailyChallengeDefinition}', [AdminDailyChallengeController::class, 'update'])
+            ->name('daily-challenges.update');
 
         // ==================== 奖励自定义路由 ====================
         Route::get('rewards/background/create', [AdminRewardController::class, 'createBackground'])

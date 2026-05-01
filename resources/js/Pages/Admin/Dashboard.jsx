@@ -9,6 +9,7 @@ import {
   Target,
   Activity,
   BarChart3,
+  Settings2,
   Plus,
   Eye,
   Play,
@@ -188,6 +189,18 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                             <span className="text-sm font-medium text-slate-900">Students</span>
                         </div>
                     </Link>
+
+                    <Link
+                        href={route('admin.daily-challenges.index')}
+                        className="group bg-white border border-slate-200 rounded-xl p-4 hover:border-emerald-300 hover:shadow-md transition-all"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                                <Settings2 className="w-5 h-5 text-emerald-600" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-900">Mission Rules</span>
+                        </div>
+                    </Link>
                 </div>
             </div>
 
@@ -333,6 +346,13 @@ export default function AdminDashboard({ auth = {}, stats = {} }) {
                         >
                             <span>View Statistics</span>
                             <Target className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+                        </Link>
+                        <Link
+                            href={route('admin.daily-challenges.index')}
+                            className="flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors group"
+                        >
+                            <span>Mission Configuration</span>
+                            <Settings2 className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
                         </Link>
                     </div>
                 </div>
