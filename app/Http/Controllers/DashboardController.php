@@ -573,18 +573,24 @@ class DashboardController extends Controller
                 'value' => $courseCompletionRate,
                 'color' => 'green',
                 'hint' => "{$completedLessonCount} completed out of {$lessonProgressCount} tracked lesson journeys",
+                'href' => route('admin.progress.index'),
+                'actionLabel' => 'Review lesson progress',
             ],
             [
                 'label' => 'Attempt Pass Rate',
                 'value' => $testPassRate,
                 'color' => 'blue',
                 'hint' => "{$passedSubmissionCount} passed out of {$completedSubmissionCount} submitted attempts",
+                'href' => route('admin.tests.index'),
+                'actionLabel' => 'Inspect tests and submissions',
             ],
             [
                 'label' => 'Student Engagement',
                 'value' => $studentEngagement,
                 'color' => 'purple',
                 'hint' => "{$stats['active_students']} active students in the last 7 days",
+                'href' => route('admin.students.index', ['status' => 'active']),
+                'actionLabel' => 'Follow up with active students',
             ],
         ];
     }

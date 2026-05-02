@@ -592,21 +592,50 @@ export default function AdminDashboard({ auth = {}, stats = {}, healthStatus = {
                     </div>
                     {performance.length > 0 ? (
                         <div className="space-y-4">
-                            {performance.map((metric) => (
-                                <div key={metric.label} className="space-y-2">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-slate-600">{metric.label}</span>
-                                        <span className="font-medium text-slate-900">{metric.value}%</span>
+                            {performance.map((metric) => {
+                                const metricContent = (
+                                    <>
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-900">{metric.label}</p>
+                                                <p className="mt-1 text-xs text-slate-500">{metric.hint}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-lg font-semibold text-slate-900">{metric.value}%</div>
+                                                {metric.actionLabel ? (
+                                                    <div className="mt-1 text-[11px] font-medium text-indigo-600">
+                                                        {metric.actionLabel}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 w-full rounded-full bg-slate-100 h-2">
+                                            <div
+                                                className={`h-2 rounded-full ${performanceBarClasses[metric.color] ?? 'bg-slate-500'}`}
+                                                style={{ width: `${Math.max(0, Math.min(metric.value, 100))}%` }}
+                                            />
+                                        </div>
+                                    </>
+                                );
+
+                                if (metric.href) {
+                                    return (
+                                        <Link
+                                            key={metric.label}
+                                            href={metric.href}
+                                            className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-sm"
+                                        >
+                                            {metricContent}
+                                        </Link>
+                                    );
+                                }
+
+                                return (
+                                    <div key={metric.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                        {metricContent}
                                     </div>
-                                    <div className="w-full bg-slate-100 rounded-full h-2">
-                                        <div
-                                            className={`h-2 rounded-full ${performanceBarClasses[metric.color] ?? 'bg-slate-500'}`}
-                                            style={{ width: `${Math.max(0, Math.min(metric.value, 100))}%` }}
-                                        />
-                                    </div>
-                                    <p className="text-xs text-slate-500">{metric.hint}</p>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">

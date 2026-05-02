@@ -187,6 +187,12 @@ class AdminDashboardTest extends TestCase
             ->component('Admin/Dashboard')
             ->where('performance.0.label', 'Tracked Lesson Completion Rate')
             ->where('performance.1.label', 'Attempt Pass Rate')
+            ->where('performance.0.href', route('admin.progress.index'))
+            ->where('performance.0.actionLabel', 'Review lesson progress')
+            ->where('performance.1.href', route('admin.tests.index'))
+            ->where('performance.1.actionLabel', 'Inspect tests and submissions')
+            ->where('performance.2.href', route('admin.students.index', ['status' => 'active']))
+            ->where('performance.2.actionLabel', 'Follow up with active students')
         );
     }
 
