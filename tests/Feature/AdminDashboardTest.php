@@ -170,6 +170,9 @@ class AdminDashboardTest extends TestCase
             ->where('healthStatus.state', 'attention')
             ->where('healthStatus.label', 'Needs Attention')
             ->where('healthStatus.summary', '1 pending reports, 1 locked accounts')
+            ->where('healthStatus.details.0.href', route('admin.forum.reports.index'))
+            ->where('healthStatus.details.1.href', route('admin.students.index', ['status' => 'locked']))
+            ->where('healthStatus.details.2.href', route('admin.ai-logs.index'))
         );
     }
 
@@ -184,6 +187,49 @@ class AdminDashboardTest extends TestCase
             ->component('Admin/Dashboard')
             ->where('performance.0.label', 'Tracked Lesson Completion Rate')
             ->where('performance.1.label', 'Attempt Pass Rate')
+        );
+    }
+
+    public function test_admin_dashboard_recent_activity_items_include_drill_down_links(): void
+    {
+        $admin = $this->createVerifiedUser('administrator', 'Admin Dashboard User');
+        $student = $this->createVerifiedUser('student', 'Linked Student');
+
+        $student->forceFill([
+            'created_at' => now()->subMinutes(10),
+            'updated_at' => now()->subMinutes(10),
+        ])->save();
+
+        $post = ForumPost::create([
+            'user_id' => $student->user_Id,
+            'title' => 'Drill-down ready post',
+            'content' => 'Forum activity should be clickable.',
+            'category' => 'general',
+        ]);
+
+        $reply = ForumReply::create([
+            'post_id' => $post->post_id,
+            'user_id' => $student->user_Id,
+            'content' => 'Latest linked reply.',
+        ]);
+
+        $reply->forceFill([
+            'created_at' => now()->subMinute(),
+            'updated_at' => now()->subMinute(),
+        ])->save();
+
+        $response = $this->actingAs($admin)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Dashboard')
+            ->where('recentActivity', fn ($items) => collect($items)->contains(
+                fn (array $item) => $item['type'] === 'forum_reply'
+                    && $item['href'] === route('forum.show', $post->post_id) . '#reply-' . $reply->reply_id
+            ) && collect($items)->contains(
+                fn (array $item) => $item['type'] === 'student_registration'
+                    && $item['href'] === route('admin.students.show', $student->user_Id)
+            ))
         );
     }
 

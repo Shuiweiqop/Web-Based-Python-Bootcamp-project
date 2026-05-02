@@ -283,6 +283,7 @@ export default function Index({ students = null, stats = null, filters = {} }) {
                     <option value="verified">Verified</option>
                     <option value="unverified">Unverified</option>
                     <option value="active">Active (7 days)</option>
+                    <option value="locked">Locked</option>
                   </select>
                 </div>
               </div>
@@ -399,6 +400,15 @@ export default function Index({ students = null, stats = null, filters = {} }) {
                     {/* Status */}
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
+                        {student.locked_until && new Date(student.locked_until) > new Date() && (
+                          <span className={cn(
+                            "inline-flex items-center gap-1 text-xs",
+                            isDark ? "text-rose-400" : "text-rose-600"
+                          )}>
+                            <X className="w-3 h-3" />
+                            Locked
+                          </span>
+                        )}
                         <span className={cn(
                           "inline-flex items-center gap-1 text-xs",
                           student.email_verified_at

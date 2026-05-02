@@ -134,6 +134,44 @@ export default function AdminDashboard({ auth = {}, stats = {}, healthStatus = {
                                 <span>{dashboardHealth.label}</span>
                             </div>
                             <p className="mt-1 text-xs opacity-90">{dashboardHealth.summary}</p>
+                            {dashboardHealth.details.length > 0 && (
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                    {dashboardHealth.details.map((detail, index) => {
+                                        const detailLabel = typeof detail === 'string' ? detail : detail?.label;
+                                        const detailValue = typeof detail === 'string' ? null : detail?.value;
+                                        const detailHref = typeof detail === 'string' ? null : detail?.href;
+                                        const content = (
+                                            <>
+                                                <span className="text-sm font-semibold text-slate-900">
+                                                    {typeof detailValue === 'number' ? detailValue.toLocaleString() : detailValue}
+                                                </span>
+                                                <span className="text-[11px] text-slate-600">{detailLabel}</span>
+                                            </>
+                                        );
+
+                                        if (!detailHref) {
+                                            return (
+                                                <div
+                                                    key={`${detailLabel}-${index}`}
+                                                    className="flex min-w-[9rem] flex-col rounded-md border border-white/70 bg-white/80 px-2.5 py-2"
+                                                >
+                                                    {content}
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <Link
+                                                key={`${detailLabel}-${index}`}
+                                                href={detailHref}
+                                                className="flex min-w-[9rem] flex-col rounded-md border border-white/70 bg-white/80 px-2.5 py-2 transition hover:border-indigo-200 hover:bg-white"
+                                            >
+                                                {content}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -520,11 +558,23 @@ export default function AdminDashboard({ auth = {}, stats = {}, healthStatus = {
                     {recentActivity.length > 0 ? (
                         <div className="space-y-3">
                             {recentActivity.map((item, index) => (
-                                <div key={`${item.type}-${item.timestamp}-${index}`} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colorClasses[item.color] ?? 'bg-slate-400'}`} />
-                                    <span className="text-sm text-slate-700 flex-1">{item.message}</span>
-                                    <span className="text-xs text-slate-500 whitespace-nowrap">{item.time_ago ?? 'Just now'}</span>
-                                </div>
+                                item.href ? (
+                                    <Link
+                                        key={`${item.type}-${item.timestamp}-${index}`}
+                                        href={item.href}
+                                        className="flex items-center gap-3 rounded-lg border border-transparent bg-slate-50 p-3 transition hover:border-indigo-200 hover:bg-indigo-50/60"
+                                    >
+                                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colorClasses[item.color] ?? 'bg-slate-400'}`} />
+                                        <span className="text-sm text-slate-700 flex-1">{item.message}</span>
+                                        <span className="text-xs text-slate-500 whitespace-nowrap">{item.time_ago ?? 'Just now'}</span>
+                                    </Link>
+                                ) : (
+                                    <div key={`${item.type}-${item.timestamp}-${index}`} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colorClasses[item.color] ?? 'bg-slate-400'}`} />
+                                        <span className="text-sm text-slate-700 flex-1">{item.message}</span>
+                                        <span className="text-xs text-slate-500 whitespace-nowrap">{item.time_ago ?? 'Just now'}</span>
+                                    </div>
+                                )
                             ))}
                         </div>
                     ) : (

@@ -298,7 +298,12 @@ class DashboardController extends Controller
             ->selectRaw("
                 'student_registration' as activity_type,
                 users.name as actor_name,
+                users.user_Id as actor_user_id,
+                NULL as actor_student_id,
                 NULL as subject_name,
+                NULL as subject_id,
+                NULL as post_id,
+                NULL as reply_id,
                 users.created_at as activity_at
             ");
 
@@ -311,7 +316,12 @@ class DashboardController extends Controller
             ->selectRaw("
                 'lesson_completed' as activity_type,
                 users.name as actor_name,
+                users.user_Id as actor_user_id,
+                student_profiles.student_id as actor_student_id,
                 lessons.title as subject_name,
+                lessons.lesson_id as subject_id,
+                NULL as post_id,
+                NULL as reply_id,
                 lesson_progress.completed_at as activity_at
             ");
 
@@ -324,7 +334,12 @@ class DashboardController extends Controller
             ->selectRaw("
                 'test_submitted' as activity_type,
                 users.name as actor_name,
+                users.user_Id as actor_user_id,
+                student_profiles.student_id as actor_student_id,
                 tests.title as subject_name,
+                tests.test_id as subject_id,
+                NULL as post_id,
+                NULL as reply_id,
                 test_submissions.submitted_at as activity_at
             ");
 
@@ -333,7 +348,12 @@ class DashboardController extends Controller
             ->selectRaw("
                 'forum_post' as activity_type,
                 users.name as actor_name,
+                users.user_Id as actor_user_id,
+                NULL as actor_student_id,
                 NULL as subject_name,
+                NULL as subject_id,
+                forum_posts.post_id as post_id,
+                NULL as reply_id,
                 forum_posts.created_at as activity_at
             ");
 
@@ -342,7 +362,12 @@ class DashboardController extends Controller
             ->selectRaw("
                 'forum_reply' as activity_type,
                 users.name as actor_name,
+                users.user_Id as actor_user_id,
+                NULL as actor_student_id,
                 NULL as subject_name,
+                NULL as subject_id,
+                forum_replies.post_id as post_id,
+                forum_replies.reply_id as reply_id,
                 forum_replies.created_at as activity_at
             ");
 
@@ -381,6 +406,21 @@ class DashboardController extends Controller
                         'forum_reply' => 'amber',
                         default => 'blue',
                     },
+                    'href' => match ($item->activity_type) {
+                        'student_registration' => $item->actor_user_id
+                            ? route('admin.students.show', $item->actor_user_id)
+                            : null,
+                        'lesson_completed', 'test_submitted' => $item->actor_student_id
+                            ? route('admin.progress.student', $item->actor_student_id)
+                            : null,
+                        'forum_post' => $item->post_id
+                            ? route('forum.show', $item->post_id)
+                            : null,
+                        'forum_reply' => $item->post_id && $item->reply_id
+                            ? route('forum.show', $item->post_id) . '#reply-' . $item->reply_id
+                            : null,
+                        default => null,
+                    },
                 ];
             })
             ->all();
@@ -417,8 +457,26 @@ class DashboardController extends Controller
             'label' => $label,
             'summary' => "{$pendingReports} pending reports, {$lockedAccounts} locked accounts",
             'details' => [
-                "{$reportsReviewedLast24Hours} reports reviewed in the last 24h",
-                "{$aiSessionsLast24Hours} AI sessions logged in the last 24h",
+                [
+                    'label' => 'Pending forum reports',
+                    'value' => $pendingReports,
+                    'href' => route('admin.forum.reports.index'),
+                ],
+                [
+                    'label' => 'Locked student accounts',
+                    'value' => $lockedAccounts,
+                    'href' => route('admin.students.index', ['status' => 'locked']),
+                ],
+                [
+                    'label' => 'AI sessions in last 24h',
+                    'value' => $aiSessionsLast24Hours,
+                    'href' => route('admin.ai-logs.index'),
+                ],
+                [
+                    'label' => 'Reports reviewed in last 24h',
+                    'value' => $reportsReviewedLast24Hours,
+                    'href' => route('admin.forum.reports.index'),
+                ],
             ],
         ];
     }

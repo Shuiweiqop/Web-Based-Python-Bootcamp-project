@@ -18,9 +18,14 @@ class AdminStudentController extends Controller
      */
     public function index(Request $request)
     {
+        $status = $request->input('status', 'all');
+
         $query = User::with(['studentProfile'])
-            ->where('role', 'student')
-            ->notLocked();
+            ->where('role', 'student');
+
+        if ($status !== 'locked') {
+            $query->notLocked();
+        }
 
         // Search
         if ($request->filled('search')) {
@@ -55,8 +60,8 @@ class AdminStudentController extends Controller
         }
 
         // Filter by status
-        if ($request->filled('status') && $request->status !== 'all') {
-            switch ($request->status) {
+        if ($request->filled('status') && $status !== 'all') {
+            switch ($status) {
                 case 'verified':
                     $query->whereNotNull('email_verified_at');
                     break;
@@ -67,6 +72,10 @@ class AdminStudentController extends Controller
                     $query->whereHas('studentProfile', function ($q) {
                         $q->where('last_activity_date', '>=', now()->subDays(7));
                     });
+                    break;
+                case 'locked':
+                    $query->whereNotNull('locked_until')
+                        ->where('locked_until', '>', now());
                     break;
             }
         }
