@@ -173,6 +173,20 @@ class AdminDashboardTest extends TestCase
         );
     }
 
+    public function test_admin_dashboard_performance_labels_match_metric_scope(): void
+    {
+        $admin = $this->createVerifiedUser('administrator', 'Admin Dashboard User');
+
+        $response = $this->actingAs($admin)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Dashboard')
+            ->where('performance.0.label', 'Tracked Lesson Completion Rate')
+            ->where('performance.1.label', 'Attempt Pass Rate')
+        );
+    }
+
     private function createVerifiedUser(string $role, string $name): User
     {
         $user = User::create([

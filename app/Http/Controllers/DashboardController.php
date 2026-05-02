@@ -511,13 +511,13 @@ class DashboardController extends Controller
 
         return [
             [
-                'label' => 'Course Completion Rate',
+                'label' => 'Tracked Lesson Completion Rate',
                 'value' => $courseCompletionRate,
                 'color' => 'green',
                 'hint' => "{$completedLessonCount} completed out of {$lessonProgressCount} tracked lesson journeys",
             ],
             [
-                'label' => 'Test Pass Rate',
+                'label' => 'Attempt Pass Rate',
                 'value' => $testPassRate,
                 'color' => 'blue',
                 'hint' => "{$passedSubmissionCount} passed out of {$completedSubmissionCount} submitted attempts",
