@@ -2,20 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\User;
 use App\Models\Lesson;
-use App\Models\Test;
-use App\Models\ForumPost;
-use App\Models\ForumReply;
-use App\Models\LessonRegistration;
 use App\Models\LessonProgress;
-use App\Models\TestSubmission;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use App\Models\LessonRegistration;
+use App\Models\Test;
+use App\Models\User;
 use App\Services\DailyChallengeService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -24,15 +21,14 @@ class DashboardController extends Controller
     ) {}
 
     /**
-     * Landing Page / Home Page - 公开访问
+     * Landing Page / Home Page - public access
      */
     public function home()
     {
-        // 获取 6 个特色课程用于 landing page
         $featuredLessons = Lesson::where('status', 'active')
             ->withCount([
                 'interactiveExercises as exercises_count',
-                'tests as tests_count'
+                'tests as tests_count',
             ])
             ->orderBy('created_at', 'desc')
             ->limit(6)
@@ -47,13 +43,13 @@ class DashboardController extends Controller
                     'tests_count' => $lesson->tests_count ?? 0,
                     'completion_reward_points' => $lesson->completion_reward_points ?? 100,
                     'estimated_duration' => $lesson->estimated_duration,
-                    'is_registered' => false, // 默认未注册
+                    'is_registered' => false,
                 ];
             });
 
-        // 如果用户已登录且是学生，检查注册状态
         if (Auth::check() && Auth::user()->role === 'student') {
             $studentProfile = Auth::user()->studentProfile;
+
             if ($studentProfile) {
                 $registrations = LessonRegistration::where('student_id', $studentProfile->student_id)
                     ->whereIn('lesson_id', $featuredLessons->pluck('lesson_id'))
@@ -62,6 +58,7 @@ class DashboardController extends Controller
 
                 $featuredLessons = $featuredLessons->map(function ($lesson) use ($registrations) {
                     $lesson['is_registered'] = isset($registrations[$lesson['lesson_id']]);
+
                     return $lesson;
                 });
             }
@@ -73,7 +70,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Dashboard - 需要认证
+     * Authenticated dashboard entry.
      */
     public function index(Request $request)
     {
@@ -91,11 +88,10 @@ class DashboardController extends Controller
     }
 
     /**
-     * Admin Dashboard
+     * Admin dashboard.
      */
     private function adminDashboard($user)
     {
-        // 获取真实统计数据
         $stats = [
             'total_students' => User::where('role', 'student')->count(),
             'total_lessons' => Lesson::where('status', 'active')->count(),
@@ -122,20 +118,18 @@ class DashboardController extends Controller
     }
 
     /**
-     * Student Dashboard - 只显示 Available Lessons
+     * Student dashboard - only show available lessons.
      */
     private function studentDashboard($user)
     {
         $user->load('studentProfile');
         $studentProfile = $user->studentProfile;
 
-        // Check if student needs onboarding
         if ($studentProfile && !$studentProfile->hasActiveLearningPath()) {
             return redirect()->route('student.onboarding.index')
                 ->with('info', 'Welcome! Let\'s find the perfect learning path for you.');
         }
 
-        // Get learning path progress
         $learningPathProgress = null;
         $nextLesson = null;
         $dailyChallengeBoard = [
@@ -154,6 +148,7 @@ class DashboardController extends Controller
             $learningPathProgress = $studentProfile->getLearningPathProgress();
             $nextLessonModel = $studentProfile->getNextPathLesson();
             $dailyChallengeBoard = $this->dailyChallengeService->getDashboardBoard($studentProfile->student_id);
+
             if ($nextLessonModel) {
                 $nextLesson = [
                     'lesson_id' => $nextLessonModel->lesson_id,
@@ -165,8 +160,8 @@ class DashboardController extends Controller
             }
         }
 
-        // Get available lessons
         $availableLessons = collect();
+
         if ($studentProfile) {
             $registeredLessonIds = LessonRegistration::where('student_id', $studentProfile->student_id)
                 ->pluck('lesson_id')
@@ -200,8 +195,8 @@ class DashboardController extends Controller
                 });
         }
 
-        // Get student's recent lessons
         $recentLessons = [];
+
         if ($studentProfile) {
             $recentLessons = LessonRegistration::with(['lesson'])
                 ->where('student_id', $studentProfile->student_id)
@@ -223,14 +218,7 @@ class DashboardController extends Controller
                 });
         }
 
-        // ✅ 修复：不要覆盖 auth.user，让 middleware 处理
-        // ❌ 删除这部分 - 它会覆盖 middleware 的数据
-        // 'auth' => [
-        //     'user' => [...]
-        // ],
-
         return Inertia::render('Student/Dashboard', [
-            // ✅ 不传递 auth，让 HandleInertiaRequests middleware 自动处理
             'studentProfile' => $studentProfile ? [
                 'current_points' => $studentProfile->current_points,
                 'total_lessons_completed' => $studentProfile->total_lessons_completed,
@@ -239,7 +227,7 @@ class DashboardController extends Controller
                 'streak_days' => $studentProfile->streak_days,
                 'points_level' => $studentProfile->points_level ?? 'Newbie',
                 'completion_percentage' => $studentProfile->completion_percentage ?? 0,
-                'streak_status' => $studentProfile->streak_status ?? 'Ready to Start! 🚀',
+                'streak_status' => $studentProfile->streak_status ?? 'Ready to Start! ðŸš€',
                 'last_activity_date' => $studentProfile->last_activity_date?->format('Y-m-d'),
             ] : null,
             'recentLessons' => $recentLessons,
@@ -249,150 +237,146 @@ class DashboardController extends Controller
             'dailyChallengeBoard' => $dailyChallengeBoard,
         ]);
     }
+
     /**
-     * 获取活跃学生数量（过去7天有活动）
+     * Count distinct active students across all tracked student activity sources.
      */
     private function getActiveStudents()
     {
         $sevenDaysAgo = Carbon::now()->subDays(7);
 
-        // 方法1: 通过 studentProfile 关联查询 lesson_registrations
-        $activeCount = User::where('role', 'student')
-            ->whereHas('studentProfile.lessonRegistrations', function ($query) use ($sevenDaysAgo) {
-                $query->where('updated_at', '>=', $sevenDaysAgo);
-            })
-            ->count();
+        $activeStudentIds = DB::table('lesson_registrations')
+            ->select('student_id')
+            ->where('updated_at', '>=', $sevenDaysAgo)
+            ->union(
+                DB::table('lesson_progress')
+                    ->select('student_id')
+                    ->where('last_updated_at', '>=', $sevenDaysAgo)
+            )
+            ->union(
+                DB::table('exercise_submissions')
+                    ->select('student_id')
+                    ->where('submitted_at', '>=', $sevenDaysAgo)
+            )
+            ->union(
+                DB::table('test_submissions')
+                    ->select('student_id')
+                    ->where('submitted_at', '>=', $sevenDaysAgo)
+            )
+            ->union(
+                DB::table('forum_posts')
+                    ->join('student_profiles', 'forum_posts.user_id', '=', 'student_profiles.user_Id')
+                    ->select('student_profiles.student_id')
+                    ->where('forum_posts.created_at', '>=', $sevenDaysAgo)
+            )
+            ->union(
+                DB::table('forum_replies')
+                    ->join('student_profiles', 'forum_replies.user_id', '=', 'student_profiles.user_Id')
+                    ->select('student_profiles.student_id')
+                    ->where('forum_replies.created_at', '>=', $sevenDaysAgo)
+            );
 
-        // 如果上面的方法返回0，尝试方法2: 直接查询 lesson_registrations 表
-        if ($activeCount === 0) {
-            $activeStudentIds = LessonRegistration::where('updated_at', '>=', $sevenDaysAgo)
-                ->distinct()
-                ->pluck('student_id');
-
-            $activeCount = User::where('role', 'student')
-                ->whereHas('studentProfile', function ($query) use ($activeStudentIds) {
-                    $query->whereIn('student_id', $activeStudentIds);
-                })
-                ->count();
-        }
-
-        // 如果还是0，尝试方法3: 使用 exercise_submissions
-        if ($activeCount === 0) {
-            $activeCount = DB::table('exercise_submissions')
-                ->where('submitted_at', '>=', $sevenDaysAgo)
-                ->distinct()
-                ->count('student_id');
-        }
-
-        // 如果数据库是空的，至少返回0而不是错误
-        return $activeCount;
+        return DB::query()
+            ->fromSub($activeStudentIds, 'active_students')
+            ->distinct()
+            ->count('student_id');
     }
 
+    /**
+     * Build a true global activity timeline ordered across all activity sources.
+     */
     private function getAdminRecentActivity(): array
     {
-        $studentRegistrations = User::query()
+        $studentRegistrations = DB::table('users')
             ->where('role', 'student')
-            ->latest('created_at')
-            ->limit(4)
-            ->get(['user_Id', 'name', 'created_at'])
-            ->map(fn (User $student) => [
-                'type' => 'student_registration',
-                'message' => "{$student->name} joined the platform",
-                'timestamp' => $student->created_at,
-                'time_ago' => $student->created_at?->diffForHumans(),
-                'color' => 'green',
-            ]);
+            ->selectRaw("
+                'student_registration' as activity_type,
+                users.name as actor_name,
+                NULL as subject_name,
+                users.created_at as activity_at
+            ");
 
-        $lessonCompletions = LessonProgress::query()
-            ->with(['student.user:user_Id,name', 'lesson:lesson_id,title'])
-            ->where('status', 'completed')
-            ->whereNotNull('completed_at')
-            ->latest('completed_at')
-            ->limit(4)
+        $lessonCompletions = DB::table('lesson_progress')
+            ->join('student_profiles', 'lesson_progress.student_id', '=', 'student_profiles.student_id')
+            ->join('users', 'student_profiles.user_Id', '=', 'users.user_Id')
+            ->leftJoin('lessons', 'lesson_progress.lesson_id', '=', 'lessons.lesson_id')
+            ->where('lesson_progress.status', 'completed')
+            ->whereNotNull('lesson_progress.completed_at')
+            ->selectRaw("
+                'lesson_completed' as activity_type,
+                users.name as actor_name,
+                lessons.title as subject_name,
+                lesson_progress.completed_at as activity_at
+            ");
+
+        $testSubmissions = DB::table('test_submissions')
+            ->join('student_profiles', 'test_submissions.student_id', '=', 'student_profiles.student_id')
+            ->join('users', 'student_profiles.user_Id', '=', 'users.user_Id')
+            ->leftJoin('tests', 'test_submissions.test_id', '=', 'tests.test_id')
+            ->whereIn('test_submissions.status', ['submitted', 'timeout'])
+            ->whereNotNull('test_submissions.submitted_at')
+            ->selectRaw("
+                'test_submitted' as activity_type,
+                users.name as actor_name,
+                tests.title as subject_name,
+                test_submissions.submitted_at as activity_at
+            ");
+
+        $forumPosts = DB::table('forum_posts')
+            ->join('users', 'forum_posts.user_id', '=', 'users.user_Id')
+            ->selectRaw("
+                'forum_post' as activity_type,
+                users.name as actor_name,
+                NULL as subject_name,
+                forum_posts.created_at as activity_at
+            ");
+
+        $forumReplies = DB::table('forum_replies')
+            ->join('users', 'forum_replies.user_id', '=', 'users.user_Id')
+            ->selectRaw("
+                'forum_reply' as activity_type,
+                users.name as actor_name,
+                NULL as subject_name,
+                forum_replies.created_at as activity_at
+            ");
+
+        $timeline = $studentRegistrations
+            ->unionAll($lessonCompletions)
+            ->unionAll($testSubmissions)
+            ->unionAll($forumPosts)
+            ->unionAll($forumReplies);
+
+        return DB::query()
+            ->fromSub($timeline, 'recent_activity')
+            ->whereNotNull('activity_at')
+            ->orderByDesc('activity_at')
+            ->limit(6)
             ->get()
-            ->map(function (LessonProgress $progress) {
-                $studentName = $progress->student?->user?->name ?? 'A student';
-                $lessonTitle = $progress->lesson?->title ?? 'a lesson';
-                $timestamp = $progress->completed_at ?? $progress->updated_at;
+            ->map(function ($item) {
+                $timestamp = Carbon::parse($item->activity_at);
 
                 return [
-                    'type' => 'lesson_completed',
-                    'message' => "{$studentName} completed {$lessonTitle}",
-                    'timestamp' => $timestamp,
-                    'time_ago' => $timestamp?->diffForHumans(),
-                    'color' => 'blue',
+                    'type' => $item->activity_type,
+                    'message' => match ($item->activity_type) {
+                        'student_registration' => "{$item->actor_name} joined the platform",
+                        'lesson_completed' => "{$item->actor_name} completed " . ($item->subject_name ?: 'a lesson'),
+                        'test_submitted' => "{$item->actor_name} submitted " . ($item->subject_name ?: 'a test'),
+                        'forum_post' => "{$item->actor_name} posted in the forum",
+                        'forum_reply' => "{$item->actor_name} replied in the forum",
+                        default => "{$item->actor_name} had new activity",
+                    },
+                    'timestamp' => $timestamp->toIso8601String(),
+                    'time_ago' => $timestamp->diffForHumans(),
+                    'color' => match ($item->activity_type) {
+                        'student_registration' => 'green',
+                        'lesson_completed' => 'blue',
+                        'test_submitted' => 'purple',
+                        'forum_post' => 'orange',
+                        'forum_reply' => 'amber',
+                        default => 'blue',
+                    },
                 ];
-            });
-
-        $testSubmissions = TestSubmission::query()
-            ->with(['studentProfile.user:user_Id,name', 'test:test_id,title'])
-            ->whereIn('status', [TestSubmission::STATUS_SUBMITTED, TestSubmission::STATUS_TIMEOUT])
-            ->whereNotNull('submitted_at')
-            ->latest('submitted_at')
-            ->limit(4)
-            ->get()
-            ->map(function (TestSubmission $submission) {
-                $studentName = $submission->studentProfile?->user?->name ?? 'A student';
-                $testTitle = $submission->test?->title ?? 'a test';
-                $timestamp = $submission->submitted_at;
-
-                return [
-                    'type' => 'test_submitted',
-                    'message' => "{$studentName} submitted {$testTitle}",
-                    'timestamp' => $timestamp,
-                    'time_ago' => $timestamp?->diffForHumans(),
-                    'color' => 'purple',
-                ];
-            });
-
-        $forumPosts = ForumPost::query()
-            ->with('user:user_Id,name')
-            ->latest('created_at')
-            ->limit(3)
-            ->get()
-            ->map(function (ForumPost $post) {
-                $authorName = $post->user?->name ?? 'A user';
-
-                return [
-                    'type' => 'forum_post',
-                    'message' => "{$authorName} posted in the forum",
-                    'timestamp' => $post->created_at,
-                    'time_ago' => $post->created_at?->diffForHumans(),
-                    'color' => 'orange',
-                ];
-            });
-
-        $forumReplies = ForumReply::query()
-            ->with('user:user_Id,name')
-            ->latest('created_at')
-            ->limit(3)
-            ->get()
-            ->map(function (ForumReply $reply) {
-                $authorName = $reply->user?->name ?? 'A user';
-
-                return [
-                    'type' => 'forum_reply',
-                    'message' => "{$authorName} replied in the forum",
-                    'timestamp' => $reply->created_at,
-                    'time_ago' => $reply->created_at?->diffForHumans(),
-                    'color' => 'amber',
-                ];
-            });
-
-        return collect()
-            ->concat($studentRegistrations)
-            ->concat($lessonCompletions)
-            ->concat($testSubmissions)
-            ->concat($forumPosts)
-            ->concat($forumReplies)
-            ->filter(fn (array $item) => $item['timestamp'] !== null)
-            ->sortByDesc('timestamp')
-            ->take(6)
-            ->values()
-            ->map(fn (array $item) => [
-                ...$item,
-                'timestamp' => $item['timestamp']->toIso8601String(),
-            ])
+            })
             ->all();
     }
 
@@ -406,8 +390,8 @@ class DashboardController extends Controller
             ? round(($completedLessonCount / $lessonProgressCount) * 100)
             : 0;
 
-        $completedSubmissionQuery = TestSubmission::query()
-            ->whereIn('status', [TestSubmission::STATUS_SUBMITTED, TestSubmission::STATUS_TIMEOUT]);
+        $completedSubmissionQuery = DB::table('test_submissions')
+            ->whereIn('status', ['submitted', 'timeout']);
         $completedSubmissionCount = (clone $completedSubmissionQuery)->count();
         $passedSubmissionCount = (clone $completedSubmissionQuery)
             ->whereRaw('score >= (SELECT passing_score FROM tests WHERE test_id = test_submissions.test_id)')
