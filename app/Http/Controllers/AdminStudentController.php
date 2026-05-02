@@ -70,7 +70,12 @@ class AdminStudentController extends Controller
                     break;
                 case 'active':
                     $query->whereHas('studentProfile', function ($q) {
-                        $q->where('last_activity_date', '>=', now()->subDays(7));
+                        $q->whereIn('student_id', $this->getRecentlyActiveStudentIds(now()->subDays(7)));
+                    });
+                    break;
+                case 'inactive':
+                    $query->whereHas('studentProfile', function ($q) {
+                        $q->whereNotIn('student_id', $this->getRecentlyActiveStudentIds(now()->subDays(7)));
                     });
                     break;
                 case 'locked':
@@ -98,6 +103,40 @@ class AdminStudentController extends Controller
             'stats' => $stats,
             'filters' => $request->only(['search', 'level', 'status']),
         ]);
+    }
+
+    private function getRecentlyActiveStudentIds($start)
+    {
+        return DB::table('lesson_registrations')
+            ->select('student_id')
+            ->where('updated_at', '>=', $start)
+            ->union(
+                DB::table('lesson_progress')
+                    ->select('student_id')
+                    ->where('last_updated_at', '>=', $start)
+            )
+            ->union(
+                DB::table('exercise_submissions')
+                    ->select('student_id')
+                    ->where('submitted_at', '>=', $start)
+            )
+            ->union(
+                DB::table('test_submissions')
+                    ->select('student_id')
+                    ->where('submitted_at', '>=', $start)
+            )
+            ->union(
+                DB::table('forum_posts')
+                    ->join('student_profiles', 'forum_posts.user_id', '=', 'student_profiles.user_Id')
+                    ->select('student_profiles.student_id')
+                    ->where('forum_posts.created_at', '>=', $start)
+            )
+            ->union(
+                DB::table('forum_replies')
+                    ->join('student_profiles', 'forum_replies.user_id', '=', 'student_profiles.user_Id')
+                    ->select('student_profiles.student_id')
+                    ->where('forum_replies.created_at', '>=', $start)
+            );
     }
 
     /**

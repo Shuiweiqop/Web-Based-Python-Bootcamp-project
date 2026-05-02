@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Models\ForumPost;
 use App\Models\ForumReply;
 use App\Models\ForumReport;
+use App\Models\Lesson;
+use App\Models\Test;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -236,6 +239,111 @@ class AdminDashboardTest extends TestCase
                 fn (array $item) => $item['type'] === 'student_registration'
                     && $item['href'] === route('admin.students.show', $student->user_Id)
             ))
+        );
+    }
+
+    public function test_admin_dashboard_exposes_low_completion_low_pass_and_inactive_watchlists(): void
+    {
+        $admin = $this->createVerifiedUser('administrator', 'Admin Dashboard User');
+        $inactiveStudent = $this->createVerifiedUser('student', 'Inactive Student');
+        $activeStudent = $this->createVerifiedUser('student', 'Active Student');
+
+        $lesson = Lesson::create([
+            'title' => 'Loops 101',
+            'status' => 'active',
+        ]);
+
+        $test = Test::create([
+            'title' => 'Loops Checkpoint',
+            'status' => 'active',
+            'passing_score' => 80,
+            'test_type' => 'lesson',
+        ]);
+
+        DB::table('lesson_progress')->insert([
+            [
+                'student_id' => $inactiveStudent->studentProfile->student_id,
+                'lesson_id' => $lesson->lesson_id,
+                'status' => 'not_started',
+                'progress_percent' => 0,
+                'exercise_completed' => false,
+                'test_completed' => false,
+                'reward_granted' => false,
+                'completed_at' => null,
+                'last_updated_at' => now()->subDays(10),
+                'created_at' => now()->subDays(10),
+                'updated_at' => now()->subDays(10),
+            ],
+            [
+                'student_id' => $activeStudent->studentProfile->student_id,
+                'lesson_id' => $lesson->lesson_id,
+                'status' => 'completed',
+                'progress_percent' => 100,
+                'exercise_completed' => true,
+                'test_completed' => true,
+                'reward_granted' => true,
+                'completed_at' => now()->subDay(),
+                'last_updated_at' => now()->subDay(),
+                'created_at' => now()->subDays(5),
+                'updated_at' => now()->subDay(),
+            ],
+        ]);
+
+        DB::table('test_submissions')->insert([
+            [
+                'student_id' => $inactiveStudent->studentProfile->student_id,
+                'test_id' => $test->test_id,
+                'attempt_number' => 1,
+                'started_at' => now()->subDays(8)->subMinutes(20),
+                'status' => 'submitted',
+                'score' => 40,
+                'total_questions' => 10,
+                'correct_answers' => 4,
+                'time_spent' => 1200,
+                'submitted_at' => now()->subDays(8),
+                'created_at' => now()->subDays(8),
+                'updated_at' => now()->subDays(8),
+            ],
+            [
+                'student_id' => $activeStudent->studentProfile->student_id,
+                'test_id' => $test->test_id,
+                'attempt_number' => 1,
+                'started_at' => now()->subDays(2)->subMinutes(15),
+                'status' => 'submitted',
+                'score' => 50,
+                'total_questions' => 10,
+                'correct_answers' => 5,
+                'time_spent' => 900,
+                'submitted_at' => now()->subDays(2),
+                'created_at' => now()->subDays(2),
+                'updated_at' => now()->subDays(2),
+            ],
+        ]);
+
+        DB::table('forum_posts')->insert([
+            'user_id' => $activeStudent->user_Id,
+            'title' => 'Still active',
+            'content' => 'Recent forum activity keeps this student active.',
+            'category' => 'general',
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Dashboard')
+            ->where('watchlists.0.title', 'Low Completion Watchlist')
+            ->where('watchlists.0.items.0.title', 'Loops 101')
+            ->where('watchlists.0.items.0.href', route('admin.progress.lesson', $lesson->lesson_id))
+            ->where('watchlists.1.title', 'Low Pass Rate Tests')
+            ->where('watchlists.1.items.0.title', 'Loops Checkpoint')
+            ->where('watchlists.1.items.0.href', route('admin.tests.show', $test->test_id))
+            ->where('watchlists.2.title', 'Inactive Students')
+            ->where('watchlists.2.summary', '1 students have not been active in the last 7 days.')
+            ->where('watchlists.2.href', route('admin.students.index', ['status' => 'inactive']))
+            ->where('watchlists.2.items.0.title', 'Inactive Student')
         );
     }
 

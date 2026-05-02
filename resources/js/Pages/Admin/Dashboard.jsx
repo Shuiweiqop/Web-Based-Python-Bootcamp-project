@@ -22,10 +22,11 @@ import {
   Flag,
   Map,
   UserCheck,
-  Brain
+  Brain,
+  ArrowRight
 } from 'lucide-react';
 
-export default function AdminDashboard({ auth = {}, stats = {}, healthStatus = {}, summaryCards = {}, recentActivity = [], performance = [] }) {
+export default function AdminDashboard({ auth = {}, stats = {}, healthStatus = {}, summaryCards = {}, recentActivity = [], performance = [], watchlists = [] }) {
     const defaultStats = {
         total_students: stats?.total_students ?? 0,
         total_lessons: stats?.total_lessons ?? 0,
@@ -643,6 +644,70 @@ export default function AdminDashboard({ auth = {}, stats = {}, healthStatus = {
                         </div>
                     )}
                 </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {watchlists.map((watchlist) => (
+                    <div key={watchlist.title} className="rounded-xl border border-slate-200 bg-white p-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 className="font-semibold text-slate-900">{watchlist.title}</h3>
+                                <p className="mt-1 text-sm text-slate-500">{watchlist.summary}</p>
+                            </div>
+                            {watchlist.href ? (
+                                <Link
+                                    href={watchlist.href}
+                                    className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
+                                >
+                                    {watchlist.actionLabel}
+                                    <ArrowRight className="h-3.5 w-3.5" />
+                                </Link>
+                            ) : null}
+                        </div>
+
+                        {watchlist.items?.length > 0 ? (
+                            <div className="mt-5 space-y-3">
+                                {watchlist.items.map((item, index) => {
+                                    const content = (
+                                        <>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
+                                                <p className="mt-1 text-xs font-medium text-slate-600">{item.metric}</p>
+                                                <p className="mt-1 text-xs text-slate-500">{item.supportingText}</p>
+                                            </div>
+                                            <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                                        </>
+                                    );
+
+                                    if (item.href) {
+                                        return (
+                                            <Link
+                                                key={`${watchlist.title}-${item.title}-${index}`}
+                                                href={item.href}
+                                                className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-indigo-200 hover:bg-indigo-50/50"
+                                            >
+                                                {content}
+                                            </Link>
+                                        );
+                                    }
+
+                                    return (
+                                        <div
+                                            key={`${watchlist.title}-${item.title}-${index}`}
+                                            className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                                        >
+                                            {content}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="mt-5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                                {watchlist.emptyState}
+                            </div>
+                        )}
+                    </div>
+                ))}
             </div>
         </AuthenticatedLayout>
     );

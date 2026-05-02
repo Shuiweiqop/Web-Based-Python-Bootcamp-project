@@ -283,6 +283,7 @@ export default function Index({ students = null, stats = null, filters = {} }) {
                     <option value="verified">Verified</option>
                     <option value="unverified">Unverified</option>
                     <option value="active">Active (7 days)</option>
+                    <option value="inactive">Inactive (7 days)</option>
                     <option value="locked">Locked</option>
                   </select>
                 </div>

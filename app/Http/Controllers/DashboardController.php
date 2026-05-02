@@ -105,6 +105,7 @@ class DashboardController extends Controller
         $summaryCards = $this->getAdminSummaryCards($stats);
         $recentActivity = $this->getAdminRecentActivity();
         $performance = $this->getAdminPerformanceMetrics($stats);
+        $watchlists = $this->getAdminWatchlists();
 
         return Inertia::render('Admin/Dashboard', [
             'auth' => [
@@ -120,6 +121,7 @@ class DashboardController extends Controller
             'summaryCards' => $summaryCards,
             'recentActivity' => $recentActivity,
             'performance' => $performance,
+            'watchlists' => $watchlists,
         ]);
     }
 
@@ -593,6 +595,140 @@ class DashboardController extends Controller
                 'actionLabel' => 'Follow up with active students',
             ],
         ];
+    }
+
+    private function getAdminWatchlists(): array
+    {
+        $lowCompletionLessons = DB::table('lesson_progress')
+            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.lesson_id')
+            ->selectRaw("
+                lesson_progress.lesson_id,
+                lessons.title,
+                COUNT(*) as tracked_count,
+                SUM(CASE WHEN lesson_progress.status = 'completed' THEN 1 ELSE 0 END) as completed_count
+            ")
+            ->groupBy('lesson_progress.lesson_id', 'lessons.title')
+            ->havingRaw('COUNT(*) > 0')
+            ->orderByRaw("
+                (SUM(CASE WHEN lesson_progress.status = 'completed' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) ASC
+            ")
+            ->orderByDesc('tracked_count')
+            ->limit(3)
+            ->get()
+            ->map(fn ($lesson) => [
+                'title' => $lesson->title ?: 'Untitled lesson',
+                'metric' => round(($lesson->completed_count / max($lesson->tracked_count, 1)) * 100) . '% completion',
+                'supportingText' => "{$lesson->completed_count} of {$lesson->tracked_count} tracked journeys completed",
+                'href' => route('admin.progress.lesson', $lesson->lesson_id),
+            ])
+            ->all();
+
+        $lowPassTests = DB::table('test_submissions')
+            ->join('tests', 'test_submissions.test_id', '=', 'tests.test_id')
+            ->whereIn('test_submissions.status', ['submitted', 'timeout'])
+            ->selectRaw("
+                test_submissions.test_id,
+                tests.title,
+                COUNT(*) as attempt_count,
+                SUM(CASE WHEN test_submissions.score >= tests.passing_score THEN 1 ELSE 0 END) as passed_count
+            ")
+            ->groupBy('test_submissions.test_id', 'tests.title')
+            ->havingRaw('COUNT(*) > 0')
+            ->orderByRaw("
+                (SUM(CASE WHEN test_submissions.score >= tests.passing_score THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) ASC
+            ")
+            ->orderByDesc('attempt_count')
+            ->limit(3)
+            ->get()
+            ->map(fn ($test) => [
+                'title' => $test->title ?: 'Untitled test',
+                'metric' => round(($test->passed_count / max($test->attempt_count, 1)) * 100) . '% pass rate',
+                'supportingText' => "{$test->passed_count} of {$test->attempt_count} submitted attempts passed",
+                'href' => route('admin.tests.show', $test->test_id),
+            ])
+            ->all();
+
+        $activeStudentIds = $this->getActiveStudentIdsSince(now()->subDays(7));
+
+        $inactiveStudentsQuery = User::query()
+            ->where('role', 'student')
+            ->whereHas('studentProfile', function ($query) use ($activeStudentIds) {
+                $query->whereNotIn('student_id', $activeStudentIds);
+            });
+
+        $inactiveStudentsCount = (clone $inactiveStudentsQuery)->count();
+        $inactiveStudentPreview = (clone $inactiveStudentsQuery)
+            ->orderBy('name')
+            ->limit(3)
+            ->get(['user_Id', 'name'])
+            ->map(fn ($student) => [
+                'title' => $student->name,
+                'metric' => 'No activity in 7 days',
+                'supportingText' => 'Open student management to review progress and follow-up.',
+                'href' => route('admin.students.show', $student->user_Id),
+            ])
+            ->all();
+
+        return [
+            [
+                'title' => 'Low Completion Watchlist',
+                'summary' => 'Tracked lessons with the weakest completion rates right now.',
+                'href' => route('admin.progress.index'),
+                'actionLabel' => 'Open lesson progress',
+                'items' => $lowCompletionLessons,
+                'emptyState' => 'No tracked lesson progress yet.',
+            ],
+            [
+                'title' => 'Low Pass Rate Tests',
+                'summary' => 'Tests with the lowest pass rates across submitted attempts.',
+                'href' => route('admin.tests.index'),
+                'actionLabel' => 'Open test management',
+                'items' => $lowPassTests,
+                'emptyState' => 'No submitted test attempts yet.',
+            ],
+            [
+                'title' => 'Inactive Students',
+                'summary' => "{$inactiveStudentsCount} students have not been active in the last 7 days.",
+                'href' => route('admin.students.index', ['status' => 'inactive']),
+                'actionLabel' => 'Review inactive students',
+                'items' => $inactiveStudentPreview,
+                'emptyState' => 'No inactive students right now.',
+            ],
+        ];
+    }
+
+    private function getActiveStudentIdsSince(Carbon $start): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('lesson_registrations')
+            ->select('student_id')
+            ->where('updated_at', '>=', $start)
+            ->union(
+                DB::table('lesson_progress')
+                    ->select('student_id')
+                    ->where('last_updated_at', '>=', $start)
+            )
+            ->union(
+                DB::table('exercise_submissions')
+                    ->select('student_id')
+                    ->where('submitted_at', '>=', $start)
+            )
+            ->union(
+                DB::table('test_submissions')
+                    ->select('student_id')
+                    ->where('submitted_at', '>=', $start)
+            )
+            ->union(
+                DB::table('forum_posts')
+                    ->join('student_profiles', 'forum_posts.user_id', '=', 'student_profiles.user_Id')
+                    ->select('student_profiles.student_id')
+                    ->where('forum_posts.created_at', '>=', $start)
+            )
+            ->union(
+                DB::table('forum_replies')
+                    ->join('student_profiles', 'forum_replies.user_id', '=', 'student_profiles.user_Id')
+                    ->select('student_profiles.student_id')
+                    ->where('forum_replies.created_at', '>=', $start)
+            );
     }
 
     private function countActiveStudentsBetween(Carbon $start, Carbon $end): int
