@@ -107,8 +107,8 @@ export default function Index({ students = null, stats = null, filters = {} }) {
     <div className={cn(
       "relative overflow-hidden rounded-xl border transition-all card-hover-effect",
       isDark 
-        ? "glassmorphism-enhanced border-white/10" 
-        : "bg-white border-purple-200 shadow-sm"
+        ? "bg-gradient-to-br from-slate-900 to-slate-800 border-white/10 shadow-sm shadow-slate-950/40"
+        : "bg-gradient-to-br from-white to-purple-50 border-purple-200 shadow-sm shadow-purple-200/60"
     )}>
       <div className={cn(
         "absolute inset-0 bg-gradient-to-br opacity-5",
@@ -173,7 +173,7 @@ export default function Index({ students = null, stats = null, filters = {} }) {
       <Head title="Student Management" />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           icon={Users}
           label="Total Students"
@@ -197,10 +197,10 @@ export default function Index({ students = null, stats = null, filters = {} }) {
 
       {/* Main Content Card */}
       <div className={cn(
-        "rounded-xl border overflow-hidden animate-fadeIn",
+        "rounded-xl border overflow-hidden shadow-sm",
         isDark
-          ? "glassmorphism-enhanced border-white/10"
-          : "bg-white border-purple-200 shadow-sm"
+          ? "bg-gradient-to-br from-slate-900 to-slate-800 border-white/10 shadow-slate-950/30"
+          : "bg-gradient-to-br from-white to-slate-50 border-purple-200 shadow-purple-200/60"
       )}>
         {/* Header with Search and Filters */}
         <div className={cn(
@@ -255,7 +255,7 @@ export default function Index({ students = null, stats = null, filters = {} }) {
           {/* Filter Panel */}
           {showFilters && (
             <div className={cn(
-              "mt-4 p-4 rounded-lg border animate-fadeIn",
+              "mt-4 p-4 rounded-lg border",
               isDark
                 ? "bg-white/5 border-white/10"
                 : "bg-gray-50 border-purple-200"
@@ -348,14 +348,13 @@ export default function Index({ students = null, stats = null, filters = {} }) {
             </thead>
             <tbody className="divide-y divide-white/5">
               {studentsData.length > 0 ? (
-                studentsData.map((student, index) => (
+                studentsData.map((student) => (
                   <tr
                     key={student.user_Id}
                     className={cn(
-                      "transition-colors animate-fadeIn",
+                      "transition-colors",
                       isDark ? "hover:bg-white/5" : "hover:bg-purple-50/50"
                     )}
-                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     {/* Student Info */}
                     <td className="px-6 py-4">

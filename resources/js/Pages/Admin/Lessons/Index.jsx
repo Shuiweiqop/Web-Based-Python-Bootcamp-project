@@ -134,7 +134,7 @@ export default function Index({ auth }) {
         <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
           {/* Statistics Cards */}
           {statistics && (
-            <div className="animate-fadeIn">
+            <div>
               <StatisticsCards 
                 statistics={statistics}
                 currentData={data}
@@ -282,7 +282,7 @@ export default function Index({ auth }) {
 
           {/* Lessons List */}
           {data.length === 0 ? (
-            <div className="animate-fadeIn">
+            <div>
               <EmptyState 
                 hasFilters={!!(filters?.q || filters?.difficulty || filters?.status)}
                 searchQuery={filters?.q}
@@ -292,12 +292,8 @@ export default function Index({ auth }) {
             </div>
           ) : (
             <div className="space-y-4">
-              {data.map((lesson, index) => (
-                <div 
-                  key={lesson.lesson_id}
-                  className="animate-fadeIn"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
+              {data.map((lesson) => (
+                <div key={lesson.lesson_id}>
                   <LessonCard
                     lesson={lesson}
                     isSelected={selectedLessons.includes(lesson.lesson_id)}

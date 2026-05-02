@@ -142,7 +142,7 @@ export default function RewardIndex({ auth, rewards, filters }) {
     <AuthenticatedLayout
       user={auth.user}
       header={
-        <div className="flex items-center justify-between animate-fadeIn">
+        <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
               Reward Management
@@ -196,11 +196,12 @@ export default function RewardIndex({ auth, rewards, filters }) {
               <div 
                 key={index}
                 className={cn(
-                  "rounded-2xl shadow-lg border backdrop-blur-sm p-6 card-hover-effect animate-fadeIn",
-                  isDark ? "bg-slate-900/50 border-white/10" : "bg-white",
+                  "rounded-2xl border p-6 card-hover-effect shadow-sm transition-all duration-200",
+                  isDark
+                    ? "bg-gradient-to-br from-slate-900 to-slate-800 border-white/10 shadow-slate-950/40"
+                    : "bg-gradient-to-br from-white to-slate-50 border-gray-200 shadow-slate-200/80",
                   stat.border
                 )}
-                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -224,8 +225,10 @@ export default function RewardIndex({ auth, rewards, filters }) {
 
           {/* Filters */}
           <div className={cn(
-            "rounded-2xl shadow-lg border backdrop-blur-sm p-6 mb-8 animate-slideDown",
-            isDark ? "bg-slate-900/50 border-white/10" : "bg-white border-gray-200"
+            "rounded-2xl border p-6 mb-8 shadow-sm",
+            isDark
+              ? "bg-gradient-to-br from-slate-900 to-slate-800 border-white/10 shadow-slate-950/30"
+              : "bg-gradient-to-br from-white to-slate-50 border-gray-200 shadow-slate-200/80"
           )}>
             <div className="flex items-center justify-between mb-6">
               <h2 className={cn("text-lg font-bold flex items-center gap-2", isDark ? "text-white" : "text-gray-900")}>
@@ -351,7 +354,7 @@ export default function RewardIndex({ auth, rewards, filters }) {
 
             {/* Active Filter Tags */}
             {hasActiveFilters() && (
-              <div className="mt-6 pt-6 border-t border-white/10 flex flex-wrap gap-2 animate-fadeIn">
+              <div className="mt-6 pt-6 border-t border-white/10 flex flex-wrap gap-2">
                 {searchTerm && (
                   <FilterTag
                     label={`Search: ${searchTerm}`}
@@ -390,8 +393,10 @@ export default function RewardIndex({ auth, rewards, filters }) {
 
           {/* Rewards Table */}
           <div className={cn(
-            "rounded-2xl shadow-lg border backdrop-blur-sm overflow-hidden animate-fadeIn",
-            isDark ? "bg-slate-900/50 border-white/10" : "bg-white border-gray-200"
+            "rounded-2xl border overflow-hidden shadow-sm",
+            isDark
+              ? "bg-gradient-to-br from-slate-900 to-slate-800 border-white/10 shadow-slate-950/30"
+              : "bg-gradient-to-br from-white to-slate-50 border-gray-200 shadow-slate-200/80"
           )}>
             {rewards?.data && rewards.data.length > 0 ? (
               <div className="overflow-x-auto">
@@ -427,16 +432,15 @@ export default function RewardIndex({ auth, rewards, filters }) {
                     </tr>
                   </thead>
                   <tbody className={cn("divide-y", isDark ? "divide-gray-700" : "divide-gray-200")}>
-                    {rewards.data.map((reward, index) => {
+                    {rewards.data.map((reward) => {
                       const rarityInfo = getRarityConfig(reward.rarity);
                       return (
                         <tr 
                           key={reward.reward_id} 
                           className={cn(
-                            "transition-all animate-fadeIn",
+                            "transition-colors",
                             isDark ? "hover:bg-purple-500/10" : "hover:bg-purple-50/50"
                           )}
-                          style={{ animationDelay: `${index * 50}ms` }}
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -567,7 +571,7 @@ export default function RewardIndex({ auth, rewards, filters }) {
 
           {/* Pagination */}
           {rewards?.links && rewards.links.length > 3 && (
-            <div className="mt-8 flex items-center justify-center gap-2 animate-fadeIn">
+            <div className="mt-8 flex items-center justify-center gap-2">
               {rewards.links.map((link, index) => {
                 if (!link.url) {
                   return (

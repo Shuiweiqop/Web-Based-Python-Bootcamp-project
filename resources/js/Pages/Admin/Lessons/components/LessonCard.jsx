@@ -72,14 +72,14 @@ export default function LessonCard({ lesson, isSelected, onSelect, onDelete, isD
   return (
     <>
       <div className={cn(
-        "rounded-2xl shadow-lg border backdrop-blur-sm transition-all card-hover-effect animate-fadeIn",
+        "rounded-2xl border shadow-sm transition-all duration-200 card-hover-effect",
         isSelected
           ? isDark 
-            ? "bg-gradient-to-br from-purple-500/30 to-cyan-500/30 border-purple-500/50 ring-2 ring-purple-400/50 shadow-purple-500/20 animate-glowPulse"
-            : "bg-gradient-to-br from-purple-100 to-cyan-100 border-purple-400 ring-2 ring-purple-300 shadow-purple-500/20"
+            ? "bg-gradient-to-br from-slate-900 to-slate-800 border-purple-500/60 ring-2 ring-purple-400/40 shadow-purple-950/40"
+            : "bg-gradient-to-br from-white to-purple-50 border-purple-400 ring-2 ring-purple-300 shadow-purple-200/70"
           : isDark
-            ? "bg-slate-900/50 border-white/10 hover:border-purple-500/30"
-            : "bg-white border-gray-200 hover:border-purple-300"
+            ? "bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700/80 hover:border-purple-500/40 shadow-slate-950/40"
+            : "bg-gradient-to-br from-white to-slate-50 border-slate-200 hover:border-purple-300 shadow-slate-200/80"
       )}>
         <div className="p-6">
           <div className="flex items-start gap-4">
@@ -122,6 +122,7 @@ export default function LessonCard({ lesson, isSelected, onSelect, onDelete, isD
                 {/* Difficulty */}
                 <span className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-lg",
+                  "shadow-sm",
                   `bg-gradient-to-r ${difficultyConfig.color} ${difficultyConfig.text}`
                 )}>
                   <Target className="w-3.5 h-3.5" />
@@ -130,7 +131,7 @@ export default function LessonCard({ lesson, isSelected, onSelect, onDelete, isD
 
                 {/* Status */}
                 <span className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border shadow-lg",
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border shadow-sm",
                   `bg-gradient-to-r ${statusConfig.color} ${statusConfig.text} ${statusConfig.border}`
                 )}>
                   {statusConfig.label}
@@ -139,7 +140,7 @@ export default function LessonCard({ lesson, isSelected, onSelect, onDelete, isD
                 {/* Duration */}
                 {lesson.estimated_duration && (
                   <span className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-lg",
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm",
                     isDark
                       ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                       : "bg-blue-100 text-blue-700 border border-blue-200"
@@ -152,7 +153,7 @@ export default function LessonCard({ lesson, isSelected, onSelect, onDelete, isD
                 {/* Video */}
                 {lesson.video_url && (
                   <span className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-lg",
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm",
                     isDark
                       ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
                       : "bg-purple-100 text-purple-700 border border-purple-200"
@@ -165,7 +166,7 @@ export default function LessonCard({ lesson, isSelected, onSelect, onDelete, isD
                 {/* Reward Points */}
                 {lesson.completion_reward_points > 0 && (
                   <span className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-lg",
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm",
                     isDark
                       ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                       : "bg-amber-100 text-amber-700 border border-amber-200"
