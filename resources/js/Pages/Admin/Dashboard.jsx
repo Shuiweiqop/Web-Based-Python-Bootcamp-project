@@ -25,12 +25,35 @@ import {
   Brain
 } from 'lucide-react';
 
-export default function AdminDashboard({ auth = {}, stats = {}, recentActivity = [], performance = [] }) {
+export default function AdminDashboard({ auth = {}, stats = {}, healthStatus = {}, summaryCards = {}, recentActivity = [], performance = [] }) {
     const defaultStats = {
         total_students: stats?.total_students ?? 0,
         total_lessons: stats?.total_lessons ?? 0,
         total_tests: stats?.total_tests ?? 0,
         active_students: stats?.active_students ?? 0,
+    };
+
+    const defaultSummaryCards = {
+        total_students: {
+            value: defaultStats.total_students,
+            trend: { direction: 'neutral', percent: 0, label: '0%' },
+            caption: 'No student growth data yet',
+        },
+        active_students: {
+            value: defaultStats.active_students,
+            trend: { direction: 'neutral', percent: 0, label: '0%' },
+            caption: 'No activity trend data yet',
+        },
+        total_lessons: {
+            value: defaultStats.total_lessons,
+            trend: { direction: 'neutral', percent: 0, label: '0%' },
+            caption: 'No lesson growth data yet',
+        },
+        total_tests: {
+            value: defaultStats.total_tests,
+            trend: { direction: 'neutral', percent: 0, label: '0%' },
+            caption: 'No test growth data yet',
+        },
     };
 
     const colorClasses = {
@@ -45,6 +68,38 @@ export default function AdminDashboard({ auth = {}, stats = {}, recentActivity =
         green: 'bg-green-500',
         blue: 'bg-blue-500',
         purple: 'bg-purple-500',
+    };
+
+    const healthClasses = {
+        healthy: 'bg-green-100 text-green-800 border-green-200',
+        attention: 'bg-amber-100 text-amber-800 border-amber-200',
+        critical: 'bg-rose-100 text-rose-800 border-rose-200',
+    };
+
+    const healthDotClasses = {
+        healthy: 'bg-green-600',
+        attention: 'bg-amber-500',
+        critical: 'bg-rose-600',
+    };
+
+    const trendClasses = {
+        up: 'bg-green-50 text-green-700',
+        down: 'bg-rose-50 text-rose-700',
+        neutral: 'bg-slate-100 text-slate-600',
+    };
+
+    const cardSummaries = {
+        total_students: summaryCards?.total_students ?? defaultSummaryCards.total_students,
+        active_students: summaryCards?.active_students ?? defaultSummaryCards.active_students,
+        total_lessons: summaryCards?.total_lessons ?? defaultSummaryCards.total_lessons,
+        total_tests: summaryCards?.total_tests ?? defaultSummaryCards.total_tests,
+    };
+
+    const dashboardHealth = {
+        state: healthStatus?.state ?? 'healthy',
+        label: healthStatus?.label ?? 'Platform Healthy',
+        summary: healthStatus?.summary ?? 'No open platform issues detected',
+        details: healthStatus?.details ?? [],
     };
     
     const user = auth?.user;
@@ -73,10 +128,13 @@ export default function AdminDashboard({ auth = {}, stats = {}, recentActivity =
                         <p className="text-slate-600 mt-1">Welcome back, {user?.name}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 text-sm font-medium rounded-lg border border-green-200 dark:border-green-700">
-    <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full animate-pulse" />
-    All systems operational
-</span>
+                        <div className={`rounded-lg border px-3 py-2 ${healthClasses[dashboardHealth.state] ?? healthClasses.healthy}`}>
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                                <div className={`h-2 w-2 rounded-full animate-pulse ${healthDotClasses[dashboardHealth.state] ?? healthDotClasses.healthy}`} />
+                                <span>{dashboardHealth.label}</span>
+                            </div>
+                            <p className="mt-1 text-xs opacity-90">{dashboardHealth.summary}</p>
+                        </div>
                     </div>
                 </div>
             }
@@ -91,16 +149,16 @@ export default function AdminDashboard({ auth = {}, stats = {}, recentActivity =
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                             <Users className="w-6 h-6 text-blue-600" />
                         </div>
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${trendClasses[cardSummaries.total_students.trend.direction] ?? trendClasses.neutral}`}>
                             <TrendingUp className="w-3 h-3" />
-                            12%
+                            {cardSummaries.total_students.trend.label}
                         </span>
                     </div>
                     <div className="text-3xl font-bold text-slate-900 mb-1">
-                        {defaultStats.total_students.toLocaleString()}
+                        {cardSummaries.total_students.value.toLocaleString()}
                     </div>
                     <div className="text-sm text-slate-600">Total Students</div>
-                    <div className="mt-3 text-xs text-slate-500">+12% from last month</div>
+                    <div className="mt-3 text-xs text-slate-500">{cardSummaries.total_students.caption}</div>
                 </div>
 
                 {/* Active Students */}
@@ -109,13 +167,16 @@ export default function AdminDashboard({ auth = {}, stats = {}, recentActivity =
                         <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                             <Activity className="w-6 h-6 text-green-600" />
                         </div>
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${trendClasses[cardSummaries.active_students.trend.direction] ?? trendClasses.neutral}`}>
+                            <TrendingUp className="w-3 h-3" />
+                            {cardSummaries.active_students.trend.label}
+                        </span>
                     </div>
                     <div className="text-3xl font-bold text-slate-900 mb-1">
-                        {defaultStats.active_students.toLocaleString()}
+                        {cardSummaries.active_students.value.toLocaleString()}
                     </div>
                     <div className="text-sm text-slate-600">Active This Week</div>
-                    <div className="mt-3 text-xs text-slate-500">Last 7 days</div>
+                    <div className="mt-3 text-xs text-slate-500">{cardSummaries.active_students.caption}</div>
                 </div>
 
                 {/* Total Lessons */}
@@ -124,13 +185,16 @@ export default function AdminDashboard({ auth = {}, stats = {}, recentActivity =
                         <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                             <BookOpen className="w-6 h-6 text-purple-600" />
                         </div>
-                        <BarChart3 className="w-5 h-5 text-slate-400" />
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${trendClasses[cardSummaries.total_lessons.trend.direction] ?? trendClasses.neutral}`}>
+                            <TrendingUp className="w-3 h-3" />
+                            {cardSummaries.total_lessons.trend.label}
+                        </span>
                     </div>
                     <div className="text-3xl font-bold text-slate-900 mb-1">
-                        {defaultStats.total_lessons.toLocaleString()}
+                        {cardSummaries.total_lessons.value.toLocaleString()}
                     </div>
                     <div className="text-sm text-slate-600">Total Lessons</div>
-                    <div className="mt-3 text-xs text-slate-500">Content library</div>
+                    <div className="mt-3 text-xs text-slate-500">{cardSummaries.total_lessons.caption}</div>
                 </div>
 
                 {/* Total Tests */}
@@ -139,13 +203,16 @@ export default function AdminDashboard({ auth = {}, stats = {}, recentActivity =
                         <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                             <FileText className="w-6 h-6 text-orange-600" />
                         </div>
-                        <CheckCircle className="w-5 h-5 text-slate-400" />
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${trendClasses[cardSummaries.total_tests.trend.direction] ?? trendClasses.neutral}`}>
+                            <TrendingUp className="w-3 h-3" />
+                            {cardSummaries.total_tests.trend.label}
+                        </span>
                     </div>
                     <div className="text-3xl font-bold text-slate-900 mb-1">
-                        {defaultStats.total_tests.toLocaleString()}
+                        {cardSummaries.total_tests.value.toLocaleString()}
                     </div>
                     <div className="text-sm text-slate-600">Total Tests</div>
-                    <div className="mt-3 text-xs text-slate-500">Assessment pool</div>
+                    <div className="mt-3 text-xs text-slate-500">{cardSummaries.total_tests.caption}</div>
                 </div>
             </div>
 

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ForumPost;
 use App\Models\ForumReply;
+use App\Models\ForumReport;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -107,7 +108,68 @@ class AdminDashboardTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Dashboard')
             ->where('stats.active_students', 2)
+            ->where('summaryCards.active_students.value', 2)
             ->where('performance.2.value', 100)
+        );
+    }
+
+    public function test_admin_dashboard_summary_cards_use_real_growth_data(): void
+    {
+        $admin = $this->createVerifiedUser('administrator', 'Admin Dashboard User');
+
+        $previousMonthStudent = $this->createVerifiedUser('student', 'Previous Month Student');
+        $currentMonthStudentA = $this->createVerifiedUser('student', 'Current Month Student A');
+        $currentMonthStudentB = $this->createVerifiedUser('student', 'Current Month Student B');
+
+        $previousMonthStudent->forceFill([
+            'created_at' => now()->subMonthNoOverflow()->startOfMonth()->addDays(2),
+            'updated_at' => now()->subMonthNoOverflow()->startOfMonth()->addDays(2),
+        ])->save();
+        $currentMonthStudentA->forceFill([
+            'created_at' => now()->startOfMonth()->addDay(),
+            'updated_at' => now()->startOfMonth()->addDay(),
+        ])->save();
+        $currentMonthStudentB->forceFill([
+            'created_at' => now()->startOfMonth()->addDays(2),
+            'updated_at' => now()->startOfMonth()->addDays(2),
+        ])->save();
+
+        $response = $this->actingAs($admin)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Dashboard')
+            ->where('summaryCards.total_students.value', 3)
+            ->where('summaryCards.total_students.trend.label', '+100%')
+            ->where('summaryCards.total_students.caption', '+1 new students vs last month')
+        );
+    }
+
+    public function test_admin_dashboard_health_status_uses_real_moderation_and_security_signals(): void
+    {
+        $admin = $this->createVerifiedUser('administrator', 'Admin Dashboard User');
+        $reporter = $this->createVerifiedUser('student', 'Report Student');
+        $offender = $this->createVerifiedUser('student', 'Locked Student');
+
+        ForumReport::create([
+            'reporter_user_id' => $reporter->user_Id,
+            'reportable_type' => 'post',
+            'reportable_id' => 999,
+            'reason' => 'spam',
+            'description' => 'Needs review',
+            'status' => 'pending',
+        ]);
+
+        $offender->forceFill(['locked_until' => now()->addHour()])->save();
+
+        $response = $this->actingAs($admin)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Dashboard')
+            ->where('healthStatus.state', 'attention')
+            ->where('healthStatus.label', 'Needs Attention')
+            ->where('healthStatus.summary', '1 pending reports, 1 locked accounts')
         );
     }
 

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\LessonRegistration;
+use App\Models\AISessionLog;
+use App\Models\ForumReport;
 use App\Models\Test;
 use App\Models\User;
 use App\Services\DailyChallengeService;
@@ -99,6 +101,8 @@ class DashboardController extends Controller
             'active_students' => $this->getActiveStudents(),
         ];
 
+        $healthStatus = $this->getAdminHealthStatus();
+        $summaryCards = $this->getAdminSummaryCards($stats);
         $recentActivity = $this->getAdminRecentActivity();
         $performance = $this->getAdminPerformanceMetrics($stats);
 
@@ -112,6 +116,8 @@ class DashboardController extends Controller
                 ],
             ],
             'stats' => $stats,
+            'healthStatus' => $healthStatus,
+            'summaryCards' => $summaryCards,
             'recentActivity' => $recentActivity,
             'performance' => $performance,
         ]);
@@ -380,6 +386,105 @@ class DashboardController extends Controller
             ->all();
     }
 
+    private function getAdminHealthStatus(): array
+    {
+        $pendingReports = ForumReport::query()->pending()->count();
+        $lockedAccounts = User::query()
+            ->whereNotNull('locked_until')
+            ->where('locked_until', '>', now())
+            ->count();
+        $aiSessionsLast24Hours = AISessionLog::query()
+            ->where('timestamp', '>=', now()->subDay())
+            ->count();
+        $reportsReviewedLast24Hours = ForumReport::query()
+            ->whereNotNull('reviewed_at')
+            ->where('reviewed_at', '>=', now()->subDay())
+            ->count();
+
+        $state = 'healthy';
+        $label = 'Platform Healthy';
+
+        if ($pendingReports >= 10 || $lockedAccounts >= 5) {
+            $state = 'critical';
+            $label = 'Needs Immediate Review';
+        } elseif ($pendingReports > 0 || $lockedAccounts > 0) {
+            $state = 'attention';
+            $label = 'Needs Attention';
+        }
+
+        return [
+            'state' => $state,
+            'label' => $label,
+            'summary' => "{$pendingReports} pending reports, {$lockedAccounts} locked accounts",
+            'details' => [
+                "{$reportsReviewedLast24Hours} reports reviewed in the last 24h",
+                "{$aiSessionsLast24Hours} AI sessions logged in the last 24h",
+            ],
+        ];
+    }
+
+    private function getAdminSummaryCards(array $stats): array
+    {
+        $monthStart = now()->startOfMonth();
+        $previousMonthStart = now()->subMonthNoOverflow()->startOfMonth();
+        $previousMonthEnd = $monthStart->copy()->subSecond();
+
+        $studentCurrent = User::query()
+            ->where('role', 'student')
+            ->where('created_at', '>=', $monthStart)
+            ->count();
+        $studentPrevious = User::query()
+            ->where('role', 'student')
+            ->whereBetween('created_at', [$previousMonthStart, $previousMonthEnd])
+            ->count();
+
+        $lessonCurrent = Lesson::query()
+            ->where('status', 'active')
+            ->where('created_at', '>=', $monthStart)
+            ->count();
+        $lessonPrevious = Lesson::query()
+            ->where('status', 'active')
+            ->whereBetween('created_at', [$previousMonthStart, $previousMonthEnd])
+            ->count();
+
+        $testCurrent = Test::query()
+            ->where('status', 'active')
+            ->where('created_at', '>=', $monthStart)
+            ->count();
+        $testPrevious = Test::query()
+            ->where('status', 'active')
+            ->whereBetween('created_at', [$previousMonthStart, $previousMonthEnd])
+            ->count();
+
+        $currentWeekStart = now()->subDays(7);
+        $previousWeekStart = now()->subDays(14);
+        $previousWeekEnd = $currentWeekStart->copy()->subSecond();
+        $previousActiveStudents = $this->countActiveStudentsBetween($previousWeekStart, $previousWeekEnd);
+
+        return [
+            'total_students' => [
+                'value' => $stats['total_students'],
+                'trend' => $this->formatTrend($studentCurrent, $studentPrevious),
+                'caption' => $this->formatComparisonCaption($studentCurrent, $studentPrevious, 'new students', 'this month', 'last month'),
+            ],
+            'active_students' => [
+                'value' => $stats['active_students'],
+                'trend' => $this->formatTrend($stats['active_students'], $previousActiveStudents),
+                'caption' => $this->formatComparisonCaption($stats['active_students'], $previousActiveStudents, 'active students', 'last 7 days', 'previous 7 days'),
+            ],
+            'total_lessons' => [
+                'value' => $stats['total_lessons'],
+                'trend' => $this->formatTrend($lessonCurrent, $lessonPrevious),
+                'caption' => $this->formatComparisonCaption($lessonCurrent, $lessonPrevious, 'active lessons', 'this month', 'last month'),
+            ],
+            'total_tests' => [
+                'value' => $stats['total_tests'],
+                'trend' => $this->formatTrend($testCurrent, $testPrevious),
+                'caption' => $this->formatComparisonCaption($testCurrent, $testPrevious, 'active tests', 'this month', 'last month'),
+            ],
+        ];
+    }
+
     private function getAdminPerformanceMetrics(array $stats): array
     {
         $lessonProgressCount = LessonProgress::query()->count();
@@ -424,5 +529,90 @@ class DashboardController extends Controller
                 'hint' => "{$stats['active_students']} active students in the last 7 days",
             ],
         ];
+    }
+
+    private function countActiveStudentsBetween(Carbon $start, Carbon $end): int
+    {
+        $activeStudentIds = DB::table('lesson_registrations')
+            ->select('student_id')
+            ->whereBetween('updated_at', [$start, $end])
+            ->union(
+                DB::table('lesson_progress')
+                    ->select('student_id')
+                    ->whereBetween('last_updated_at', [$start, $end])
+            )
+            ->union(
+                DB::table('exercise_submissions')
+                    ->select('student_id')
+                    ->whereBetween('submitted_at', [$start, $end])
+            )
+            ->union(
+                DB::table('test_submissions')
+                    ->select('student_id')
+                    ->whereBetween('submitted_at', [$start, $end])
+            )
+            ->union(
+                DB::table('forum_posts')
+                    ->join('student_profiles', 'forum_posts.user_id', '=', 'student_profiles.user_Id')
+                    ->select('student_profiles.student_id')
+                    ->whereBetween('forum_posts.created_at', [$start, $end])
+            )
+            ->union(
+                DB::table('forum_replies')
+                    ->join('student_profiles', 'forum_replies.user_id', '=', 'student_profiles.user_Id')
+                    ->select('student_profiles.student_id')
+                    ->whereBetween('forum_replies.created_at', [$start, $end])
+            );
+
+        return DB::query()
+            ->fromSub($activeStudentIds, 'active_students')
+            ->distinct()
+            ->count('student_id');
+    }
+
+    private function formatTrend(int $current, int $previous): array
+    {
+        if ($current === 0 && $previous === 0) {
+            return [
+                'direction' => 'neutral',
+                'percent' => 0,
+                'label' => '0%',
+            ];
+        }
+
+        if ($previous === 0) {
+            return [
+                'direction' => 'up',
+                'percent' => 100,
+                'label' => '+100%',
+            ];
+        }
+
+        $percent = (int) round((($current - $previous) / $previous) * 100);
+
+        return [
+            'direction' => $percent > 0 ? 'up' : ($percent < 0 ? 'down' : 'neutral'),
+            'percent' => abs($percent),
+            'label' => ($percent > 0 ? '+' : '') . $percent . '%',
+        ];
+    }
+
+    private function formatComparisonCaption(int $current, int $previous, string $subject, string $currentLabel, string $previousLabel): string
+    {
+        $difference = $current - $previous;
+
+        if ($difference > 0) {
+            return "+{$difference} {$subject} vs {$previousLabel}";
+        }
+
+        if ($difference < 0) {
+            return abs($difference) . " fewer {$subject} than {$previousLabel}";
+        }
+
+        if ($current === 0) {
+            return "No {$subject} in {$currentLabel}";
+        }
+
+        return "Flat vs {$previousLabel}";
     }
 }
