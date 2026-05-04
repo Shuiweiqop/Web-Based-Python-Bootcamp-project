@@ -4,6 +4,9 @@ import StudentLayout from '@/Layouts/StudentLayout';
 import {
   Award,
   BookOpen,
+  Compass,
+  Gem,
+  Sparkle,
   Search,
   Sparkles,
   Trophy,
@@ -119,6 +122,13 @@ const LessonCard = ({ lesson }) => {
   const config = getDifficultyConfig(lesson.difficulty);
   const bestForLabel = getBestForLabel(lesson);
   const clickReason = getClickReason(lesson);
+  const quickStats = [
+    lesson.estimated_duration ? `${lesson.estimated_duration} min` : 'Self-paced',
+    lesson.completion_reward_points ? `${lesson.completion_reward_points} pts` : null,
+    lesson.required_exercises || lesson.required_tests
+      ? `${lesson.required_exercises ?? 0} practice${(lesson.required_exercises ?? 0) === 1 ? '' : 's'} / ${lesson.required_tests ?? 0} check${(lesson.required_tests ?? 0) === 1 ? '' : 's'}`
+      : null,
+  ].filter(Boolean);
 
   return (
     <Link href={route('lessons.show', lesson.lesson_id)} className="group block">
@@ -126,6 +136,21 @@ const LessonCard = ({ lesson }) => {
         <div className={`absolute inset-0 bg-gradient-to-br ${config.color} opacity-10 transition-opacity duration-300 group-hover:opacity-20`} />
 
         <div className="relative p-6">
+          <div className="mb-5 rounded-2xl border border-blue-400/20 bg-gradient-to-r from-blue-500/15 via-cyan-500/10 to-transparent p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-200">
+                  <Compass className="h-3.5 w-3.5" />
+                  Recommended For
+                </p>
+                <p className="mt-2 text-base font-semibold text-white">{bestForLabel}</p>
+              </div>
+              <div className="rounded-xl bg-white/10 p-2 text-cyan-200">
+                <Sparkle className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${config.color} shadow-lg`}>
@@ -135,9 +160,11 @@ const LessonCard = ({ lesson }) => {
                 {config.label}
               </span>
             </div>
-            <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-200">
-              {bestForLabel}
-            </span>
+            {lesson.video_url && (
+              <span className="rounded-full border border-rose-400/30 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-rose-200">
+                Video support
+              </span>
+            )}
           </div>
 
           <h3 className="mb-3 line-clamp-2 text-xl font-bold text-white transition-colors group-hover:text-blue-300">
@@ -150,18 +177,34 @@ const LessonCard = ({ lesson }) => {
             </p>
           )}
 
-          <div className="mb-4 rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">Why click this lesson</p>
-            <p className="mt-1 text-sm font-semibold text-white">{clickReason}</p>
+          <div className="mb-4 rounded-xl border border-violet-400/20 bg-violet-500/10 px-4 py-3">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-violet-200">
+              <Gem className="h-3.5 w-3.5" />
+              Why Click This Lesson
+            </p>
+            <p className="mt-2 text-sm font-semibold text-white">{clickReason}</p>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/10 pt-4">
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
-              {lesson.estimated_duration && (
-                <span>{lesson.estimated_duration} min</span>
-              )}
-              {lesson.completion_reward_points && (
-                <span className="font-bold text-yellow-400">{lesson.completion_reward_points} pts</span>
+          <div className="flex flex-wrap gap-2 border-t border-white/10 pt-4">
+            {quickStats.map((stat) => (
+              <span
+                key={stat}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-200"
+              >
+                {stat}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              {lesson.completion_reward_points ? (
+                <>
+                  <Award className="h-4 w-4 text-yellow-400" />
+                  <span>Reward ready on completion</span>
+                </>
+              ) : (
+                <span>Guided lesson path</span>
               )}
             </div>
             <div className="text-sm font-semibold text-blue-400 transition-colors group-hover:text-blue-300">
