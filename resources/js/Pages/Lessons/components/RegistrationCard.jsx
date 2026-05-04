@@ -1,20 +1,21 @@
 import React from 'react';
 import { router } from '@inertiajs/react';
-import { 
-  User, 
-  BookOpen, 
-  Sparkles, 
-  Trophy, 
-  TrendingUp, 
-  Zap, 
-  Gamepad2, 
-  ChevronRight 
+import {
+  BookOpen,
+  ChevronRight,
+  Gamepad2,
+  Gift,
+  Sparkles,
+  Target,
+  Trophy,
+  User,
+  Zap,
 } from 'lucide-react';
 
-export default function RegistrationCard({ 
-  auth, 
-  lesson, 
-  isLoading, 
+export default function RegistrationCard({
+  auth,
+  lesson,
+  isLoading,
   lessonCompleted,
   completedExercises,
   totalExercises,
@@ -25,64 +26,55 @@ export default function RegistrationCard({
   onRegister,
   onUnregister,
   scrollToSection,
-  onCompleteLesson
+  onCompleteLesson,
 }) {
-  // 🔥 ALL HOOKS MUST BE AT THE TOP - before any conditional returns!
   const isStudent = auth?.user?.role === 'student';
   const isRegistered = lesson.is_registered;
-  
-  // 计算完成状态
-  const allExercisesCompleted = completedExercises === totalExercises && totalExercises > 0;
-  const allTestsPassed = passedTests === totalTests && totalTests > 0;
+  const allExercisesCompleted = totalExercises === 0 || completedExercises === totalExercises;
+  const allTestsPassed = totalTests === 0 || passedTests === totalTests;
   const canCompleteLesson = !lessonCompleted && contentCompleted && allExercisesCompleted && allTestsPassed;
+  const guidedGateProgress =
+    (contentCompleted ? 1 : 0) +
+    (allExercisesCompleted ? 1 : 0) +
+    (allTestsPassed ? 1 : 0);
+  const guidedProgressPercent = Math.round((guidedGateProgress / 3) * 100);
 
-  // 🔥 调试：打印接收到的 props (Hook #1)
-  React.useEffect(() => {
-    console.log('🎯 RegistrationCard Props:', {
-      'lessonCompleted (prop)': lessonCompleted,
-      'lesson.registration_status': lesson?.registration_status,
-      'lesson.is_completed': lesson?.is_completed,
-      'completedExercises': completedExercises,
-      'totalExercises': totalExercises,
-      'passedTests': passedTests,
-      'totalTests': totalTests,
-      'contentCompleted': contentCompleted,
-    });
-  }, [lessonCompleted, lesson, completedExercises, totalExercises, passedTests, totalTests, contentCompleted]);
-
-  // 🔥 调试日志 (Hook #2)
-  React.useEffect(() => {
-    if (isRegistered) {
-      console.log('🎯 RegistrationCard 状态:', {
-        lessonCompleted,
-        allExercisesCompleted,
-        allTestsPassed,
-        canCompleteLesson,
-        completedExercises,
-        totalExercises,
-        passedTests,
-        totalTests,
-        contentCompleted
-      });
+  let nextMilestone = 'Register to begin this lesson journey.';
+  if (isRegistered) {
+    if (!contentCompleted) {
+      nextMilestone = 'Review the lesson content to unlock guided practice.';
+    } else if (!allExercisesCompleted) {
+      const remaining = Math.max(totalExercises - completedExercises, 0);
+      nextMilestone = remaining === 1
+        ? 'One more exercise unlocks the checks.'
+        : `${remaining} more exercises unlock the checks.`;
+    } else if (!allTestsPassed) {
+      const remaining = Math.max(totalTests - passedTests, 0);
+      nextMilestone = remaining === 1
+        ? 'Pass 1 more check to finish this lesson.'
+        : `Pass ${remaining} more checks to finish this lesson.`;
+    } else if (canCompleteLesson) {
+      nextMilestone = `You are ready to claim ${lesson.completion_reward_points} points.`;
+    } else if (lessonCompleted) {
+      nextMilestone = 'You completed this lesson and claimed the reward.';
     }
-  }, [isRegistered, lessonCompleted, allExercisesCompleted, allTestsPassed, canCompleteLesson, completedExercises, totalExercises, passedTests, totalTests, contentCompleted]);
+  }
 
-  // ================== 未登录状态 ==================
   if (!auth?.user) {
     return (
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-blue-600 rounded-xl">
+      <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-100 p-6 shadow-lg">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="rounded-xl bg-blue-600 p-3">
             <User className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-xl font-bold text-blue-900">Ready to Start?</h3>
+          <h3 className="text-xl font-bold text-blue-900">Ready to start?</h3>
         </div>
-        <p className="text-blue-800 mb-5 leading-relaxed">
-          Register for an account to enroll in this lesson and track your progress!
+        <p className="mb-5 leading-relaxed text-blue-800">
+          Log in to register, track your lesson journey, and collect rewards as you finish.
         </p>
         <button
           onClick={() => router.visit('/login')}
-          className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-xl transform hover:-translate-y-0.5"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-blue-700 hover:to-indigo-700"
         >
           <User className="h-5 w-5" />
           Login to Register
@@ -91,12 +83,11 @@ export default function RegistrationCard({
     );
   }
 
-  // ================== 管理员视图 ==================
   if (!isStudent) {
     return (
-      <div className="bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl p-6 border-2 border-gray-200">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 bg-gray-600 rounded-lg">
+      <div className="rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-slate-100 p-6">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="rounded-lg bg-gray-600 p-2">
             <BookOpen className="h-5 w-5 text-white" />
           </div>
           <h3 className="text-lg font-bold text-gray-900">Admin View</h3>
@@ -106,219 +97,160 @@ export default function RegistrationCard({
     );
   }
 
-  // ================== 未注册状态 ==================
   if (!isRegistered) {
     return (
-      <div className="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl p-6 border-2 border-emerald-300 shadow-lg">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-emerald-600 rounded-xl">
+      <div className="rounded-2xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-100 p-6 shadow-lg">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="rounded-xl bg-emerald-600 p-3">
             <Sparkles className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-xl font-bold text-emerald-900">Enroll Now!</h3>
+          <h3 className="text-xl font-bold text-emerald-900">Start this lesson</h3>
         </div>
-        <p className="text-emerald-800 mb-5 leading-relaxed">
-          Join this lesson and start your learning journey immediately!
+        <p className="mb-5 leading-relaxed text-emerald-800">
+          Join the guided flow, unlock practice in order, and finish strong with your reward.
         </p>
         <button
           onClick={onRegister}
           disabled={isLoading}
-          className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-xl transform hover:-translate-y-0.5"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-3.5 font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-emerald-700 hover:to-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-              Registering...
-            </>
-          ) : (
-            <>
-              <BookOpen className="h-5 w-5" />
-              Register for This Lesson
-            </>
-          )}
+          {isLoading ? 'Registering...' : 'Register for This Lesson'}
         </button>
       </div>
     );
   }
 
-  // ================== 已注册状态 ==================
   return (
-    <div className={`rounded-2xl p-6 border-2 shadow-lg ${
-      lessonCompleted 
-        ? 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border-amber-300' 
-        : 'bg-gradient-to-br from-emerald-50 to-teal-100 border-emerald-300'
+    <div className={`rounded-2xl border-2 p-6 shadow-lg ${
+      lessonCompleted
+        ? 'border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50'
+        : 'border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-100'
     }`}>
-      {/* 标题和状态 */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`p-3 rounded-xl ${lessonCompleted ? 'bg-amber-600' : 'bg-emerald-600'}`}>
+      <div className="mb-4 flex items-center gap-3">
+        <div className={`rounded-xl p-3 ${lessonCompleted ? 'bg-amber-600' : 'bg-emerald-600'}`}>
           {lessonCompleted ? (
             <Trophy className="h-6 w-6 text-white" />
           ) : (
-            <TrendingUp className="h-6 w-6 text-white" />
+            <Target className="h-6 w-6 text-white" />
           )}
         </div>
         <div>
           <h3 className={`text-xl font-bold ${lessonCompleted ? 'text-amber-900' : 'text-emerald-900'}`}>
-            {lessonCompleted ? 'Guided Flow Complete!' : 'Guided Lesson Flow'}
+            {lessonCompleted ? 'Reward Claimed' : 'Your Guided Lesson Flow'}
           </h3>
-          {!lessonCompleted && (
-            <p className="text-sm text-emerald-700">Review content first, then practice, then pass the checks.</p>
-          )}
+          <p className={`text-sm ${lessonCompleted ? 'text-amber-700' : 'text-emerald-700'}`}>
+            {nextMilestone}
+          </p>
         </div>
       </div>
 
-      {/* 进度卡片 */}
-      <div className="mb-5 p-5 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm">
+      <div className="mb-5 rounded-xl border border-white/60 bg-white/75 p-5 shadow-sm">
         <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">1. Content Reviewed</span>
-            <span className="font-bold text-lg text-gray-900">
-              {contentCompleted ? 'Yes' : 'No'}
-              {contentCompleted && (
-                <span className="ml-2 text-emerald-600">✓</span>
-              )}
-            </span>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">1. Review Content</span>
+            <span className="font-bold text-gray-900">{contentCompleted ? 'Done' : 'Pending'}</span>
           </div>
-
-          {/* 练习进度 */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">2. Practice Complete</span>
-            <span className="font-bold text-lg text-gray-900">
-              {completedExercises}/{totalExercises}
-              {allExercisesCompleted && (
-                <span className="ml-2 text-emerald-600">✓</span>
-              )}
-            </span>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">2. Finish Practice</span>
+            <span className="font-bold text-gray-900">{completedExercises}/{totalExercises}</span>
           </div>
-
-          {/* 测试进度 */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">3. Checks Passed</span>
-            <span className="font-bold text-lg text-gray-900">
-              {passedTests}/{totalTests}
-              {allTestsPassed && (
-                <span className="ml-2 text-amber-600">✓</span>
-              )}
-            </span>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">3. Pass Checks</span>
+            <span className="font-bold text-gray-900">{passedTests}/{totalTests}</span>
           </div>
-          
-          {/* 总体进度条 */}
-          <div className="pt-2">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-semibold text-gray-600">Guided Path Progress</span>
-              <span className="text-sm font-bold text-gray-900">{exerciseProgress}%</span>
+          <div className="border-t border-gray-200 pt-2">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-600">Guided path progress</span>
+              <span className="text-sm font-bold text-gray-900">{guidedProgressPercent}%</span>
             </div>
-            <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+            <div className="h-3 overflow-hidden rounded-full bg-gray-200 shadow-inner">
               <div
                 className={`h-full transition-all duration-700 ease-out ${
-                  lessonCompleted 
-                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500' 
+                  lessonCompleted
+                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500'
                     : 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-500'
                 }`}
-                style={{ width: `${exerciseProgress}%` }}
+                style={{ width: `${guidedProgressPercent}%` }}
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* 🔥 已完成时显示奖励（不能再次领取） */}
       {lessonCompleted && (
-        <div className="mb-5 p-4 bg-gradient-to-r from-amber-100 to-yellow-100 border-2 border-amber-400 rounded-xl text-center shadow-md">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Trophy className="h-6 w-6 text-amber-600" />
-            <p className="text-amber-900 font-bold text-lg">
-              Lesson Completed!
-            </p>
+        <div className="mb-5 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-100 to-yellow-100 p-4 text-center shadow-md">
+          <div className="mb-1 flex items-center justify-center gap-2">
+            <Gift className="h-6 w-6 text-amber-600" />
+            <p className="text-lg font-bold text-amber-900">Lesson completed</p>
           </div>
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="mb-1 flex items-center justify-center gap-2">
             <Zap className="h-5 w-5 text-amber-600" />
-            <p className="text-amber-800 font-semibold">
-              +{lesson.completion_reward_points} Points Earned
+            <p className="font-semibold text-amber-800">
+              {lesson.completion_reward_points} points collected
             </p>
           </div>
-          <p className="text-amber-700 text-sm">Amazing work! 🎊</p>
+          <p className="text-sm text-amber-700">You finished the full guided lesson flow.</p>
         </div>
       )}
 
-      {/* 🔥 完成课程按钮 - 只在未完成且满足条件时显示 */}
       {canCompleteLesson && (
-        <div className="mb-5 p-5 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl shadow-lg">
-          <div className="text-center mb-4">
-            <div className="inline-block p-3 bg-green-500 rounded-full mb-3 animate-bounce">
-              <Trophy className="h-8 w-8 text-white" />
+        <div className="mb-5 rounded-xl border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 p-5 shadow-lg">
+          <div className="mb-4 text-center">
+            <div className="mb-3 inline-block rounded-full bg-green-500 p-3">
+              <Gift className="h-8 w-8 text-white" />
             </div>
-            <h4 className="text-lg font-bold text-green-900 mb-2">
-              🎉 Ready to Complete!
-            </h4>
-            <p className="text-sm text-green-700 mb-3">
-              You reviewed the lesson, finished practice, and passed every check.
+            <h4 className="mb-2 text-lg font-bold text-green-900">Reward ready to claim</h4>
+            <p className="mb-3 text-sm text-green-700">
+              You reviewed the content, cleared the practice, and passed every check.
             </p>
-            <div className="flex items-center justify-center gap-2 text-sm text-green-600 mb-4">
-              <span className="px-3 py-1 bg-green-100 rounded-full font-medium">
-                ✓ Content
-              </span>
-              <span className="px-3 py-1 bg-green-100 rounded-full font-medium">
-                ✓ {completedExercises} Exercises
-              </span>
-              <span className="px-3 py-1 bg-green-100 rounded-full font-medium">
-                ✓ {passedTests} Tests
-              </span>
+            <div className="flex items-center justify-center gap-2 text-sm text-green-600">
+              <span className="rounded-full bg-green-100 px-3 py-1 font-medium">Content done</span>
+              <span className="rounded-full bg-green-100 px-3 py-1 font-medium">Practice done</span>
+              <span className="rounded-full bg-green-100 px-3 py-1 font-medium">Checks passed</span>
             </div>
           </div>
           <button
             onClick={onCompleteLesson}
             disabled={isLoading}
-            className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-lg rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 py-4 text-lg font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-green-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                Completing...
-              </>
-            ) : (
-              <>
-                <Trophy className="h-6 w-6" />
-                Complete Lesson & Claim {lesson.completion_reward_points} Points
-              </>
-            )}
+            {isLoading ? 'Completing...' : `Claim ${lesson.completion_reward_points} Points`}
           </button>
         </div>
       )}
 
-      {!lessonCompleted && !contentCompleted && (
+      {!lessonCompleted && !canCompleteLesson && (
         <div className="mb-5 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm">
-          Follow the guided order: review the lesson, unlock practice, pass the tests, then claim points.
+          {nextMilestone}
         </div>
       )}
-      
-      {/* 快速导航按钮 */}
+
       {!lessonCompleted && (
-        <div className="space-y-3 mb-5">
+        <div className="mb-5 space-y-3">
           <button
             onClick={() => scrollToSection('exercises-section')}
-            className="w-full group inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-xl transform hover:-translate-y-0.5"
+            className="group inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-blue-700 hover:to-indigo-700"
           >
-            <Gamepad2 className="h-5 w-5 group-hover:rotate-12 transition-transform" />
+            <Gamepad2 className="h-5 w-5 transition-transform group-hover:rotate-12" />
             Go to Practice
-            <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </button>
           <button
             onClick={() => scrollToSection('tests-section')}
-            className="w-full group inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-md hover:shadow-xl transform hover:-translate-y-0.5"
+            className="group inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3.5 font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-purple-700 hover:to-pink-700"
           >
-            <Trophy className="h-5 w-5 group-hover:rotate-12 transition-transform" />
+            <Trophy className="h-5 w-5 transition-transform group-hover:rotate-12" />
             Go to Checks
-            <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
       )}
 
-      {/* 🔥 取消注册按钮 - 只在未完成时显示 */}
       {!lessonCompleted && (
         <button
           onClick={onUnregister}
           disabled={isLoading}
-          className="w-full px-4 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+          className="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? 'Unregistering...' : 'Unregister from Lesson'}
         </button>
