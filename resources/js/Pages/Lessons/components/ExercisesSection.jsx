@@ -13,7 +13,7 @@ const getExerciseStatus = (exercise, index, exercises, userProgress, contentComp
   const progress = userProgress.exercises?.[exercise.exercise_id];
 
   if (!contentCompleted) {
-    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Review lesson content first' };
+    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Read through the lesson first' };
   }
 
   if (progress?.completed) {
@@ -34,12 +34,12 @@ const getExerciseStatus = (exercise, index, exercises, userProgress, contentComp
     return { status: 'available', icon: Play, color: 'blue', locked: false, label: 'New' };
   }
 
-  return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Finish the previous exercise first' };
+  return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Finish the step right before this one' };
 };
 
 const getRecommendedAction = (exercises, userProgress, contentCompleted) => {
   if (!contentCompleted) {
-    return 'Review the lesson content first to unlock guided practice.';
+    return 'Read the lesson first, then your first practice step will open.';
   }
 
   const nextIncomplete = exercises.find((exercise, index) => {
@@ -48,13 +48,13 @@ const getRecommendedAction = (exercises, userProgress, contentCompleted) => {
   });
 
   if (!nextIncomplete) {
-    return 'Practice complete. You are ready for the checks.';
+    return 'Practice is done. You are ready to test yourself.';
   }
 
   const progress = userProgress.exercises?.[nextIncomplete.exercise_id];
   return progress && !progress.completed
-    ? `Continue ${nextIncomplete.title}`
-    : `Start ${nextIncomplete.title}`;
+    ? `Pick back up with ${nextIncomplete.title}`
+    : `Start with ${nextIncomplete.title}`;
 };
 
 const ExercisesSection = ({ lesson, exercises, userProgress, contentCompleted = false }) => {
@@ -79,7 +79,7 @@ const ExercisesSection = ({ lesson, exercises, userProgress, contentCompleted = 
           <div className="mr-3 rounded-xl bg-blue-100 p-2.5">
             <Gamepad2 className="h-7 w-7 text-blue-600" />
           </div>
-          Guided Practice
+          Practice Lab
         </h2>
         <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">
           {completedExercises}/{totalExercises}
@@ -89,10 +89,10 @@ const ExercisesSection = ({ lesson, exercises, userProgress, contentCompleted = 
       <div className="mb-6 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-5">
         <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">Why this matters</p>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          These practice steps help you apply the concept immediately so the final checks feel easier and less random.
+          These steps help you use the idea right away, so the final checks feel familiar instead of surprising.
         </p>
         <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-blue-900 shadow-sm">
-          Next best step: {recommendedAction}
+          Best next step: {recommendedAction}
         </div>
       </div>
 
@@ -102,7 +102,7 @@ const ExercisesSection = ({ lesson, exercises, userProgress, contentCompleted = 
             <span className="mr-3 rounded-lg bg-slate-200 p-2">
               <Lock className="h-5 w-5 text-slate-700" />
             </span>
-            Review the lesson content first to unlock guided practice.
+            Read the lesson first so your practice path can open.
           </p>
         </div>
       )}

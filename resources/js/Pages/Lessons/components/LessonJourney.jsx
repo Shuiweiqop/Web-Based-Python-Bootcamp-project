@@ -20,10 +20,10 @@ export default function LessonJourney({ steps = [], onJump }) {
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Lesson Journey</p>
-          <h2 className="mt-1 text-lg font-bold text-slate-900">Keep moving with the next best step.</h2>
+          <h2 className="mt-1 text-lg font-bold text-slate-900">Stay focused on the one best next step.</h2>
         </div>
         <div className="hidden rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 md:block">
-          Review - Practice - Checks - Reward
+          Read - Practice - Checks - Reward
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export default function LessonJourney({ steps = [], onJump }) {
                 ) : step.state === 'locked' ? (
                   <Lock className="h-4 w-4" />
                 ) : (
-                  <span className="rounded-full bg-white/80 px-2 py-1 text-[11px] font-bold text-blue-700">Ready</span>
+                  <span className="rounded-full bg-white/80 px-2 py-1 text-[11px] font-bold text-blue-700">You can do this now</span>
                 )}
               </div>
 

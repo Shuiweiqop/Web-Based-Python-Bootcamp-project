@@ -39,24 +39,24 @@ export default function RegistrationCard({
     (allTestsPassed ? 1 : 0);
   const guidedProgressPercent = Math.round((guidedGateProgress / 3) * 100);
 
-  let nextMilestone = 'Register to begin this lesson journey.';
+  let nextMilestone = 'Register when you are ready to turn this lesson into a tracked learning run.';
   if (isRegistered) {
     if (!contentCompleted) {
-      nextMilestone = 'Review the lesson content to unlock guided practice.';
+      nextMilestone = 'Read through the lesson first, then your practice steps will open up.';
     } else if (!allExercisesCompleted) {
       const remaining = Math.max(totalExercises - completedExercises, 0);
       nextMilestone = remaining === 1
-        ? 'One more exercise unlocks the checks.'
-        : `${remaining} more exercises unlock the checks.`;
+        ? 'One more practice step and you are ready for the checks.'
+        : `${remaining} more practice steps and you will be ready for the checks.`;
     } else if (!allTestsPassed) {
       const remaining = Math.max(totalTests - passedTests, 0);
       nextMilestone = remaining === 1
-        ? 'Pass 1 more check to finish this lesson.'
-        : `Pass ${remaining} more checks to finish this lesson.`;
+        ? 'Pass 1 more check to wrap this lesson up.'
+        : `Pass ${remaining} more checks to wrap this lesson up.`;
     } else if (canCompleteLesson) {
-      nextMilestone = `You are ready to claim ${lesson.completion_reward_points} points.`;
+      nextMilestone = `Nice work. Your ${lesson.completion_reward_points} point reward is ready to collect.`;
     } else if (lessonCompleted) {
-      nextMilestone = 'You completed this lesson and claimed the reward.';
+      nextMilestone = 'You finished the lesson, collected the reward, and locked this one in.';
     }
   }
 
@@ -70,14 +70,14 @@ export default function RegistrationCard({
           <h3 className="text-xl font-bold text-blue-900">Ready to start?</h3>
         </div>
         <p className="mb-5 leading-relaxed text-blue-800">
-          Log in to register, track your lesson journey, and collect rewards as you finish.
+          Log in when you want your progress saved, your practice tracked, and your rewards waiting at the finish.
         </p>
         <button
           onClick={() => router.visit('/login')}
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-blue-700 hover:to-indigo-700"
         >
           <User className="h-5 w-5" />
-          Login to Register
+          Log In to Start
         </button>
       </div>
     );
@@ -107,7 +107,7 @@ export default function RegistrationCard({
           <h3 className="text-xl font-bold text-emerald-900">Start this lesson</h3>
         </div>
         <p className="mb-5 leading-relaxed text-emerald-800">
-          Join the guided flow, unlock practice in order, and finish strong with your reward.
+          Start with the lesson content now, then move into practice, checks, and your finish-line reward.
         </p>
         <button
           onClick={onRegister}
@@ -136,7 +136,7 @@ export default function RegistrationCard({
         </div>
         <div>
           <h3 className={`text-xl font-bold ${lessonCompleted ? 'text-amber-900' : 'text-emerald-900'}`}>
-            {lessonCompleted ? 'Reward Claimed' : 'Your Guided Lesson Flow'}
+            {lessonCompleted ? 'Reward Collected' : 'Your Lesson Momentum'}
           </h3>
           <p className={`text-sm ${lessonCompleted ? 'text-amber-700' : 'text-emerald-700'}`}>
             {nextMilestone}
@@ -147,20 +147,20 @@ export default function RegistrationCard({
       <div className="mb-5 rounded-xl border border-white/60 bg-white/75 p-5 shadow-sm">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">1. Review Content</span>
-            <span className="font-bold text-gray-900">{contentCompleted ? 'Done' : 'Pending'}</span>
+            <span className="text-sm font-medium text-gray-700">1. Read the lesson</span>
+            <span className="font-bold text-gray-900">{contentCompleted ? 'Done' : 'Next up'}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">2. Finish Practice</span>
+            <span className="text-sm font-medium text-gray-700">2. Work through practice</span>
             <span className="font-bold text-gray-900">{completedExercises}/{totalExercises}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">3. Pass Checks</span>
+            <span className="text-sm font-medium text-gray-700">3. Clear the checks</span>
             <span className="font-bold text-gray-900">{passedTests}/{totalTests}</span>
           </div>
           <div className="border-t border-gray-200 pt-2">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-600">Guided path progress</span>
+              <span className="text-xs font-semibold text-gray-600">Lesson momentum</span>
               <span className="text-sm font-bold text-gray-900">{guidedProgressPercent}%</span>
             </div>
             <div className="h-3 overflow-hidden rounded-full bg-gray-200 shadow-inner">
@@ -189,7 +189,7 @@ export default function RegistrationCard({
               {lesson.completion_reward_points} points collected
             </p>
           </div>
-          <p className="text-sm text-amber-700">You finished the full guided lesson flow.</p>
+          <p className="text-sm text-amber-700">You carried this lesson all the way from reading to reward.</p>
         </div>
       )}
 
@@ -199,14 +199,14 @@ export default function RegistrationCard({
             <div className="mb-3 inline-block rounded-full bg-green-500 p-3">
               <Gift className="h-8 w-8 text-white" />
             </div>
-            <h4 className="mb-2 text-lg font-bold text-green-900">Reward ready to claim</h4>
+            <h4 className="mb-2 text-lg font-bold text-green-900">Your reward is ready</h4>
             <p className="mb-3 text-sm text-green-700">
-              You reviewed the content, cleared the practice, and passed every check.
+              You read the lesson, finished the practice, and passed every check.
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-green-600">
-              <span className="rounded-full bg-green-100 px-3 py-1 font-medium">Content done</span>
+              <span className="rounded-full bg-green-100 px-3 py-1 font-medium">Reading done</span>
               <span className="rounded-full bg-green-100 px-3 py-1 font-medium">Practice done</span>
-              <span className="rounded-full bg-green-100 px-3 py-1 font-medium">Checks passed</span>
+              <span className="rounded-full bg-green-100 px-3 py-1 font-medium">Checks cleared</span>
             </div>
           </div>
           <button
@@ -214,7 +214,7 @@ export default function RegistrationCard({
             disabled={isLoading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 py-4 text-lg font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-green-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? 'Completing...' : `Claim ${lesson.completion_reward_points} Points`}
+            {isLoading ? 'Getting your reward...' : `Claim ${lesson.completion_reward_points} Points`}
           </button>
         </div>
       )}
@@ -232,7 +232,7 @@ export default function RegistrationCard({
             className="group inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-blue-700 hover:to-indigo-700"
           >
             <Gamepad2 className="h-5 w-5 transition-transform group-hover:rotate-12" />
-            Go to Practice
+            Take Me to Practice
             <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </button>
           <button
@@ -240,7 +240,7 @@ export default function RegistrationCard({
             className="group inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3.5 font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:from-purple-700 hover:to-pink-700"
           >
             <Trophy className="h-5 w-5 transition-transform group-hover:rotate-12" />
-            Go to Checks
+            Take Me to Checks
             <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
@@ -252,7 +252,7 @@ export default function RegistrationCard({
           disabled={isLoading}
           className="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? 'Unregistering...' : 'Unregister from Lesson'}
+          {isLoading ? 'Leaving lesson...' : 'Leave This Lesson'}
         </button>
       )}
     </div>

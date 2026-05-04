@@ -14,11 +14,11 @@ const getTestStatus = (test, userProgress, exercisesCompleted, totalExercises, c
   const progress = userProgress.tests?.[test.test_id];
 
   if (!contentCompleted) {
-    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Review lesson content first' };
+    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Read through the lesson first' };
   }
 
   if (!exercisesCompleted && totalExercises > 0) {
-    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Complete all exercises first' };
+    return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Finish the practice steps first' };
   }
 
   if (progress?.latest_score >= test.passing_score) {
@@ -72,7 +72,7 @@ export default function TestsSection({
           <div className="mr-3 rounded-xl bg-amber-100 p-2.5">
             <Trophy className="h-7 w-7 text-amber-600" />
           </div>
-          Guided Checks
+          Final Checks
         </h2>
         <span className="rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-800">
           {passedTests}/{totalTests} Passed
@@ -82,7 +82,7 @@ export default function TestsSection({
       <div className="mb-6 rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50 to-yellow-50 p-5">
         <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">Finish strong</p>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          These checks confirm the lesson really clicked. Use them as a confidence boost, not just a gate.
+          These checks are here to help you prove the idea to yourself, not just clear a requirement.
         </p>
       </div>
 
@@ -92,7 +92,7 @@ export default function TestsSection({
             <span className="mr-3 rounded-lg bg-slate-200 p-2">
               <Lock className="h-5 w-5 text-slate-700" />
             </span>
-            Review the lesson content and reach the end before the checks unlock.
+            Read the lesson through to the end before these checks open.
           </p>
         </div>
       )}
@@ -103,7 +103,7 @@ export default function TestsSection({
             <span className="mr-3 rounded-lg bg-amber-200 p-2">
               <Lock className="h-5 w-5 text-amber-700" />
             </span>
-            Complete all guided practice steps first so these checks feel easier.
+            Finish the practice steps first so these checks feel much more comfortable.
           </p>
         </div>
       )}
@@ -187,22 +187,22 @@ export default function TestsSection({
                   {statusInfo.status === 'in_progress' ? (
                     <>
                       <Play className="mr-2 h-5 w-5" />
-                      Continue Challenge
+                      Continue Check
                     </>
                   ) : statusInfo.status === 'passed' ? (
                     <>
                       <Trophy className="mr-2 h-5 w-5" />
-                      Replay Challenge
+                      Replay Check
                     </>
                   ) : statusInfo.status === 'attempted' ? (
                     <>
                       <Target className="mr-2 h-5 w-5" />
-                      Try Again
+                      Give It Another Try
                     </>
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-5 w-5" />
-                      Start Challenge
+                      Start Check
                     </>
                   )}
                   <ChevronRight className="ml-2 h-5 w-5" />
