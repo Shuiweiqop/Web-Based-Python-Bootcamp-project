@@ -33,20 +33,49 @@ const getDifficultyConfig = (difficulty) => {
   return map[difficulty] || map.beginner;
 };
 
+const stripHtml = (content = '') => content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const hasAnyKeyword = (value, keywords) => keywords.some((keyword) => value.includes(keyword));
+
+const getPreviewText = (content, maxLength = 110) => {
+  const preview = stripHtml(content);
+  if (preview.length <= maxLength) {
+    return preview;
+  }
+
+  return `${preview.slice(0, maxLength)}...`;
+};
+
 const getBestForLabel = (lesson) => {
   const title = lesson.title.toLowerCase();
+  const duration = lesson.estimated_duration || 0;
 
+  if (hasAnyKeyword(title, ['variable', 'data type', 'string', 'print', 'input'])) {
+    return 'Best for core Python basics';
+  }
+  if (hasAnyKeyword(title, ['loop', 'condition', 'if', 'else', 'while', 'for'])) {
+    return 'Best for logic-building practice';
+  }
+  if (hasAnyKeyword(title, ['function', 'argument', 'parameter', 'return'])) {
+    return 'Best for writing reusable code';
+  }
+  if (hasAnyKeyword(title, ['list', 'tuple', 'dictionary', 'dict', 'set', 'array'])) {
+    return 'Best for mastering data structures';
+  }
+  if (hasAnyKeyword(title, ['file', 'exception', 'debug', 'error', 'bug'])) {
+    return 'Best for real-world problem solving';
+  }
+  if (hasAnyKeyword(title, ['class', 'object', 'oop'])) {
+    return 'Best for object-oriented thinking';
+  }
+  if (duration > 0 && duration <= 25) {
+    return 'Best for a quick study sprint';
+  }
   if (lesson.difficulty === 'beginner') {
     return 'Best for first-time learners';
   }
-  if (title.includes('string') || title.includes('variable') || title.includes('data type')) {
-    return 'Best for core Python basics';
-  }
-  if ((lesson.estimated_duration || 0) <= 40) {
+  if (duration > 0 && duration <= 40) {
     return 'Best for quick review';
-  }
-  if (title.includes('function') || title.includes('loop')) {
-    return 'Best for building coding confidence';
   }
 
   return 'Best for guided practice';
@@ -55,17 +84,32 @@ const getBestForLabel = (lesson) => {
 const getClickReason = (lesson) => {
   const exercises = lesson.required_exercises ?? 0;
   const tests = lesson.required_tests ?? 0;
+  const duration = lesson.estimated_duration || 0;
+  const reward = lesson.completion_reward_points || 0;
+  const title = lesson.title.toLowerCase();
 
-  if (exercises > 0 || tests > 0) {
-    return `${exercises} practice${exercises === 1 ? '' : 's'} + ${tests} check${tests === 1 ? '' : 's'}`;
+  if (exercises > 0 && tests > 0) {
+    return `${exercises} practice${exercises === 1 ? '' : 's'} + ${tests} check${tests === 1 ? '' : 's'} to lock it in`;
   }
 
-  if (lesson.completion_reward_points) {
-    return `Earn ${lesson.completion_reward_points} pts`;
+  if (exercises > 0) {
+    return `${exercises} guided practice${exercises === 1 ? '' : 's'} to build confidence`;
   }
 
-  if (lesson.estimated_duration) {
-    return `${lesson.estimated_duration} min ${lesson.difficulty || 'guided'} lesson`;
+  if (tests > 0) {
+    return `${tests} progress check${tests === 1 ? '' : 's'} to prove the skill`;
+  }
+
+  if (hasAnyKeyword(title, ['variable', 'data type', 'string', 'list', 'dictionary'])) {
+    return 'Sharpen a Python concept you will reuse in every lesson';
+  }
+
+  if (reward >= 100) {
+    return `Earn a high-value ${reward} point reward`;
+  }
+
+  if (duration > 0) {
+    return `${duration} min ${lesson.difficulty || 'guided'} lesson you can finish in one sitting`;
   }
 
   return 'Start this guided lesson';
@@ -102,7 +146,7 @@ const LessonCard = ({ lesson }) => {
 
           {lesson.content && (
             <p className="mb-4 line-clamp-2 text-sm text-gray-300">
-              {lesson.content.replace(/<[^>]*>/g, '').substring(0, 110)}...
+              {getPreviewText(lesson.content)}
             </p>
           )}
 
