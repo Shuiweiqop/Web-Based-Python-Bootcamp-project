@@ -17,9 +17,15 @@ import {
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
-export default function LessonSidebar({ lesson, exercises, tests, routes, isDark }) {
+export default function LessonSidebar({ lesson, exercises, tests, routes, buildChecklist, isDark }) {
   return (
     <div className="space-y-6">
+      <LessonBuildChecklistCard
+        lesson={lesson}
+        buildChecklist={buildChecklist || []}
+        isDark={isDark}
+      />
+
       {/* Lesson Information Card */}
       <LessonInfoCard lesson={lesson} isDark={isDark} />
 
@@ -48,6 +54,156 @@ export default function LessonSidebar({ lesson, exercises, tests, routes, isDark
 }
 
 // Sub-components for Sidebar
+function LessonBuildChecklistCard({ lesson, buildChecklist, isDark }) {
+  const completedCount = buildChecklist.filter((item) => item.done).length;
+  const totalCount = buildChecklist.length;
+  const nextStep = buildChecklist.find((item) => !item.done) || null;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  return (
+    <div className={cn(
+      "rounded-2xl shadow-lg border overflow-hidden animate-fadeIn",
+      isDark
+        ? "bg-gradient-to-br from-cyan-500/10 via-slate-900/80 to-blue-500/10 border-cyan-500/20"
+        : "bg-gradient-to-br from-cyan-50 via-white to-blue-50 border-cyan-200"
+    )}>
+      <div className={cn(
+        "px-6 py-4 border-b bg-gradient-to-r",
+        isDark
+          ? "border-white/10 from-cyan-500/10 to-blue-500/10"
+          : "from-cyan-50 to-blue-50 border-cyan-100"
+      )}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className={cn("text-xs font-semibold uppercase tracking-[0.2em]", isDark ? "text-cyan-300" : "text-cyan-700")}>
+              Build Checklist
+            </p>
+            <h3 className={cn("mt-2 text-lg font-bold", isDark ? "text-white" : "text-gray-900")}>
+              Finish this lesson fast
+            </h3>
+          </div>
+          <span className={cn(
+            "rounded-full px-3 py-1 text-xs font-semibold",
+            isDark ? "bg-white/10 text-slate-100" : "bg-white text-gray-700 border border-cyan-100"
+          )}>
+            {completedCount}/{totalCount} done
+          </span>
+        </div>
+      </div>
+
+      <div className="p-6">
+        <div className={cn(
+          "mb-5 rounded-2xl border p-4",
+          isDark ? "border-white/10 bg-white/5" : "border-cyan-100 bg-white"
+        )}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className={cn("text-sm font-semibold", isDark ? "text-white" : "text-gray-900")}>
+                {lesson?.status === 'draft' ? 'Draft builder mode' : 'Lesson setup progress'}
+              </p>
+              <p className={cn("mt-1 text-xs", isDark ? "text-slate-400" : "text-gray-600")}>
+                {nextStep
+                  ? `Next best move: ${nextStep.title}`
+                  : 'Everything is in place. This lesson is ready to run smoothly.'}
+              </p>
+            </div>
+            {nextStep && (
+              <Link
+                href={nextStep.href}
+                className={cn(
+                  "rounded-xl px-3 py-2 text-xs font-semibold transition-all",
+                  isDark ? "bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/30" : "bg-cyan-100 text-cyan-800 hover:bg-cyan-200"
+                )}
+              >
+                {nextStep.actionLabel}
+              </Link>
+            )}
+          </div>
+
+          <div className={cn(
+            "mt-4 h-2 overflow-hidden rounded-full",
+            isDark ? "bg-white/10" : "bg-cyan-100"
+          )}>
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {buildChecklist.map((item, index) => (
+            <div
+              key={item.key}
+              className={cn(
+                "rounded-2xl border p-4 transition-all",
+                item.done
+                  ? isDark
+                    ? "border-emerald-500/20 bg-emerald-500/10"
+                    : "border-emerald-200 bg-emerald-50"
+                  : isDark
+                    ? "border-white/10 bg-white/5"
+                    : "border-gray-200 bg-gray-50"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  "mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold",
+                  item.done
+                    ? isDark
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : "bg-emerald-100 text-emerald-700"
+                    : isDark
+                      ? "bg-white/10 text-slate-200"
+                      : "bg-white text-gray-700 border border-gray-200"
+                )}>
+                  {item.done ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className={cn("text-sm font-semibold", isDark ? "text-white" : "text-gray-900")}>
+                      {item.title}
+                    </p>
+                    <span className={cn(
+                      "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                      item.done
+                        ? isDark
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "bg-emerald-100 text-emerald-700"
+                        : isDark
+                          ? "bg-amber-500/20 text-amber-300"
+                          : "bg-amber-100 text-amber-700"
+                    )}>
+                      {item.done ? 'Done' : 'Next up'}
+                    </span>
+                  </div>
+
+                  <p className={cn("mt-2 text-xs leading-5", isDark ? "text-slate-400" : "text-gray-600")}>
+                    {item.description}
+                  </p>
+
+                  <div className="mt-3">
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "text-xs font-semibold transition-colors",
+                        isDark ? "text-cyan-300 hover:text-cyan-200" : "text-cyan-700 hover:text-cyan-800"
+                      )}
+                    >
+                      {item.actionLabel} →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LessonInfoCard({ lesson, isDark }) {
   return (
     <div className={cn(

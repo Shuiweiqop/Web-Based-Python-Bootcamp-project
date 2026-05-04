@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Head, Link, router } from "@inertiajs/react";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { safeRoute, resourceRoutes } from "@/utils/routeHelpers";
@@ -20,7 +20,7 @@ import TestList from './components/TestList';
 import ExerciseList from './components/ExerciseList';
 import LessonSidebar from './components/LessonSidebar';
 
-export default function Show({ lesson: propLesson, sections: propSections = [], exercises = [], tests = [], statistics = {} }) {
+export default function Show({ lesson: propLesson, sections: propSections = [], exercises = [], tests = [], buildChecklist = [], statistics = {} }) {
   const [expandedSections, setExpandedSections] = useState({});
   
   // 从 localStorage 读取主题设置
@@ -64,12 +64,6 @@ export default function Show({ lesson: propLesson, sections: propSections = [], 
   // 确保 lesson 和 sections 正确更新
   const lesson = propLesson ?? null;
   const sections = propSections || [];
-
-  // 当 sections 变化时，打印调试信息
-  useEffect(() => {
-    console.log('📚 Sections updated:', sections);
-    console.log('📖 Lesson data:', lesson);
-  }, [sections, lesson]);
 
   // 当 sections 变化时，重置展开状态
   useEffect(() => {
@@ -130,6 +124,14 @@ export default function Show({ lesson: propLesson, sections: propSections = [], 
   }
 
   const lessonId = lesson?.lesson_id ?? lesson?.id ?? null;
+  const completedChecklistCount = useMemo(
+    () => buildChecklist.filter((item) => item.done).length,
+    [buildChecklist]
+  );
+  const nextChecklistStep = useMemo(
+    () => buildChecklist.find((item) => !item.done) ?? null,
+    [buildChecklist]
+  );
 
   // Generate resource routes
   const routes = lessonId ? {
@@ -174,9 +176,65 @@ export default function Show({ lesson: propLesson, sections: propSections = [], 
           isDark={isDark}
         />
 
+        <div className={cn(
+          "rounded-2xl border p-5 shadow-lg",
+          isDark
+            ? "border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 via-slate-900/70 to-blue-500/10"
+            : "border-cyan-200 bg-gradient-to-r from-cyan-50 via-white to-blue-50"
+        )}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className={cn("text-xs font-semibold uppercase tracking-[0.22em]", isDark ? "text-cyan-300" : "text-cyan-700")}>
+                Lesson Builder
+              </p>
+              <h3 className={cn("mt-2 text-xl font-bold", isDark ? "text-white" : "text-gray-900")}>
+                {lesson.status === 'draft' ? 'Keep building this draft in a clean order' : 'Your next teaching setup step is ready'}
+              </h3>
+              <p className={cn("mt-2 text-sm", isDark ? "text-slate-300" : "text-gray-600")}>
+                {nextChecklistStep
+                  ? `${completedChecklistCount} of ${buildChecklist.length} setup steps done. Next best move: ${nextChecklistStep.title}.`
+                  : 'All core setup steps are done. You can keep polishing the lesson experience from here.'}
+              </p>
+            </div>
+
+            {nextChecklistStep && (
+              <Link
+                href={nextChecklistStep.href}
+                className={cn(
+                  "inline-flex items-center rounded-xl px-4 py-3 text-sm font-semibold transition-all",
+                  isDark
+                    ? "bg-cyan-500/20 text-cyan-100 hover:bg-cyan-500/30"
+                    : "bg-cyan-100 text-cyan-800 hover:bg-cyan-200"
+                )}
+              >
+                {nextChecklistStep.actionLabel}
+              </Link>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
+            {!lesson?.content && sections.length === 0 && (
+              <div className={cn(
+                "rounded-2xl border p-6",
+                isDark ? "border-amber-500/20 bg-amber-500/10" : "border-amber-200 bg-amber-50"
+              )}>
+                <div className="flex items-start gap-3">
+                  <Sparkles className={cn("mt-0.5 h-5 w-5", isDark ? "text-amber-300" : "text-amber-600")} />
+                  <div>
+                    <h3 className={cn("text-lg font-semibold", isDark ? "text-white" : "text-gray-900")}>
+                      This draft shell is ready for content
+                    </h3>
+                    <p className={cn("mt-2 text-sm", isDark ? "text-slate-300" : "text-gray-700")}>
+                      Start with a short lesson overview, then break the topic into sections if you want a more guided teaching flow before adding practice and final checks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Lesson Content */}
             {lesson?.content && (
               <LessonContent
@@ -302,6 +360,7 @@ export default function Show({ lesson: propLesson, sections: propSections = [], 
               exercises={exercises}
               tests={tests}
               routes={routes}
+              buildChecklist={buildChecklist}
               isDark={isDark}
             />
 

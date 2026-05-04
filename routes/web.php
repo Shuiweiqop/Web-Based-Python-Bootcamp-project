@@ -391,6 +391,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         // ==================== Resource 路由 ====================
+        Route::post('lessons/quick-draft', [AdminLessonController::class, 'quickDraft'])
+            ->name('lessons.quick-draft');
         Route::resource('lessons', AdminLessonController::class);
         Route::resource('exercises', AdminExerciseController::class);
         Route::resource('rewards', AdminRewardController::class)->except(['destroy']);

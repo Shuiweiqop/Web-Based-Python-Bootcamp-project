@@ -1,6 +1,6 @@
 // resources/js/Pages/Admin/Lessons/Index.jsx
 import React, { useState } from 'react';
-import { Head, Link, usePage, router } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
   PlusIcon,
@@ -22,6 +22,10 @@ export default function Index({ auth }) {
   const { lessons, filters, statistics } = usePage().props;
   const [showFilters, setShowFilters] = useState(false);
   const [isDark, setIsDark] = useState(true); 
+  const quickDraftForm = useForm({
+    title: '',
+    difficulty: 'beginner',
+  });
   const meta = lessons?.meta || {};
   const data = lessons?.data || [];
 
@@ -105,6 +109,14 @@ export default function Index({ auth }) {
     router.get(safeRoute('admin.lessons.index'), {}, { preserveState: true });
   };
 
+  const handleQuickDraft = (e) => {
+    e.preventDefault();
+
+    quickDraftForm.post(safeRoute('admin.lessons.quick-draft'), {
+      preserveScroll: true,
+    });
+  };
+
   return (
     <AuthenticatedLayout
       user={auth?.user}
@@ -132,6 +144,110 @@ export default function Index({ auth }) {
 
       <div className="py-12">
         <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          <div className="mb-6 rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/80 p-6 shadow-2xl">
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                  Teacher Fast Path
+                </p>
+                <h3 className="mt-2 text-2xl font-bold text-white">
+                  Start a lesson shell in under 10 seconds
+                </h3>
+                <p className="mt-2 max-w-2xl text-sm text-slate-300">
+                  Create the draft first, then finish content, sections, practice, checks, and publish settings from a guided checklist.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                  {['Draft by default', 'Opens a next-step checklist', 'Great for series lessons'].map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 font-medium text-cyan-100"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleQuickDraft}
+                className="rounded-2xl border border-white/10 bg-black/20 p-5 backdrop-blur-sm"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-100">
+                      Lesson Title
+                    </label>
+                    <input
+                      type="text"
+                      value={quickDraftForm.data.title}
+                      onChange={(e) => quickDraftForm.setData('title', e.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                      placeholder="e.g. Python loops quick draft"
+                    />
+                    {quickDraftForm.errors.title && (
+                      <p className="mt-2 text-sm text-red-300">{quickDraftForm.errors.title}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-100">
+                      Difficulty
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        ['beginner', 'Beginner'],
+                        ['intermediate', 'Intermediate'],
+                        ['advanced', 'Advanced'],
+                      ].map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => quickDraftForm.setData('difficulty', value)}
+                          className={cn(
+                            'rounded-xl border px-3 py-2 text-sm font-semibold transition-all',
+                            quickDraftForm.data.difficulty === value
+                              ? 'border-cyan-300 bg-cyan-400/15 text-white'
+                              : 'border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:text-white'
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {quickDraftForm.errors.difficulty && (
+                      <p className="mt-2 text-sm text-red-300">{quickDraftForm.errors.difficulty}</p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    <button
+                      type="submit"
+                      disabled={quickDraftForm.processing}
+                      className="inline-flex items-center rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:from-cyan-400 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <PlusIcon className="mr-2 h-4 w-4" />
+                      {quickDraftForm.processing ? 'Creating Draft...' : 'Quick Draft'}
+                    </button>
+
+                    <Link
+                      href={safeRoute('admin.lessons.create')}
+                      className="inline-flex items-center rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition-all hover:bg-white/10 hover:text-white"
+                    >
+                      Full Builder
+                    </Link>
+
+                    <Link
+                      href={safeRoute('admin.ai-lessons.create')}
+                      className="inline-flex items-center rounded-xl border border-fuchsia-400/20 bg-fuchsia-500/10 px-5 py-3 text-sm font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-500/15"
+                    >
+                      AI Draft
+                    </Link>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
           {/* Statistics Cards */}
           {statistics && (
             <div>

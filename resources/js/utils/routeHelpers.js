@@ -64,6 +64,7 @@ const generateFallbackRoute = (name, params) => {
   // ===== ADMIN LESSON ROUTES =====
   if (name === 'admin.lessons.index') return '/admin/lessons';
   if (name === 'admin.lessons.create') return '/admin/lessons/create';
+  if (name === 'admin.lessons.quick-draft') return '/admin/lessons/quick-draft';
   if (name === 'admin.lessons.show') return `/admin/lessons/${lessonId}`;
   if (name === 'admin.lessons.edit') return `/admin/lessons/${lessonId}/edit`;
   if (name === 'admin.lessons.destroy') return `/admin/lessons/${lessonId}`;

@@ -63,6 +63,38 @@ class AdminLessonController extends Controller
         return Inertia::render('Admin/Lessons/Create');
     }
 
+    public function quickDraft(Request $request)
+    {
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'difficulty' => 'required|string|in:beginner,intermediate,advanced',
+        ]);
+
+        $lesson = Lesson::create([
+            'title' => $data['title'],
+            'content' => '',
+            'content_type' => 'markdown',
+            'difficulty' => $data['difficulty'],
+            'estimated_duration' => 30,
+            'status' => 'draft',
+            'completion_reward_points' => 100,
+            'required_exercises' => 0,
+            'required_tests' => 0,
+            'min_exercise_score_percent' => 70,
+            'created_by' => $request->user()->user_Id ?? $request->user()->id,
+        ]);
+
+        Log::info('Quick draft lesson created', [
+            'lesson_id' => $lesson->lesson_id,
+            'title' => $lesson->title,
+            'created_by' => $request->user()->id,
+        ]);
+
+        return redirect()
+            ->route('admin.lessons.show', $lesson->lesson_id)
+            ->with('success', 'Draft lesson created. Follow the checklist to finish content, practice, checks, and publishing.');
+    }
+
     public function store(Request $request)
     {
         // ✅ 完整验证（包含 sections）
@@ -205,6 +237,7 @@ class AdminLessonController extends Controller
             'sections' => $sectionsData, // 🔥 显式传递 sections
             'exercises' => $lesson->interactiveExercises,
             'tests' => $lesson->tests,
+            'buildChecklist' => $this->buildLessonChecklist($lesson),
             'statistics' => [
                 'exercises_count' => $lesson->interactiveExercises->count(),
                 'active_exercises_count' => $lesson->interactiveExercises->where('is_active', true)->count(),
@@ -215,6 +248,72 @@ class AdminLessonController extends Controller
                 'sections_count' => $lesson->sections->count(),
             ],
         ]);
+    }
+
+    private function buildLessonChecklist(Lesson $lesson): array
+    {
+        $hasContent = filled(trim((string) $lesson->content));
+        $hasSections = $lesson->sections->isNotEmpty();
+        $hasExercises = $lesson->interactiveExercises->isNotEmpty();
+        $hasTests = $lesson->tests->isNotEmpty();
+        $isPublished = $lesson->status === 'active';
+
+        return [
+            [
+                'key' => 'content',
+                'title' => 'Write lesson overview',
+                'description' => $hasContent
+                    ? 'Your core lesson content is in place.'
+                    : 'Add the teaching content students should read before they practice.',
+                'done' => $hasContent,
+                'actionLabel' => $hasContent ? 'Refine content' : 'Add lesson content',
+                'href' => route('admin.lessons.edit', $lesson->lesson_id),
+            ],
+            [
+                'key' => 'sections',
+                'title' => 'Add lesson sections',
+                'description' => $hasSections
+                    ? 'Sections are set up to guide the learning flow.'
+                    : 'Break the lesson into clear sections if you want a more guided teaching flow.',
+                'done' => $hasSections,
+                'actionLabel' => $hasSections ? 'Review sections' : 'Create sections',
+                'href' => route('admin.lessons.edit', $lesson->lesson_id),
+            ],
+            [
+                'key' => 'practice',
+                'title' => 'Attach practice',
+                'description' => $hasExercises
+                    ? 'Students already have practice waiting after content.'
+                    : 'Add at least one exercise so students can apply the lesson immediately.',
+                'done' => $hasExercises,
+                'actionLabel' => $hasExercises ? 'Manage practices' : 'Add practice',
+                'href' => $hasExercises
+                    ? route('admin.lessons.exercises.index', $lesson->lesson_id)
+                    : route('admin.lessons.exercises.create', $lesson->lesson_id),
+            ],
+            [
+                'key' => 'checks',
+                'title' => 'Set final checks',
+                'description' => $hasTests
+                    ? 'Lesson checks are ready to confirm understanding.'
+                    : 'Add a test or quiz so students can prove they are ready to finish the lesson.',
+                'done' => $hasTests,
+                'actionLabel' => $hasTests ? 'Manage checks' : 'Add check',
+                'href' => $hasTests
+                    ? route('admin.lessons.tests.index', $lesson->lesson_id)
+                    : route('admin.lessons.tests.create', $lesson->lesson_id),
+            ],
+            [
+                'key' => 'publish',
+                'title' => 'Publish lesson',
+                'description' => $isPublished
+                    ? 'This lesson is already live for students.'
+                    : 'Review the completion rules, reward, and status before making the lesson live.',
+                'done' => $isPublished,
+                'actionLabel' => $isPublished ? 'Review live lesson' : 'Review publish settings',
+                'href' => route('admin.lessons.edit', $lesson->lesson_id),
+            ],
+        ];
     }
 
     // 在你的 AdminLessonController.php 中
