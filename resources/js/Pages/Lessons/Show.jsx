@@ -15,8 +15,9 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
   const [isLoading, setIsLoading] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [contentSignals, setContentSignals] = useState({
-    openedSections: 0,
+    visitedSections: 0,
     totalSections: sections.length,
+    nextSectionNumber: sections.length > 0 ? 1 : null,
     contentScrolledToBottom: false,
   });
 
@@ -44,11 +45,6 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
   const guidedPathProgress = Math.round((guidedStepCount / 4) * 100);
   const remainingExercises = Math.max(totalExercises - completedExercises, 0);
   const remainingTests = Math.max(totalTests - passedTests, 0);
-  const nextSectionNumber =
-    contentSignals.totalSections > 0 && contentSignals.openedSections < contentSignals.totalSections
-      ? contentSignals.openedSections + 1
-      : null;
-
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (!element) return;
@@ -129,57 +125,65 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
       key: 'review',
       label: 'Review Content',
       anchor: 'content-section',
-      state: contentCompleted ? 'done' : 'ready',
+      state: contentCompleted ? 'done' : isRegistered ? 'ready' : 'ready',
       action: contentCompleted
         ? 'Review complete. Practice is now open.'
-        : nextSectionNumber
-          ? `Open section ${nextSectionNumber} and keep reading to the end.`
-          : contentSignals.contentScrolledToBottom
-            ? 'Finish the review checkpoint to unlock practice.'
-            : 'Scroll to the end of the lesson content to unlock practice.',
+        : !isRegistered
+          ? 'Preview the lesson here, then register to unlock practice and checks.'
+          : contentSignals.nextSectionNumber
+            ? `Visit section ${contentSignals.nextSectionNumber} and read to the end.`
+            : contentSignals.contentScrolledToBottom
+              ? 'Finish the review checkpoint to unlock practice.'
+              : 'Scroll to the end of the lesson content to unlock practice.',
     },
     {
       key: 'practice',
       label: 'Practice',
       anchor: 'exercises-section',
-      state: !contentCompleted ? 'locked' : allExercisesCompleted ? 'done' : 'ready',
-      action: !contentCompleted
-        ? 'Practice unlocks after you review the lesson.'
-        : totalExercises === 0
-          ? 'No practice tasks are required for this lesson.'
-          : allExercisesCompleted
-            ? 'Practice complete. You are ready for the checks.'
-            : remainingExercises === 1
-              ? 'Finish 1 more exercise to unlock the checks.'
-              : `Finish ${remainingExercises} more exercises to keep momentum.`,
+      state: !isRegistered || !contentCompleted ? 'locked' : allExercisesCompleted ? 'done' : 'ready',
+      action: !isRegistered
+        ? 'Register to unlock guided practice.'
+        : !contentCompleted
+          ? 'Practice unlocks after you review the lesson.'
+          : totalExercises === 0
+            ? 'No practice tasks are required for this lesson.'
+            : allExercisesCompleted
+              ? 'Practice complete. You are ready for the checks.'
+              : remainingExercises === 1
+                ? 'Finish 1 more exercise to unlock the checks.'
+                : `Finish ${remainingExercises} more exercises to keep momentum.`,
     },
     {
       key: 'checks',
       label: 'Checks',
       anchor: 'tests-section',
-      state: !contentCompleted || (!allExercisesCompleted && totalExercises > 0)
+      state: !isRegistered || !contentCompleted || (!allExercisesCompleted && totalExercises > 0)
         ? 'locked'
         : allTestsPassed
           ? 'done'
           : 'ready',
-      action: !contentCompleted
-        ? 'Checks unlock after content review.'
-        : !allExercisesCompleted && totalExercises > 0
-          ? 'Wrap up practice before the checks open.'
-          : totalTests === 0
-            ? 'No checks are required for this lesson.'
-            : remainingTests === 1
-              ? 'Pass 1 check to unlock the reward.'
-              : `Pass ${remainingTests} more checks to finish strong.`,
+      action: !isRegistered
+        ? 'Register to unlock guided checks.'
+        : !contentCompleted
+          ? 'Checks unlock after content review.'
+          : !allExercisesCompleted && totalExercises > 0
+            ? 'Wrap up practice before the checks open.'
+            : totalTests === 0
+              ? 'No checks are required for this lesson.'
+              : remainingTests === 1
+                ? 'Pass 1 check to unlock the reward.'
+                : `Pass ${remainingTests} more checks to finish strong.`,
     },
     {
       key: 'reward',
       label: 'Claim Reward',
       anchor: 'registration-card',
-      state: lessonCompleted ? 'done' : contentCompleted && allExercisesCompleted && allTestsPassed ? 'ready' : 'locked',
+      state: lessonCompleted ? 'done' : !isRegistered ? 'locked' : contentCompleted && allExercisesCompleted && allTestsPassed ? 'ready' : 'locked',
       action: lessonCompleted
         ? `Reward claimed. You earned ${lesson.completion_reward_points} points.`
-        : contentCompleted && allExercisesCompleted && allTestsPassed
+        : !isRegistered
+          ? 'Register to track progress and claim the completion reward.'
+          : contentCompleted && allExercisesCompleted && allTestsPassed
           ? `Claim your ${lesson.completion_reward_points} point reward.`
           : 'Your reward unlocks after content, practice, and checks are done.',
     },
@@ -246,7 +250,7 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
                 </div>
                 <h3 className="mb-3 text-2xl font-bold text-gray-900">Ready to start this guided lesson?</h3>
                 <p className="mx-auto mb-6 max-w-md text-gray-600">
-                  Register to unlock the content journey, guided practice, checks, and your completion reward.
+                  You can preview the lesson content now. Register when you want tracked progress, guided practice, checks, and the completion reward.
                 </p>
                 <button
                   onClick={handleRegister}

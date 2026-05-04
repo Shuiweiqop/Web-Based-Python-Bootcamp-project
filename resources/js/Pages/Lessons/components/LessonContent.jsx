@@ -52,6 +52,7 @@ const LessonContent = ({
   onJourneySignalsChange,
 }) => {
   const [expandedSections, setExpandedSections] = useState(new Set());
+  const [visitedSections, setVisitedSections] = useState(new Set());
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
   const [contentScrolledToBottom, setContentScrolledToBottom] = useState(false);
   const [showTakeaways, setShowTakeaways] = useState(true);
@@ -64,16 +65,20 @@ const LessonContent = ({
     () => buildLearningPoints(lesson, sections, takeaways),
     [lesson, sections, takeaways]
   );
-  const allSectionsOpened = useMemo(() => {
+  const allSectionsVisited = useMemo(() => {
     if (sections.length === 0) {
       return true;
     }
 
-    return sections.every((section) => expandedSections.has(section.id || section.lesson_section_id));
-  }, [expandedSections, sections]);
+    return sections.every((section) => visitedSections.has(section.id || section.lesson_section_id));
+  }, [sections, visitedSections]);
   const hasStructuredContent = sections.length > 0 || Boolean(lesson.content) || Boolean(lesson.video_url);
-  const canAutoReview = isStudent && isRegistered && !contentCompleted && allSectionsOpened && contentScrolledToBottom;
-  const openedSectionsCount = expandedSections.size;
+  const canAutoReview = isStudent && isRegistered && !contentCompleted && allSectionsVisited && contentScrolledToBottom;
+  const visitedSectionsCount = visitedSections.size;
+  const nextSectionNumber = useMemo(() => {
+    const nextIndex = sections.findIndex((section) => !visitedSections.has(section.id || section.lesson_section_id));
+    return nextIndex >= 0 ? nextIndex + 1 : null;
+  }, [sections, visitedSections]);
 
   const toggleSection = (sectionId) => {
     setExpandedSections((prev) => {
@@ -83,6 +88,16 @@ const LessonContent = ({
       } else {
         next.add(sectionId);
       }
+      return next;
+    });
+
+    setVisitedSections((prev) => {
+      if (prev.has(sectionId)) {
+        return prev;
+      }
+
+      const next = new Set(prev);
+      next.add(sectionId);
       return next;
     });
   };
@@ -112,33 +127,19 @@ const LessonContent = ({
   }, [canAutoReview, contentCompleted]);
 
   useEffect(() => {
-    if (!lesson.content && !lesson.video_url && sections.length === 0) {
+    if (!lesson.content) {
       setContentScrolledToBottom(true);
     }
-  }, [lesson.content, lesson.video_url, sections.length]);
-
-  useEffect(() => {
-    const checkPageBottom = () => {
-      if (contentScrolledToBottom) return;
-
-      const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 24;
-      if (nearBottom) {
-        setContentScrolledToBottom(true);
-      }
-    };
-
-    checkPageBottom();
-    window.addEventListener('scroll', checkPageBottom, { passive: true });
-    return () => window.removeEventListener('scroll', checkPageBottom);
-  }, [contentScrolledToBottom]);
+  }, [lesson.content]);
 
   useEffect(() => {
     onJourneySignalsChange?.({
-      openedSections: openedSectionsCount,
+      visitedSections: visitedSectionsCount,
       totalSections: sections.length,
+      nextSectionNumber,
       contentScrolledToBottom,
     });
-  }, [contentScrolledToBottom, onJourneySignalsChange, openedSectionsCount, sections.length]);
+  }, [contentScrolledToBottom, nextSectionNumber, onJourneySignalsChange, sections.length, visitedSectionsCount]);
 
   const handleContentScroll = () => {
     const node = contentScrollRef.current;
@@ -219,12 +220,12 @@ const LessonContent = ({
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Guided lesson sections</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  {openedSectionsCount} of {sections.length} sections opened
+                  {visitedSectionsCount} of {sections.length} sections explored
                 </p>
               </div>
             </div>
             <span className="rounded-full bg-purple-100 px-4 py-2 text-sm font-bold text-purple-800">
-              {contentCompleted ? 'Practice unlocked' : 'Open all sections'}
+              {contentCompleted ? 'Practice unlocked' : nextSectionNumber ? `Visit section ${nextSectionNumber}` : 'Review complete'}
             </span>
           </div>
 
@@ -250,7 +251,11 @@ const LessonContent = ({
                       <div>
                         <h3 className="text-lg font-bold text-gray-900">{section.title}</h3>
                         <p className="text-sm text-gray-500">
-                          {isExpanded ? 'Opened and ready to review' : 'Open this section next'}
+                          {visitedSections.has(sectionId)
+                            ? isExpanded
+                              ? 'Open and ready to review'
+                              : 'Already explored'
+                            : 'Open this section next'}
                         </p>
                       </div>
                     </div>
@@ -288,6 +293,7 @@ const LessonContent = ({
                     setExpandedSections(new Set());
                   } else {
                     setExpandedSections(new Set(sections.map((section) => section.id || section.lesson_section_id)));
+                    setVisitedSections(new Set(sections.map((section) => section.id || section.lesson_section_id)));
                   }
                 }}
                 className="rounded-lg px-6 py-2 text-sm font-semibold text-purple-700 transition-colors hover:bg-purple-50 hover:text-purple-900"
@@ -307,8 +313,8 @@ const LessonContent = ({
                       ? "You've unlocked practice. Start the guided exercises when you're ready."
                       : canAutoReview
                         ? 'Review complete. Unlocking practice now.'
-                        : !allSectionsOpened
-                          ? 'Open every section first, then keep reading until the end.'
+                        : !allSectionsVisited
+                          ? 'Visit every section once, then keep reading until the end.'
                           : 'Great. Now scroll through the lesson content until the end to unlock practice.'}
                   </p>
                 </div>
