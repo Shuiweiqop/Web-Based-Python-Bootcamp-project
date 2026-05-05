@@ -64,8 +64,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // ==================== 代码执行 API 路由 ====================
-    Route::post('/api/code/execute', [CodeExecutionController::class, 'execute'])->name('code.execute');
-    Route::post('/api/gemini/chat', [GeminiController::class, 'chat'])->name('gemini.chat');
+    Route::post('/api/code/execute', [CodeExecutionController::class, 'execute'])
+        ->middleware('throttle:20,1')
+        ->name('code.execute');
+    Route::post('/api/gemini/chat', [GeminiController::class, 'chat'])
+        ->middleware('throttle:15,1')
+        ->name('gemini.chat');
 
     // ==================== 搜索 API ====================
     Route::prefix('api')->name('api.')->group(function () {
@@ -80,7 +84,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // 创建帖子
         Route::get('/create', [ForumController::class, 'create'])->name('create');
-        Route::post('/', [ForumController::class, 'store'])->name('store');
+        Route::post('/', [ForumController::class, 'store'])
+            ->middleware('throttle:5,1')
+            ->name('store');
 
         // 个人页面（具体路径优先）
         Route::get('/user/my-posts', [ForumController::class, 'myPosts'])->name('my-posts');
@@ -106,7 +112,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{id}/lock', [ForumController::class, 'toggleLock'])->name('lock');
 
         // 回复相关
-        Route::post('/{id}/reply', [ForumController::class, 'reply'])->name('reply');
+        Route::post('/{id}/reply', [ForumController::class, 'reply'])
+            ->middleware('throttle:10,1')
+            ->name('reply');
         Route::put('/reply/{replyId}', [ForumController::class, 'updateReply'])->name('reply.update');
         Route::delete('/reply/{replyId}', [ForumController::class, 'destroyReply'])->name('reply.destroy');
         Route::post('/reply/{replyId}/like', [ForumController::class, 'toggleReplyLike'])->name('reply.like');
@@ -208,7 +216,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/rewards', [StudentRewardController::class, 'index'])->name('rewards.index');
         Route::get('/rewards/history', [StudentRewardController::class, 'history'])->name('rewards.history');
         Route::get('/rewards/{id}', [StudentRewardController::class, 'show'])->name('rewards.show');
-        Route::post('/rewards/{id}/purchase', [StudentRewardController::class, 'purchase'])->name('rewards.purchase');
+        Route::post('/rewards/{id}/purchase', [StudentRewardController::class, 'purchase'])
+            ->middleware('throttle:5,1')
+            ->name('rewards.purchase');
 
         // ==================== 统一的库存管理路由 ====================
         Route::controller(StudentInventoryController::class)->prefix('inventory')->name('inventory.')->group(function () {
