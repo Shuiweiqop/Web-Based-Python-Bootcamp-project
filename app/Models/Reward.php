@@ -13,6 +13,22 @@ class Reward extends Model
     protected $primaryKey = 'reward_id';
     public $timestamps = true;
 
+    const TYPES = [
+        'avatar_frame'       => '头像框',
+        'profile_background' => '背景',
+        'badge'              => '徽章',
+        'title'              => '称号',
+        'theme'              => '主题',
+        'effect'             => '特效',
+    ];
+
+    const RARITIES = [
+        'common'    => '普通',
+        'rare'      => '稀有',
+        'epic'      => '史诗',
+        'legendary' => '传说',
+    ];
+
     protected $fillable = [
         'name',
         'description',
@@ -36,19 +52,6 @@ class Reward extends Model
         'point_cost' => 'integer',
         'max_owned' => 'integer',
     ];
-
-    // ==================== ✅ 添加这两个方法 ====================
-
-    /**
-     * 添加 'id' 访问器，让前端可以使用 reward.id
-     * 这样 Inertia.js 和 React 都能正常工作
-     */
-    protected $appends = ['id'];
-
-    public function getIdAttribute()
-    {
-        return $this->reward_id;
-    }
 
     // ==================== Route Model Binding Configuration ====================
 

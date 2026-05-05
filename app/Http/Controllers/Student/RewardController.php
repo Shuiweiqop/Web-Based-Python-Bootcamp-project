@@ -90,20 +90,8 @@ class RewardController extends Controller
                 'current_points' => $studentProfile->current_points,
                 'points_level' => $studentProfile->points_level,
             ],
-            'rewardTypes' => [
-                'avatar_frame' => '头像框',
-                'profile_background' => '背景',
-                'badge' => '徽章',
-                'title' => '称号',
-                'theme' => '主题',
-                'effect' => '特效',
-            ],
-            'rarities' => [
-                'common' => '普通',
-                'rare' => '稀有',
-                'epic' => '史诗',
-                'legendary' => '传说',
-            ],
+            'rewardTypes' => Reward::TYPES,
+            'rarities'    => Reward::RARITIES,
             'filters' => [
                 'type' => $request->get('type', 'all'),
                 'rarity' => $request->get('rarity', 'all'),
@@ -123,11 +111,8 @@ class RewardController extends Controller
     {
         $studentProfile = $this->getStudentProfile();
         $reward = Reward::where('is_active', true)
-            ->where(function ($q) use ($id) {
-                // 如果传进来是数字，尝试匹配模型主键或 reward_id 字段
-                $q->where($q->getModel()->getKeyName(), $id)
-                    ->orWhere('reward_id', $id);
-            })->firstOrFail();
+            ->where('reward_id', $id)
+            ->firstOrFail();
 
         // 获取拥有数量
         $ownedQuantity = StudentRewardInventory::where('student_id', $studentProfile->student_id)
