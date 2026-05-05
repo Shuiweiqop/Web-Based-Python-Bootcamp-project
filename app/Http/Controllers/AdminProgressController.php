@@ -349,14 +349,6 @@ class AdminProgressController extends Controller
                 ])
                 ->firstOrFail();
 
-            Log::info('Progress loaded:', [
-                'progress_id' => $progress->progress_id,
-                'student_id' => $progress->student_id,
-                'lesson_id' => $progress->lesson_id,
-                'has_student' => !is_null($progress->student),
-                'has_lesson' => !is_null($progress->lesson),
-            ]);
-
             // Get exercise submissions for this lesson and student
             $exerciseProgress = \App\Models\ExerciseSubmission::where('student_id', $progress->student_id)
                 ->whereHas('exercise', function ($query) use ($progress) {
@@ -388,8 +380,6 @@ class AdminProgressController extends Controller
                     ];
                 })
                 ->values();
-
-            \Log::info('Exercise progress loaded:', ['count' => $exerciseProgress->count()]);
 
             // Get test submissions for this lesson and student
             $testProgress = \App\Models\TestSubmission::where('student_id', $progress->student_id)
@@ -423,8 +413,6 @@ class AdminProgressController extends Controller
                 })
                 ->values();
 
-            Log::info('Test progress loaded:', ['count' => $testProgress->count()]);
-
             // Calculate additional statistics
             $stats = [
                 'total_exercises' => \App\Models\InteractiveExercise::where('lesson_id', $progress->lesson_id)
@@ -450,12 +438,6 @@ class AdminProgressController extends Controller
             $progressData['tests_completed'] = $stats['tests_completed'];
             $progressData['total_tests'] = $stats['total_tests'];
             $progressData['average_score'] = $stats['average_test_score'];
-
-            Log::info('Rendering Show page with data:', [
-                'progress_id' => $progressData['progress_id'],
-                'lesson_title' => $progressData['lesson']['title'] ?? 'NO LESSON',
-                'student_name' => $progressData['student']['user']['name'] ?? 'NO STUDENT',
-            ]);
 
             return Inertia::render('Admin/Progress/Show', [
                 'progress' => $progressData,

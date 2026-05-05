@@ -112,10 +112,7 @@ class AdminLessonController extends Controller
             $lessonData['required_tests']             = $lessonData['required_tests'] ?? 0;
             $lessonData['min_exercise_score_percent'] = $lessonData['min_exercise_score_percent'] ?? 70.00;
 
-            // 2️⃣ 创建 Lesson
             $lesson = Lesson::create($lessonData);
-
-            // 3️⃣ 创建 Sections（如果有）
             if (isset($data['sections']) && is_array($data['sections'])) {
                 foreach ($data['sections'] as $sectionData) {
                     $lesson->sections()->create([
@@ -159,10 +156,8 @@ class AdminLessonController extends Controller
 
     public function show(Lesson $lesson)
     {
-        // 🔥 强制刷新 lesson，确保获取最新数据
         $lesson->refresh();
 
-        // 🔥 加载所有关联关系
         $lesson->load([
             'creator',
             'sections' => function ($query) {
@@ -179,15 +174,6 @@ class AdminLessonController extends Controller
             }
         ]);
 
-        // 🔥 调试：打印 sections 数据
-        Log::info('Lesson Show Data', [
-            'lesson_id' => $lesson->lesson_id,
-            'title' => $lesson->title,
-            'sections_count' => $lesson->sections->count(),
-            'sections' => $lesson->sections->toArray(),
-        ]);
-
-        // 🔥 确保 sections 被正确序列化
         $sectionsData = $lesson->sections->map(function ($section) {
             return [
                 'id' => $section->lesson_section_id ?? $section->id,
@@ -219,7 +205,7 @@ class AdminLessonController extends Controller
                 'created_at' => $lesson->created_at,
                 'updated_at' => $lesson->updated_at,
             ],
-            'sections' => $sectionsData, // 🔥 显式传递 sections
+            'sections' => $sectionsData,
             'exercises' => $lesson->interactiveExercises,
             'tests' => $lesson->tests,
             'buildChecklist' => $this->buildLessonChecklist($lesson),
@@ -308,22 +294,16 @@ class AdminLessonController extends Controller
         DB::beginTransaction();
 
         try {
-            // 1️⃣ 更新 lesson 基本信息（排除 sections）
             $lessonData = Arr::except($data, ['sections']);
 
-            // 🔥 如果没有提供 status，保持原有值
             if (!isset($lessonData['status'])) {
                 unset($lessonData['status']);
             }
 
             $lesson->update($lessonData);
-
-            // 2️⃣ 更新 sections（如果有）
             if (isset($data['sections']) && is_array($data['sections'])) {
-                // 删除所有旧的 sections
                 $lesson->sections()->delete();
 
-                // 创建新的 sections
                 foreach ($data['sections'] as $sectionData) {
                     $lesson->sections()->create([
                         'title' => $sectionData['title'],
@@ -369,7 +349,6 @@ class AdminLessonController extends Controller
 
     public function edit(Lesson $lesson)
     {
-        // 🔥 加载 sections
         $lesson->load('sections');
 
         return Inertia::render('Admin/Lessons/Edit', [

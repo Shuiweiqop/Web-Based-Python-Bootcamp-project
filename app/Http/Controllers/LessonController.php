@@ -274,78 +274,47 @@ class LessonController extends Controller
      */
     public function register(Request $request, Lesson $lesson)
     {
-        Log::info('=== REGISTRATION START ===');
-        Log::info('Lesson ID: ' . $lesson->lesson_id);
-        Log::info('Request method: ' . $request->method());
-
         if (!Auth::check()) {
-            Log::info('User not authenticated');
             return redirect()->back()->with('error', 'Authentication required');
         }
 
         $user = Auth::user();
-        Log::info('User authenticated: ' . $user->email);
-        Log::info('User role: ' . $user->role);
 
         if ($user->role !== 'student') {
-            Log::info('User is not a student, role: ' . $user->role);
             return redirect()->back()->with('error', 'Only students can register for lessons');
         }
 
         $studentProfile = $user->studentProfile ?? null;
-        Log::info('Student profile exists: ' . ($studentProfile ? 'YES' : 'NO'));
-
-        if ($studentProfile) {
-            Log::info('Student profile ID: ' . $studentProfile->student_id);
-        }
 
         if (!$studentProfile) {
-            Log::info('No student profile found for user: ' . $user->email);
             return redirect()->back()->with('error', 'Student profile not found');
         }
 
-        Log::info('Lesson status: ' . $lesson->status);
         if ($lesson->status !== 'active') {
-            Log::info('Lesson not active');
             return redirect()->back()->with('error', 'Lesson is not available for registration');
         }
 
         try {
-            Log::info('Starting registration process...');
-
-            // Check if already registered
             $existingRegistration = LessonRegistration::where('student_id', $studentProfile->student_id)
                 ->where('lesson_id', $lesson->lesson_id)
                 ->first();
 
-            Log::info('Existing registration check: ' . ($existingRegistration ? 'FOUND' : 'NONE'));
-
             if ($existingRegistration) {
-                Log::info('Already registered, stopping');
                 return redirect()->back()->with('error', 'Already registered for this lesson');
             }
 
-            // Create new registration
-            Log::info('Creating registration with data:');
-            Log::info('student_id: ' . $studentProfile->student_id);
-            Log::info('lesson_id: ' . $lesson->lesson_id);
-
-            $registration = LessonRegistration::create([
+            LessonRegistration::create([
                 'student_id' => $studentProfile->student_id,
                 'lesson_id' => $lesson->lesson_id,
             ]);
 
-            Log::info('Registration created: ' . ($registration ? 'SUCCESS' : 'FAILED'));
-            if ($registration) {
-                Log::info('New registration ID: ' . $registration->registration_id);
-            }
-
-            Log::info('=== REGISTRATION SUCCESS ===');
             return redirect()->back()->with('success', 'Successfully registered for lesson!');
         } catch (\Exception $e) {
-            Log::error('Registration failed with error: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            Log::info('=== REGISTRATION FAILED ===');
+            Log::error('Lesson registration failed', [
+                'lesson_id'  => $lesson->lesson_id,
+                'student_id' => $studentProfile->student_id,
+                'error'      => $e->getMessage(),
+            ]);
             return redirect()->back()->with('error', 'Registration failed. Please try again.');
         }
     }
