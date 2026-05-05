@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
-
 
 class Reward extends Model
 {
@@ -14,19 +13,19 @@ class Reward extends Model
     public $timestamps = true;
 
     const TYPES = [
-        'avatar_frame'       => '头像框',
-        'profile_background' => '背景',
-        'badge'              => '徽章',
-        'title'              => '称号',
-        'theme'              => '主题',
-        'effect'             => '特效',
+        'avatar_frame' => 'Avatar Frame',
+        'profile_background' => 'Background',
+        'badge' => 'Badge',
+        'title' => 'Title',
+        'theme' => 'Theme',
+        'effect' => 'Effect',
     ];
 
     const RARITIES = [
-        'common'    => '普通',
-        'rare'      => '稀有',
-        'epic'      => '史诗',
-        'legendary' => '传说',
+        'common' => 'Common',
+        'rare' => 'Rare',
+        'epic' => 'Epic',
+        'legendary' => 'Legendary',
     ];
 
     protected $fillable = [
@@ -53,18 +52,10 @@ class Reward extends Model
         'max_owned' => 'integer',
     ];
 
-    // ==================== Route Model Binding Configuration ====================
-
-    /**
-     * Get the route key for the model.
-     * This tells Laravel to use 'reward_id' instead of 'id' for route binding
-     */
     public function getRouteKeyName()
     {
         return 'reward_id';
     }
-
-    // ==================== 关系 ====================
 
     public function rewardRecords(): HasMany
     {
@@ -76,21 +67,13 @@ class Reward extends Model
         return $this->hasMany(StudentRewardInventory::class, 'reward_id', 'reward_id');
     }
 
-    // ==================== 方法 ====================
-
-    /**
-     * 检查奖励是否可购买
-     */
     public function canPurchase(): bool
     {
         $stock = $this->stock_quantity;
+
         return (bool) ($this->is_active && ($stock === null || $stock < 0 || $stock > 0));
     }
 
-    /**
-     * 原子扣减库存。调用方必须已持有外层事务与行锁。
-     * 返回 true = 扣减成功（或无限库存），false = 库存不足。
-     */
     public function decreaseStock(int $quantity = 1): bool
     {
         if ($this->stock_quantity < 0) {
@@ -104,29 +87,22 @@ class Reward extends Model
         return $affected > 0;
     }
 
-    /**
-     * 增加库存
-     */
     public function increaseStock(int $quantity = 1): void
     {
         if ($this->stock_quantity >= 0 && $quantity > 0) {
             $this->increment('stock_quantity', $quantity);
-            // 同步当前实例的值
             $this->refresh();
         }
     }
 
-    /**
-     * 获取稀有度标签（UI 使用）
-     */
     public function getRarityBadge(): string
     {
         return match ($this->rarity) {
-            'legendary' => '🌟 传说',
-            'epic' => '💜 史诗',
-            'rare' => '💙 稀有',
-            'common' => '⚪ 普通',
-            default => '未知',
+            'legendary' => '🌟 Legendary',
+            'epic' => '💜 Epic',
+            'rare' => '💙 Rare',
+            'common' => '⚪ Common',
+            default => 'Unknown',
         };
     }
 
@@ -142,8 +118,6 @@ class Reward extends Model
 
         return $ownCount < $this->max_owned;
     }
-
-    // ==================== Scopes ====================
 
     public function scopeActive(Builder $query)
     {

@@ -542,15 +542,15 @@ class StudentProfileController extends Controller
     {
         if ($record->points_change > 0) {
             return match ($record->reason) {
-                'test_completion' => '完成测验',
-                'exercise_completion' => '完成练习',
-                'lesson_completion' => '完成课程',
-                'daily_streak' => '每日连续学习',
-                'achievement' => '解锁成就',
-                default => '获得积分',
+                'test_completion' => 'Test completed',
+                'exercise_completion' => 'Exercise completed',
+                'lesson_completion' => 'Lesson completed',
+                'daily_streak' => 'Daily learning streak',
+                'achievement' => 'Achievement unlocked',
+                default => 'Points earned',
             };
         } else {
-            return '购买奖励：' . ($record->reward->name ?? '未知奖励');
+            return 'Reward purchased: ' . ($record->reward->name ?? 'Unknown reward');
         }
     }
 

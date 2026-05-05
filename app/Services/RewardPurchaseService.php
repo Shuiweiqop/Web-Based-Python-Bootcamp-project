@@ -34,16 +34,16 @@ class RewardPurchaseService
             $this->updateInventory($student, $reward, $quantity);
             $this->recordPurchase($student, $reward, $quantity, $pointsBefore, $totalCost);
 
-            Log::info('奖励购买成功', [
-                'student_id'       => $student->student_id,
-                'reward_id'        => $reward->reward_id,
-                'quantity'         => $quantity,
-                'points_spent'     => $totalCost,
+            Log::info('Reward purchase completed successfully', [
+                'student_id' => $student->student_id,
+                'reward_id' => $reward->reward_id,
+                'quantity' => $quantity,
+                'points_spent' => $totalCost,
                 'points_remaining' => $student->current_points,
             ]);
 
             return [
-                'message'          => "成功购买 {$reward->name} x{$quantity}！消耗 {$totalCost} 积分。",
+                'message' => "Successfully purchased {$reward->name} x{$quantity}. Spent {$totalCost} points.",
                 'remaining_points' => $student->current_points,
             ];
         }, 5);
@@ -51,17 +51,18 @@ class RewardPurchaseService
 
     private function assertPurchasable(Reward $reward): void
     {
-        if (!$reward->canPurchase()) {
-            throw new \RuntimeException('此奖励暂时无法购买。');
+        if (! $reward->canPurchase()) {
+            throw new \RuntimeException('This reward is currently unavailable for purchase.');
         }
     }
 
     private function assertSufficientPoints(StudentProfile $student, Reward $reward, int $quantity): void
     {
         $total = $reward->point_cost * $quantity;
+
         if ($student->current_points < $total) {
             throw new \RuntimeException(
-                "积分不足！需要 {$total} 积分，您当前有 {$student->current_points} 积分。"
+                "Not enough points. You need {$total} points, but you currently have {$student->current_points}."
             );
         }
     }
@@ -73,15 +74,15 @@ class RewardPurchaseService
         }
 
         if ($reward->stock_quantity < $quantity) {
-            throw new \RuntimeException("库存不足！仅剩 {$reward->stock_quantity} 个。");
+            throw new \RuntimeException("Not enough stock. Only {$reward->stock_quantity} left.");
         }
 
         $affected = Reward::where('reward_id', $reward->reward_id)
             ->where('stock_quantity', '>=', $quantity)
             ->decrement('stock_quantity', $quantity);
 
-        if (!$affected) {
-            throw new \RuntimeException('库存更新失败，请重试。');
+        if (! $affected) {
+            throw new \RuntimeException('Failed to update stock. Please try again.');
         }
     }
 
@@ -97,7 +98,7 @@ class RewardPurchaseService
 
         if (($owned + $quantity) > $reward->max_owned) {
             $remaining = max(0, $reward->max_owned - $owned);
-            throw new \RuntimeException("超过拥有上限！您最多还能购买 {$remaining} 个。");
+            throw new \RuntimeException("Purchase limit exceeded. You can only buy {$remaining} more.");
         }
     }
 
@@ -106,10 +107,10 @@ class RewardPurchaseService
         $inventory = StudentRewardInventory::firstOrCreate(
             [
                 'student_id' => $student->student_id,
-                'reward_id'  => $reward->reward_id,
+                'reward_id' => $reward->reward_id,
             ],
             [
-                'quantity'    => 0,
+                'quantity' => 0,
                 'obtained_at' => now(),
                 'is_equipped' => false,
             ]
@@ -128,15 +129,15 @@ class RewardPurchaseService
         int $totalCost
     ): void {
         RewardRecord::create([
-            'student_id'     => $student->student_id,
-            'reward_id'      => $reward->reward_id,
-            'quantity'       => $quantity,
-            'points_spent'   => $totalCost,
-            'points_before'  => $pointsBefore,
-            'points_after'   => $student->current_points,
+            'student_id' => $student->student_id,
+            'reward_id' => $reward->reward_id,
+            'quantity' => $quantity,
+            'points_spent' => $totalCost,
+            'points_before' => $pointsBefore,
+            'points_after' => $student->current_points,
             'points_changed' => $student->current_points - $pointsBefore,
-            'issued_by'      => 'student_purchase',
-            'issued_at'      => now(),
+            'issued_by' => 'student_purchase',
+            'issued_at' => now(),
         ]);
     }
 }

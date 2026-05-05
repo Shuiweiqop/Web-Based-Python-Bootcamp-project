@@ -430,8 +430,8 @@ class ForumController extends Controller
                         'user_Id' => $parentReply->user_id,
                         'type' => 'community',
                         'priority' => 'normal',
-                        'title' => '💬 新回复',
-                        'message' => "{$currentUser->name} 回复了你的评论：" . \Illuminate\Support\Str::limit($validated['content'], 50),
+                        'title' => '💬 New Reply',
+                        'message' => "{$currentUser->name} replied to your comment: " . \Illuminate\Support\Str::limit($validated['content'], 50),
                         'icon' => 'message-square',
                         'color' => 'green',
                         'data' => [
@@ -442,7 +442,7 @@ class ForumController extends Controller
                             'reply_preview' => \Illuminate\Support\Str::limit($validated['content'], 100),
                         ],
                         'action_url' => route('forum.show', $post->post_id) . '#reply-' . $reply->reply_id,
-                        'action_text' => '查看回复',
+                        'action_text' => 'View Reply',
                     ]);
 
                     Log::info('📬 Reply notification sent', [
@@ -457,8 +457,8 @@ class ForumController extends Controller
                         'user_Id' => $post->user_id,
                         'type' => 'community',
                         'priority' => 'normal',
-                        'title' => '💬 新评论',
-                        'message' => "{$currentUser->name} 评论了你的帖子「{$post->title}」",
+                        'title' => '💬 New Comment',
+                        'message' => "{$currentUser->name} commented on your post \"{$post->title}\"",
                         'icon' => 'message-circle',
                         'color' => 'blue',
                         'data' => [
@@ -469,7 +469,7 @@ class ForumController extends Controller
                             'post_title' => $post->title,
                         ],
                         'action_url' => route('forum.show', $post->post_id) . '#reply-' . $reply->reply_id,
-                        'action_text' => '查看评论',
+                        'action_text' => 'View Comment',
                     ]);
 
                     Log::info('📬 Post comment notification sent', [
@@ -671,8 +671,8 @@ class ForumController extends Controller
                         'user_Id' => $reply->user_id,
                         'type' => 'community',
                         'priority' => 'high',
-                        'title' => '⭐ 最佳答案',
-                        'message' => "{$currentUser->name} 将你的回复标记为最佳答案！",
+                        'title' => '⭐ Best Answer',
+                        'message' => "{$currentUser->name} marked your reply as the best answer!",
                         'icon' => 'star',
                         'color' => 'yellow',
                         'data' => [
@@ -682,7 +682,7 @@ class ForumController extends Controller
                             'post_author' => $currentUser->name,
                         ],
                         'action_url' => route('forum.show', $reply->post_id) . '#reply-' . $reply->reply_id,
-                        'action_text' => '查看帖子',
+                        'action_text' => 'View Post',
                     ]);
 
                     Log::info('📬 Best answer notification sent', [
@@ -1102,7 +1102,7 @@ class ForumController extends Controller
             // 查找最近 5 分钟内的同类型通知
             $recentNotification = Notification::where('user_Id', $postAuthorId)
                 ->where('type', 'community')
-                ->where('title', '❤️ 帖子被点赞')
+                ->where('title', '❤️ Post Liked')
                 ->where('created_at', '>=', now()->subMinutes(5))
                 ->whereJsonContains('data->post_id', (string)$postId)
                 ->first();
@@ -1116,8 +1116,8 @@ class ForumController extends Controller
 
                 $count = count($likers);
                 $message = $count > 1
-                    ? "{$likers[0]} 和其他 " . ($count - 1) . " 人点赞了你的帖子"
-                    : "{$likerName} 点赞了你的帖子";
+                    ? "{$likers[0]} and " . ($count - 1) . " others liked your post"
+                    : "{$likerName} liked your post";
 
                 $recentNotification->update([
                     'message' => $message,
@@ -1138,8 +1138,8 @@ class ForumController extends Controller
                     'user_Id' => $postAuthorId,
                     'type' => 'community',
                     'priority' => 'low',
-                    'title' => '❤️ 帖子被点赞',
-                    'message' => "{$likerName} 点赞了你的帖子",
+                    'title' => '❤️ Post Liked',
+                    'message' => "{$likerName} liked your post",
                     'icon' => 'heart',
                     'color' => 'red',
                     'data' => [
@@ -1149,7 +1149,7 @@ class ForumController extends Controller
                         'post_title' => \Illuminate\Support\Str::limit($postTitle, 50),
                     ],
                     'action_url' => route('forum.show', $postId),
-                    'action_text' => '查看帖子',
+                    'action_text' => 'View Post',
                 ]);
 
                 Log::info('📬 Created new like notification', [

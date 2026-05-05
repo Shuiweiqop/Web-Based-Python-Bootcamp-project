@@ -34,7 +34,7 @@ class OnboardingController extends Controller
 
         // Only students can access onboarding
         if ($user->role !== 'student') {
-            abort(403, '管理员账号无需进行学生入学评估。');
+            abort(403, 'Administrator accounts do not need to complete student onboarding.');
         }
 
         $student = $user->studentProfile;
