@@ -71,15 +71,15 @@ export default function CreateBackground({ rarities }) {
       preserveScroll: false,
       // 必须设置配置让 Axios/Fetch 发送 multipart (Inertia 会处理 FormData 类型)
       onError: (err) => {
-        console.error('❌ 创建失败:', err);
+        console.error('❌ Creation failed:', err);
         setErrors(err);
         setIsSubmitting(false);
       },
       onSuccess: () => {
-        console.log('✅ 创建成功！');
+        console.log('✅ Created successfully!');
       },
       onFinish: () => {
-        console.log('🏁 请求完成');
+        console.log('🏁 Request completed');
         setIsSubmitting(false);
       },
     });
