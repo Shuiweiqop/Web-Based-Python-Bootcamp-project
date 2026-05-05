@@ -1,18 +1,12 @@
-/**
- * 奖励模板配置文件
- * 存储位置: resources/js/Config/rewardTemplates.js
- */
-
 export const rewardTemplates = {
-  // ==================== 头像框模板 ====================
   avatar_frame: [
     {
       id: 'golden_dragon',
-      name: '金龙头像框',
-      description: '华丽的金龙装饰头像框，展现王者风范',
+      name: 'Golden Dragon Frame',
+      description: 'A lavish golden dragon frame with a champion-level look.',
       rarity: 'legendary',
       point_cost: 1000,
-      preview: '/templates/frames/golden-dragon.png', // 预览图
+      preview: '/templates/frames/golden-dragon.png',
       metadata: {
         frame_dimensions: { width: 512, height: 512 },
         animation: { enabled: true, type: 'rotate', duration: '5s' },
@@ -20,8 +14,8 @@ export const rewardTemplates = {
     },
     {
       id: 'cyber_neon',
-      name: '赛博霓虹框',
-      description: '未来科技感的霓虹边框',
+      name: 'Cyber Neon Frame',
+      description: 'A futuristic neon frame with a high-tech vibe.',
       rarity: 'epic',
       point_cost: 600,
       preview: '/templates/frames/cyber-neon.png',
@@ -32,8 +26,8 @@ export const rewardTemplates = {
     },
     {
       id: 'sakura_bloom',
-      name: '樱花绽放框',
-      description: '浪漫的粉色樱花装饰框',
+      name: 'Sakura Bloom Frame',
+      description: 'A soft pink cherry blossom frame with a romantic feel.',
       rarity: 'rare',
       point_cost: 300,
       preview: '/templates/frames/sakura.png',
@@ -44,8 +38,8 @@ export const rewardTemplates = {
     },
     {
       id: 'simple_silver',
-      name: '简约银框',
-      description: '低调奢华的银色边框',
+      name: 'Simple Silver Frame',
+      description: 'A clean silver frame with a subtle premium look.',
       rarity: 'common',
       point_cost: 100,
       preview: '/templates/frames/silver.png',
@@ -55,12 +49,11 @@ export const rewardTemplates = {
     },
   ],
 
-  // ==================== 背景模板 ====================
   profile_background: [
     {
       id: 'tech_matrix',
-      name: '科技矩阵背景',
-      description: '黑客帝国风格的数字雨背景',
+      name: 'Tech Matrix Background',
+      description: 'A digital-rain background inspired by cyber worlds.',
       rarity: 'legendary',
       point_cost: 800,
       preview: '/templates/backgrounds/tech-matrix.jpg',
@@ -77,8 +70,8 @@ export const rewardTemplates = {
     },
     {
       id: 'galaxy_nebula',
-      name: '星云银河',
-      description: '璀璨的银河星云背景',
+      name: 'Galaxy Nebula',
+      description: 'A dazzling galaxy and nebula background.',
       rarity: 'epic',
       point_cost: 500,
       preview: '/templates/backgrounds/galaxy.jpg',
@@ -95,11 +88,11 @@ export const rewardTemplates = {
     },
     {
       id: 'gradient_sunset',
-      name: '日落渐变',
-      description: '温暖的橙红色渐变背景',
+      name: 'Sunset Gradient',
+      description: 'A warm orange-red gradient background.',
       rarity: 'rare',
       point_cost: 200,
-      preview: null, // 渐变不需要图片
+      preview: null,
       backgroundType: 'gradient',
       metadata: {
         background_type: 'gradient',
@@ -118,8 +111,8 @@ export const rewardTemplates = {
     },
     {
       id: 'ocean_blue',
-      name: '海洋蓝渐变',
-      description: '清新的蓝色渐变背景',
+      name: 'Ocean Blue Gradient',
+      description: 'A fresh blue gradient background.',
       rarity: 'common',
       point_cost: 100,
       preview: null,
@@ -136,12 +129,11 @@ export const rewardTemplates = {
     },
   ],
 
-  // ==================== 徽章模板 ====================
   badge: [
     {
       id: 'python_master',
-      name: 'Python 大师',
-      description: '完成所有 Python 课程的终极徽章',
+      name: 'Python Master',
+      description: 'The ultimate badge for completing every Python course.',
       rarity: 'legendary',
       point_cost: 1500,
       preview: '/templates/badges/python-master.png',
@@ -154,8 +146,8 @@ export const rewardTemplates = {
     },
     {
       id: 'code_warrior',
-      name: '代码战士',
-      description: '完成 100 道编程练习',
+      name: 'Code Warrior',
+      description: 'Awarded for completing 100 coding exercises.',
       rarity: 'epic',
       point_cost: 800,
       preview: '/templates/badges/code-warrior.png',
@@ -168,8 +160,8 @@ export const rewardTemplates = {
     },
     {
       id: 'fast_learner',
-      name: '快速学习者',
-      description: '3天内完成一门课程',
+      name: 'Fast Learner',
+      description: 'Complete a course within 3 days.',
       rarity: 'rare',
       point_cost: 400,
       preview: '/templates/badges/fast-learner.png',
@@ -182,8 +174,8 @@ export const rewardTemplates = {
     },
     {
       id: 'first_step',
-      name: '第一步',
-      description: '完成第一次练习',
+      name: 'First Step',
+      description: 'Complete your very first exercise.',
       rarity: 'common',
       point_cost: 50,
       preview: '/templates/badges/first-step.png',
@@ -196,17 +188,16 @@ export const rewardTemplates = {
     },
   ],
 
-  // ==================== 称号模板 ====================
   title: [
     {
       id: 'supreme_coder',
-      name: '至尊编程者',
-      description: '顶级编程称号，代表最高荣誉',
+      name: 'Supreme Coder',
+      description: 'A top-tier coding title that represents the highest honor.',
       rarity: 'legendary',
       point_cost: 2000,
       preview: null,
       metadata: {
-        title_text: '至尊编程者',
+        title_text: 'Supreme Coder',
         text_color: '#FFD700',
         gradient: {
           enabled: true,
@@ -223,13 +214,13 @@ export const rewardTemplates = {
     },
     {
       id: 'algorithm_expert',
-      name: '算法专家',
-      description: '精通各类算法的称号',
+      name: 'Algorithm Expert',
+      description: 'A title for students who excel at algorithms.',
       rarity: 'epic',
       point_cost: 1000,
       preview: null,
       metadata: {
-        title_text: '算法专家',
+        title_text: 'Algorithm Expert',
         text_color: '#8B5CF6',
         gradient: {
           enabled: true,
@@ -246,13 +237,13 @@ export const rewardTemplates = {
     },
     {
       id: 'python_ninja',
-      name: 'Python 忍者',
-      description: 'Python 编程高手',
+      name: 'Python Ninja',
+      description: 'A title for highly skilled Python coders.',
       rarity: 'rare',
       point_cost: 500,
       preview: null,
       metadata: {
-        title_text: 'Python 忍者',
+        title_text: 'Python Ninja',
         text_color: '#10B981',
         gradient: {
           enabled: false,
@@ -269,13 +260,13 @@ export const rewardTemplates = {
     },
     {
       id: 'code_rookie',
-      name: '编程新手',
-      description: '刚开始编程之旅',
+      name: 'Code Rookie',
+      description: 'For students just starting their coding journey.',
       rarity: 'common',
       point_cost: 50,
       preview: null,
       metadata: {
-        title_text: '编程新手',
+        title_text: 'Code Rookie',
         text_color: '#6B7280',
         gradient: {
           enabled: false,
@@ -293,56 +284,42 @@ export const rewardTemplates = {
   ],
 };
 
-/**
- * 获取指定类型的模板列表
- * @param {string} type - 奖励类型
- * @returns {Array} 模板列表
- */
 export const getTemplatesByType = (type) => {
   return rewardTemplates[type] || [];
 };
 
-/**
- * 根据 ID 获取模板
- * @param {string} type - 奖励类型
- * @param {string} id - 模板 ID
- * @returns {Object|null} 模板对象
- */
 export const getTemplateById = (type, id) => {
   const templates = rewardTemplates[type] || [];
-  return templates.find(t => t.id === id) || null;
+  return templates.find((template) => template.id === id) || null;
 };
 
-/**
- * 获取稀有度配置
- */
 export const rarityConfig = {
-  common: { 
-    color: 'bg-gray-100', 
-    text: 'text-gray-800', 
+  common: {
+    color: 'bg-gray-100',
+    text: 'text-gray-800',
     border: 'border-gray-300',
-    icon: '⚪', 
-    label: '普通' 
+    icon: '⚪',
+    label: 'Common',
   },
-  rare: { 
-    color: 'bg-blue-100', 
-    text: 'text-blue-800', 
+  rare: {
+    color: 'bg-blue-100',
+    text: 'text-blue-800',
     border: 'border-blue-300',
-    icon: '💙', 
-    label: '稀有' 
+    icon: '💙',
+    label: 'Rare',
   },
-  epic: { 
-    color: 'bg-purple-100', 
-    text: 'text-purple-800', 
+  epic: {
+    color: 'bg-purple-100',
+    text: 'text-purple-800',
     border: 'border-purple-300',
-    icon: '💜', 
-    label: '史诗' 
+    icon: '💜',
+    label: 'Epic',
   },
-  legendary: { 
-    color: 'bg-yellow-100', 
-    text: 'text-yellow-800', 
+  legendary: {
+    color: 'bg-yellow-100',
+    text: 'text-yellow-800',
     border: 'border-yellow-300',
-    icon: '🌟', 
-    label: '传说' 
+    icon: '🌟',
+    label: 'Legendary',
   },
 };

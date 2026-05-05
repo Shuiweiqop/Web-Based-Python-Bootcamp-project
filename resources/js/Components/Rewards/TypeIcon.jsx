@@ -1,98 +1,82 @@
 import React from 'react';
-import { 
-  Frame, 
-  Image, 
-  Award, 
-  Crown, 
-  Palette, 
+import {
+  Frame,
+  Image,
+  Award,
+  Crown,
+  Palette,
   Sparkles,
   Trophy,
-  Star,
-  Gift,
-  Zap
+  Zap,
 } from 'lucide-react';
 
-/**
- * 奖励类型配置
- */
 const REWARD_TYPE_CONFIG = {
   avatar_frame: {
-    label: '头像框',
+    label: 'Avatar Frame',
     icon: Frame,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     emoji: '🖼️',
-    description: '装饰你的头像边框',
+    description: 'Decorate the border around your avatar.',
   },
   profile_background: {
-    label: '个人页背景',
+    label: 'Profile Background',
     icon: Image,
     color: 'text-purple-600',
     bgColor: 'bg-purple-50',
     emoji: '🎨',
-    description: '自定义个人页面背景',
+    description: 'Customize your profile page background.',
   },
   badge: {
-    label: '徽章',
+    label: 'Badge',
     icon: Award,
     color: 'text-green-600',
     bgColor: 'bg-green-50',
     emoji: '🏅',
-    description: '展示你的成就徽章',
+    description: 'Show off your achievement badges.',
   },
   title: {
-    label: '称号',
+    label: 'Title',
     icon: Crown,
     color: 'text-amber-600',
     bgColor: 'bg-amber-50',
     emoji: '👑',
-    description: '炫酷的个人称号',
+    description: 'A standout title for your profile.',
   },
   theme: {
-    label: 'UI主题',
+    label: 'UI Theme',
     icon: Palette,
     color: 'text-pink-600',
     bgColor: 'bg-pink-50',
     emoji: '🎨',
-    description: '改变界面主题颜色',
+    description: 'Change your interface theme colors.',
   },
   effect: {
-    label: '特效',
+    label: 'Effect',
     icon: Sparkles,
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50',
     emoji: '✨',
-    description: '动态视觉特效',
+    description: 'Add dynamic visual effects.',
   },
   trophy: {
-    label: '奖杯',
+    label: 'Trophy',
     icon: Trophy,
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50',
     emoji: '🏆',
-    description: '稀有荣誉奖杯',
+    description: 'A rare trophy that shows off your honor.',
   },
   power_up: {
-    label: '增益道具',
+    label: 'Power-Up',
     icon: Zap,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50',
     emoji: '⚡',
-    description: '学习增益道具',
+    description: 'Useful boosts for your learning journey.',
   },
 };
 
-/**
- * 奖励类型图标组件
- * 
- * @param {Object} props
- * @param {string} props.type - 奖励类型
- * @param {string} props.size - 尺寸: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
- * @param {string} props.variant - 变体: 'icon' | 'emoji' | 'badge' | 'full'
- * @param {boolean} props.showLabel - 是否显示标签
- * @param {boolean} props.showBackground - 是否显示背景
- * @param {string} props.className - 额外类名
- */
 export default function TypeIcon({
   type = 'avatar_frame',
   size = 'md',
@@ -104,7 +88,6 @@ export default function TypeIcon({
   const config = REWARD_TYPE_CONFIG[type] || REWARD_TYPE_CONFIG.avatar_frame;
   const Icon = config.icon;
 
-  // 尺寸配置
   const sizeClasses = {
     xs: {
       icon: 'w-3 h-3',
@@ -145,29 +128,18 @@ export default function TypeIcon({
 
   const sizeClass = sizeClasses[size] || sizeClasses.md;
 
-  // 渲染不同变体
   const renderContent = () => {
     switch (variant) {
       case 'emoji':
-        return (
-          <span className={`${sizeClass.emoji} ${className}`}>
-            {config.emoji}
-          </span>
-        );
+        return <span className={`${sizeClass.emoji} ${className}`}>{config.emoji}</span>;
 
       case 'badge':
         return (
           <div
-            className={`
-              inline-flex items-center gap-2 px-3 py-1.5 rounded-full
-              ${config.bgColor} ${config.color}
-              ${className}
-            `}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${config.bgColor} ${config.color} ${className}`}
           >
             <Icon className={sizeClass.icon} />
-            <span className={`font-medium ${sizeClass.text}`}>
-              {config.label}
-            </span>
+            <span className={`font-medium ${sizeClass.text}`}>{config.label}</span>
           </div>
         );
 
@@ -175,11 +147,9 @@ export default function TypeIcon({
         return (
           <div className={`flex items-center gap-2 ${className}`}>
             <div
-              className={`
-                flex items-center justify-center rounded-lg
-                ${sizeClass.container} ${sizeClass.padding}
-                ${showBackground ? `${config.bgColor}` : ''}
-              `}
+              className={`flex items-center justify-center rounded-lg ${sizeClass.container} ${sizeClass.padding} ${
+                showBackground ? config.bgColor : ''
+              }`}
             >
               <Icon className={`${sizeClass.icon} ${config.color}`} />
             </div>
@@ -197,12 +167,7 @@ export default function TypeIcon({
       default:
         return showBackground ? (
           <div
-            className={`
-              flex items-center justify-center rounded-lg
-              ${sizeClass.container} ${sizeClass.padding}
-              ${config.bgColor}
-              ${className}
-            `}
+            className={`flex items-center justify-center rounded-lg ${sizeClass.container} ${sizeClass.padding} ${config.bgColor} ${className}`}
           >
             <Icon className={`${sizeClass.icon} ${config.color}`} />
           </div>
@@ -215,14 +180,11 @@ export default function TypeIcon({
   return <>{renderContent()}</>;
 }
 
-/**
- * 奖励类型标签组件（带图标和文字）
- */
-export function TypeLabel({ 
-  type = 'avatar_frame', 
+export function TypeLabel({
+  type = 'avatar_frame',
   size = 'sm',
   showIcon = true,
-  className = '' 
+  className = '',
 }) {
   const config = REWARD_TYPE_CONFIG[type] || REWARD_TYPE_CONFIG.avatar_frame;
   const Icon = config.icon;
@@ -239,21 +201,16 @@ export function TypeLabel({
   return (
     <span className={`inline-flex items-center gap-1.5 ${config.color} ${className}`}>
       {showIcon && <Icon className={sizeClass.icon} />}
-      <span className={`font-medium ${sizeClass.text}`}>
-        {config.label}
-      </span>
+      <span className={`font-medium ${sizeClass.text}`}>{config.label}</span>
     </span>
   );
 }
 
-/**
- * 奖励类型卡片组件
- */
-export function TypeCard({ 
+export function TypeCard({
   type = 'avatar_frame',
   onClick = null,
   selected = false,
-  className = '' 
+  className = '',
 }) {
   const config = REWARD_TYPE_CONFIG[type] || REWARD_TYPE_CONFIG.avatar_frame;
   const Icon = config.icon;
@@ -262,42 +219,36 @@ export function TypeCard({
     <button
       onClick={onClick}
       className={`
-        flex flex-col items-center gap-3 p-4 rounded-xl
-        border-2 transition-all duration-200
-        ${selected 
-          ? `${config.bgColor} border-current ${config.color} shadow-lg` 
-          : 'bg-white border-gray-200 hover:border-gray-300 text-gray-700'
+        flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200
+        ${
+          selected
+            ? `${config.bgColor} border-current ${config.color} shadow-lg`
+            : 'bg-white border-gray-200 hover:border-gray-300 text-gray-700'
         }
         ${onClick ? 'cursor-pointer hover:scale-105' : ''}
         ${className}
       `}
     >
-      <div className={`
-        flex items-center justify-center w-12 h-12 rounded-lg
-        ${selected ? 'bg-white/50' : config.bgColor}
-      `}>
+      <div
+        className={`flex items-center justify-center w-12 h-12 rounded-lg ${
+          selected ? 'bg-white/50' : config.bgColor
+        }`}
+      >
         <Icon className={`w-6 h-6 ${config.color}`} />
       </div>
       <div className="text-center">
-        <p className="font-semibold text-sm">
-          {config.label}
-        </p>
-        <p className="text-xs text-gray-600 mt-1">
-          {config.description}
-        </p>
+        <p className="font-semibold text-sm">{config.label}</p>
+        <p className="text-xs text-gray-600 mt-1">{config.description}</p>
       </div>
     </button>
   );
 }
 
-/**
- * 奖励类型筛选器组件
- */
-export function TypeFilter({ 
+export function TypeFilter({
   types = Object.keys(REWARD_TYPE_CONFIG),
   selectedType = null,
   onTypeChange = () => {},
-  className = '' 
+  className = '',
 }) {
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>
@@ -305,27 +256,29 @@ export function TypeFilter({
         onClick={() => onTypeChange(null)}
         className={`
           px-4 py-2 rounded-full text-sm font-medium transition-all
-          ${selectedType === null
-            ? 'bg-gray-800 text-white shadow-lg'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          ${
+            selectedType === null
+              ? 'bg-gray-800 text-white shadow-lg'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }
         `}
       >
-        全部
+        All
       </button>
       {types.map((type) => {
         const config = REWARD_TYPE_CONFIG[type];
         const Icon = config.icon;
+
         return (
           <button
             key={type}
             onClick={() => onTypeChange(type)}
             className={`
-              inline-flex items-center gap-2 px-4 py-2 rounded-full
-              text-sm font-medium transition-all
-              ${selectedType === type
-                ? `${config.bgColor} ${config.color} shadow-lg border-2 border-current`
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all
+              ${
+                selectedType === type
+                  ? `${config.bgColor} ${config.color} shadow-lg border-2 border-current`
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }
             `}
           >
@@ -338,16 +291,10 @@ export function TypeFilter({
   );
 }
 
-/**
- * 获取奖励类型配置
- */
 export function getRewardTypeConfig(type) {
   return REWARD_TYPE_CONFIG[type] || REWARD_TYPE_CONFIG.avatar_frame;
 }
 
-/**
- * 获取所有奖励类型
- */
 export function getAllRewardTypes() {
   return Object.keys(REWARD_TYPE_CONFIG);
 }
