@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Admin\StoreLessonRequest;
+use App\Http\Requests\Admin\UpdateLessonRequest;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Arr;
 
 class AdminLessonController extends Controller
 {
@@ -97,36 +99,17 @@ class AdminLessonController extends Controller
             ->with('success', 'Draft lesson created. Follow the checklist to finish content, practice, checks, and publishing.');
     }
 
-    public function store(Request $request)
+    public function store(StoreLessonRequest $request)
     {
-        // ✅ 完整验证（包含 sections）
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
-            'content_type' => 'required|string|in:text,markdown,html',
-            'video_url' => 'nullable|url',
-            'difficulty' => 'required|string|in:beginner,intermediate,advanced',
-            'estimated_duration' => 'nullable|integer|min:1|max:1440',
-            'status' => 'required|in:active,inactive,draft',
-            'completion_reward_points' => 'nullable|integer|min:0|max:10000',
-            'required_exercises' => 'nullable|integer|min:0',
-            'required_tests' => 'nullable|integer|min:0',
-            'min_exercise_score_percent' => 'nullable|numeric|min:0|max:100',
-            // 🔥 新增：sections 验证
-            'sections' => 'nullable|array',
-            'sections.*.title' => 'required_with:sections|string|max:255',
-            'sections.*.content' => 'required_with:sections|string',
-            'sections.*.order_index' => 'required_with:sections|integer|min:1',
-        ]);
+        $data = $request->validated();
 
         DB::beginTransaction();
 
         try {
-            // 1️⃣ 设置默认值
-            $lessonData = Arr::except($data, ['sections']); // 排除 sections
-            $lessonData['created_by'] = $request->user()->user_Id ?? $request->user()->id;
-            $lessonData['required_exercises'] = $lessonData['required_exercises'] ?? 0;
-            $lessonData['required_tests'] = $lessonData['required_tests'] ?? 0;
+            $lessonData = Arr::except($data, ['sections']);
+            $lessonData['created_by']                 = $request->user()->user_Id;
+            $lessonData['required_exercises']         = $lessonData['required_exercises'] ?? 0;
+            $lessonData['required_tests']             = $lessonData['required_tests'] ?? 0;
             $lessonData['min_exercise_score_percent'] = $lessonData['min_exercise_score_percent'] ?? 70.00;
 
             // 2️⃣ 创建 Lesson
@@ -151,10 +134,10 @@ class AdminLessonController extends Controller
             DB::commit();
 
             Log::info('Lesson created', [
-                'lesson_id' => $lesson->lesson_id,
-                'title' => $lesson->title,
+                'lesson_id'   => $lesson->lesson_id,
+                'title'       => $lesson->title,
                 'has_sections' => isset($data['sections']),
-                'created_by' => $request->user()->id,
+                'created_by'  => $request->user()->user_Id,
             ]);
 
             return redirect()
@@ -318,28 +301,9 @@ class AdminLessonController extends Controller
         ];
     }
 
-    public function update(Request $request, Lesson $lesson)
+    public function update(UpdateLessonRequest $request, Lesson $lesson)
     {
-        // ✅ 完整的验证（包含所有字段）
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
-            'content_type' => 'required|string|in:text,markdown,html',
-            'video_url' => 'nullable|url',
-            'difficulty' => 'required|string|in:beginner,intermediate,advanced',
-            'estimated_duration' => 'nullable|integer|min:1|max:1440',
-            'completion_reward_points' => 'nullable|integer|min:0|max:10000',
-            'status' => 'nullable|in:active,inactive,draft',
-            'required_exercises' => 'nullable|integer|min:0',
-            'required_tests' => 'nullable|integer|min:0',
-            'min_exercise_score_percent' => 'nullable|numeric|min:0|max:100',
-            // 🔥 Sections 验证
-            'sections' => 'nullable|array',
-            'sections.*.id' => 'nullable|integer',
-            'sections.*.title' => 'required_with:sections|string|max:255',
-            'sections.*.content' => 'required_with:sections|string',
-            'sections.*.order_index' => 'required_with:sections|integer|min:1',
-        ]);
+        $data = $request->validated();
 
         DB::beginTransaction();
 
@@ -377,10 +341,10 @@ class AdminLessonController extends Controller
             DB::commit();
 
             Log::info('Lesson updated successfully', [
-                'lesson_id' => $lesson->lesson_id,
-                'title' => $lesson->title,
+                'lesson_id'   => $lesson->lesson_id,
+                'title'       => $lesson->title,
                 'has_sections' => isset($data['sections']),
-                'updated_by' => $request->user()->id,
+                'updated_by'  => $request->user()->user_Id,
             ]);
 
             // 🔥 关键：使用 303 状态码避免重定向循环
