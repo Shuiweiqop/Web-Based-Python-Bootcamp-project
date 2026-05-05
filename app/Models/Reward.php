@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
+
 
 class Reward extends Model
 {
@@ -85,36 +85,20 @@ class Reward extends Model
     }
 
     /**
-     * 并发安全地扣减库存
-     *
-     * 返回 true = 扣减成功（或无限库存），false = 库存不足
+     * 原子扣减库存。调用方必须已持有外层事务与行锁。
+     * 返回 true = 扣减成功（或无限库存），false = 库存不足。
      */
     public function decreaseStock(int $quantity = 1): bool
     {
-        // 无限库存直接成功
         if ($this->stock_quantity < 0) {
             return true;
         }
 
-        // 使用事务 + 行锁（SELECT ... FOR UPDATE）防止并发超卖
-        return DB::transaction(function () use ($quantity) {
-            // 锁定当前行（使用主键）
-            $row = self::where('reward_id', $this->reward_id)->lockForUpdate()->first();
+        $affected = self::where('reward_id', $this->reward_id)
+            ->where('stock_quantity', '>=', $quantity)
+            ->decrement('stock_quantity', $quantity);
 
-            if (!$row) {
-                return false;
-            }
-
-            // 重新检查库存
-            if ($row->stock_quantity < $quantity) {
-                return false;
-            }
-
-            // 扣减
-            $row->decrement('stock_quantity', $quantity);
-
-            return true;
-        });
+        return $affected > 0;
     }
 
     /**
