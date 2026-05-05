@@ -186,9 +186,9 @@ const LessonCard = ({ lesson }) => {
           </div>
 
           <div className="flex flex-wrap gap-2 border-t border-white/10 pt-4">
-            {quickStats.map((stat) => (
+            {quickStats.map((stat, index) => (
               <span
-                key={stat}
+                key={index}
                 className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-200"
               >
                 {stat}

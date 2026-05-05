@@ -18,34 +18,28 @@ class AdminLessonController extends Controller
 
     public function index(Request $request)
     {
-        $query = Lesson::with(['creator', 'interactiveExercises', 'tests'])
+        $query = Lesson::with(['creator'])
+            ->withCount([
+                'interactiveExercises as exercises_count',
+                'tests as tests_count',
+                'registrations as registrations_count',
+            ])
             ->orderBy('created_at', 'desc');
 
-        // 搜索过滤
         if ($q = $request->input('q')) {
             $query->where('title', 'like', "%{$q}%")
                 ->orWhere('content', 'like', "%{$q}%");
         }
 
-        // 难度过滤
         if ($difficulty = $request->input('difficulty')) {
             $query->where('difficulty', $difficulty);
         }
 
-        // 状态过滤
         if ($status = $request->input('status')) {
             $query->where('status', $status);
         }
 
         $lessons = $query->paginate(10)->withQueryString();
-
-        // 添加统计信息
-        $lessons->getCollection()->transform(function ($lesson) {
-            $lesson->exercises_count = $lesson->interactiveExercises->count();
-            $lesson->tests_count = $lesson->tests->count();
-            $lesson->registrations_count = $lesson->registrations()->count();
-            return $lesson;
-        });
 
         return Inertia::render('Admin/Lessons/Index', [
             'lessons' => $lessons,
@@ -63,6 +57,12 @@ class AdminLessonController extends Controller
         return Inertia::render('Admin/Lessons/Create');
     }
 
+    private const DRAFT_DEFAULTS = [
+        'estimated_duration'        => 30,
+        'completion_reward_points'  => 100,
+        'min_exercise_score_percent' => 70,
+    ];
+
     public function quickDraft(Request $request)
     {
         $data = $request->validate([
@@ -70,24 +70,26 @@ class AdminLessonController extends Controller
             'difficulty' => 'required|string|in:beginner,intermediate,advanced',
         ]);
 
+        $createdBy = $request->user()->user_Id;
+
         $lesson = Lesson::create([
-            'title' => $data['title'],
-            'content' => '',
-            'content_type' => 'markdown',
-            'difficulty' => $data['difficulty'],
-            'estimated_duration' => 30,
-            'status' => 'draft',
-            'completion_reward_points' => 100,
-            'required_exercises' => 0,
-            'required_tests' => 0,
-            'min_exercise_score_percent' => 70,
-            'created_by' => $request->user()->user_Id ?? $request->user()->id,
+            'title'                      => $data['title'],
+            'content'                    => '',
+            'content_type'               => 'markdown',
+            'difficulty'                 => $data['difficulty'],
+            'estimated_duration'         => self::DRAFT_DEFAULTS['estimated_duration'],
+            'status'                     => 'draft',
+            'completion_reward_points'   => self::DRAFT_DEFAULTS['completion_reward_points'],
+            'required_exercises'         => 0,
+            'required_tests'             => 0,
+            'min_exercise_score_percent' => self::DRAFT_DEFAULTS['min_exercise_score_percent'],
+            'created_by'                 => $createdBy,
         ]);
 
         Log::info('Quick draft lesson created', [
-            'lesson_id' => $lesson->lesson_id,
-            'title' => $lesson->title,
-            'created_by' => $request->user()->id,
+            'lesson_id'  => $lesson->lesson_id,
+            'title'      => $lesson->title,
+            'created_by' => $createdBy,
         ]);
 
         return redirect()
@@ -315,9 +317,6 @@ class AdminLessonController extends Controller
             ],
         ];
     }
-
-    // 在你的 AdminLessonController.php 中
-    // 找到 update 方法并完全替换为：
 
     public function update(Request $request, Lesson $lesson)
     {
