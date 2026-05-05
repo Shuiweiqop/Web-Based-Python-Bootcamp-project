@@ -222,7 +222,7 @@ class AdminRewardController extends Controller
 
             return back()
                 ->withInput()
-                ->withErrors(['error' => '创建奖励失败：' . $e->getMessage()]);
+                ->withErrors(['error' => 'Failed to create reward: ' . $e->getMessage()]);
         }
     }
 
@@ -520,7 +520,7 @@ class AdminRewardController extends Controller
 
             return back()
                 ->withInput()
-                ->withErrors(['error' => '更新奖励失败：' . $e->getMessage()]);
+                ->withErrors(['error' => 'Failed to update reward: ' . $e->getMessage()]);
         }
     }
 

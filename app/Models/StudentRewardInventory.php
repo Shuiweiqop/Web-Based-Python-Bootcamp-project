@@ -1,5 +1,4 @@
 <?php
-// app/Models/StudentRewardInventory.php
 
 namespace App\Models;
 
@@ -33,43 +32,24 @@ class StudentRewardInventory extends Model
         'updated_at' => 'datetime',
     ];
 
-    /* -------------------------
-       关系定义
-       ------------------------- */
-
-    /**
-     * 所属的学生
-     */
     public function student(): BelongsTo
     {
         return $this->belongsTo(StudentProfile::class, 'student_id', 'student_id');
     }
 
-    /**
-     * 所属的奖励
-     */
     public function reward(): BelongsTo
     {
         return $this->belongsTo(Reward::class, 'reward_id', 'reward_id');
     }
 
-    /* -------------------------
-       业务方法
-       ------------------------- */
-
-    /**
-     * 增加数量
-     */
     public function addQuantity(int $amount = 1): self
     {
         $this->increment('quantity', $amount);
         $this->refresh();
+
         return $this;
     }
 
-    /**
-     * 减少数量
-     */
     public function reduceQuantity(int $amount = 1): bool
     {
         if ($this->quantity < $amount) {
@@ -79,7 +59,6 @@ class StudentRewardInventory extends Model
         $this->decrement('quantity', $amount);
         $this->refresh();
 
-        // 如果数量为 0，可以选择删除记录或保留
         if ($this->quantity <= 0) {
             $this->is_equipped = false;
             $this->equipped_at = null;
@@ -89,27 +68,21 @@ class StudentRewardInventory extends Model
         return true;
     }
 
-    /**
-     * 装备奖励
-     * 会自动卸下同类型的其他奖励
-     */
     public function equip(): bool
     {
         return DB::transaction(function () {
             $rewardType = $this->reward->reward_type;
 
-            // 1. 卸下该学生所有同类型的奖励
             self::where('student_id', $this->student_id)
                 ->where('is_equipped', true)
-                ->whereHas('reward', function ($q) use ($rewardType) {
-                    $q->where('reward_type', $rewardType);
+                ->whereHas('reward', function ($query) use ($rewardType) {
+                    $query->where('reward_type', $rewardType);
                 })
                 ->update([
                     'is_equipped' => false,
                     'equipped_at' => null,
                 ]);
 
-            // 2. 装备当前奖励
             $this->update([
                 'is_equipped' => true,
                 'equipped_at' => now(),
@@ -119,9 +92,6 @@ class StudentRewardInventory extends Model
         });
     }
 
-    /**
-     * 卸下奖励
-     */
     public function unequip(): bool
     {
         $this->update([
@@ -132,69 +102,40 @@ class StudentRewardInventory extends Model
         return true;
     }
 
-    /**
-     * 检查是否可以装备
-     */
     public function canEquip(): bool
     {
-        return $this->quantity > 0 && !$this->is_equipped;
+        return $this->quantity > 0 && ! $this->is_equipped;
     }
 
-    /**
-     * 检查是否可以卸下
-     */
     public function canUnequip(): bool
     {
         return $this->is_equipped;
     }
 
-    /* -------------------------
-       访问器
-       ------------------------- */
-
-    /**
-     * 获取装备状态文本
-     */
     public function getEquipStatusAttribute(): string
     {
-        return $this->is_equipped ? '已装备' : '未装备';
+        return $this->is_equipped ? 'Equipped' : 'Not Equipped';
     }
 
-    /**
-     * 获取装备时长（小时）
-     */
     public function getEquippedDurationAttribute(): ?int
     {
-        if (!$this->is_equipped || !$this->equipped_at) {
+        if (! $this->is_equipped || ! $this->equipped_at) {
             return null;
         }
 
         return now()->diffInHours($this->equipped_at);
     }
 
-    /* -------------------------
-       作用域
-       ------------------------- */
-
-    /**
-     * 已装备的奖励
-     */
     public function scopeEquipped($query)
     {
         return $query->where('is_equipped', true);
     }
 
-    /**
-     * 未装备的奖励
-     */
     public function scopeUnequipped($query)
     {
         return $query->where('is_equipped', false);
     }
 
-    /**
-     * 按奖励类型筛选
-     */
     public function scopeByRewardType($query, string $type)
     {
         return $query->whereHas('reward', function ($q) use ($type) {
@@ -202,17 +143,11 @@ class StudentRewardInventory extends Model
         });
     }
 
-    /**
-     * 有库存的（数量大于0）
-     */
     public function scopeHasStock($query)
     {
         return $query->where('quantity', '>', 0);
     }
 
-    /**
-     * 最近获得的
-     */
     public function scopeRecentlyObtained($query, int $days = 7)
     {
         return $query->where('obtained_at', '>=', now()->subDays($days));
