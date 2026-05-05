@@ -29,13 +29,6 @@ class ForumController extends Controller
 
         $userId = auth()->user()->user_Id;
 
-        // ✅ 添加调试日志
-        Log::info('Forum index accessed', [
-            'user_id' => $userId,
-            'is_admin' => ForumHelper::isAdmin(),
-            'can_access' => ForumHelper::canAccessForum(),
-        ]);
-
         // 检查权限
         if (!ForumHelper::canAccessForum()) {
             Log::warning('Forum access denied', ['user_id' => $userId]);
@@ -94,12 +87,6 @@ class ForumController extends Controller
         // ✅ 根据角色返回不同页面
         $isAdmin = ForumHelper::isAdmin();
         $pageName = $isAdmin ? 'Admin/Forum/Index' : 'Student/Forum/Index';
-
-        Log::info('Rendering forum page', [
-            'page' => $pageName,
-            'posts_count' => $posts->count(),
-            'user_id' => $userId,
-        ]);
 
         if ($isAdmin) {
             return Inertia::render('Admin/Forum/Index', [
@@ -360,44 +347,14 @@ class ForumController extends Controller
         $post = ForumPost::findOrFail($id);
         $userId = auth()->user()->user_Id;
 
-        // 🔥 详细的调试日志
-        Log::info('=== Post Deletion Debug ===', [
-            'step' => 'start',
-            'post_id' => $post->post_id,
-            'post_user_id' => $post->user_id,
-            'post_user_id_type' => gettype($post->user_id),
-            'current_user_id' => $userId,
-            'current_user_id_type' => gettype($userId),
-            'match' => (int) $post->user_id === (int) $userId,
-            'user_role' => auth()->user()->role,
-        ]);
-
-        // 检查权限
         $canDelete = $post->canDelete($userId);
 
-        Log::info('=== Can Delete Check ===', [
-            'canDelete' => $canDelete,
-            'is_author' => (int) $post->user_id === (int) $userId,
-            'is_admin' => auth()->user()->role === 'administrator',
-        ]);
-
         if (!$canDelete) {
-            Log::error('=== Post Deletion DENIED ===', [
-                'post_id' => $post->post_id,
-                'user_id' => $userId,
-                'reason' => 'canDelete returned false',
-            ]);
-
             abort(403, 'You do not have permission to delete this post.');
         }
 
         try {
             $post->delete();
-
-            Log::info('=== Post Deletion SUCCESS ===', [
-                'post_id' => $id,
-                'user_id' => $userId,
-            ]);
 
             return redirect()->route('forum.index')
                 ->setStatusCode(303)  // ✅ 加上 303 重定向
