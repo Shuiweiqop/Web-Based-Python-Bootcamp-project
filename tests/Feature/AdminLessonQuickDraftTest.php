@@ -14,18 +14,17 @@ class AdminLessonQuickDraftTest extends TestCase
 
     public function test_admin_can_create_a_quick_draft_lesson_with_defaults(): void
     {
-        $admin = $this->createVerifiedUser('administrator', 'Quick Draft Admin');
+        $admin = User::factory()->administrator()->create();
 
         $response = $this->actingAs($admin)->post(route('admin.lessons.quick-draft'), [
             'title' => 'Quick loops shell',
             'difficulty' => 'beginner',
         ]);
 
-        $lesson = Lesson::first();
-
-        $response->assertRedirect(route('admin.lessons.show', $lesson->lesson_id));
+        $lesson = Lesson::latest('lesson_id')->first();
 
         $this->assertNotNull($lesson);
+        $response->assertRedirect(route('admin.lessons.show', $lesson->lesson_id));
         $this->assertSame('Quick loops shell', $lesson->title);
         $this->assertSame('draft', $lesson->status);
         $this->assertSame('markdown', $lesson->content_type);
@@ -38,7 +37,7 @@ class AdminLessonQuickDraftTest extends TestCase
 
     public function test_admin_lesson_show_exposes_build_checklist_for_new_drafts(): void
     {
-        $admin = $this->createVerifiedUser('administrator', 'Checklist Admin');
+        $admin = User::factory()->administrator()->create();
 
         $lesson = Lesson::create([
             'title' => 'Draft shell lesson',
@@ -61,24 +60,14 @@ class AdminLessonQuickDraftTest extends TestCase
             ->component('Admin/Lessons/Show')
             ->where('buildChecklist.0.key', 'content')
             ->where('buildChecklist.0.done', false)
+            ->where('buildChecklist.1.key', 'sections')
+            ->where('buildChecklist.1.done', false)
             ->where('buildChecklist.2.key', 'practice')
             ->where('buildChecklist.2.done', false)
+            ->where('buildChecklist.3.key', 'checks')
+            ->where('buildChecklist.3.done', false)
             ->where('buildChecklist.4.key', 'publish')
             ->where('buildChecklist.4.done', false)
         );
-    }
-
-    private function createVerifiedUser(string $role, string $name): User
-    {
-        $user = User::create([
-            'name' => $name,
-            'email' => strtolower(str_replace(' ', '-', $name)) . '-' . uniqid() . '@example.com',
-            'password' => 'password',
-            'role' => $role,
-        ]);
-
-        $user->forceFill(['email_verified_at' => now()])->save();
-
-        return $user->fresh();
     }
 }
