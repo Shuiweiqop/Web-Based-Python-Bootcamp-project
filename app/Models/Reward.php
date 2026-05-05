@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class Reward extends Model
 {
@@ -81,7 +80,8 @@ class Reward extends Model
      */
     public function canPurchase(): bool
     {
-        return (bool) ($this->is_active && ($this->stock_quantity < 0 || $this->stock_quantity > 0));
+        $stock = $this->stock_quantity;
+        return (bool) ($this->is_active && ($stock === null || $stock < 0 || $stock > 0));
     }
 
     /**
@@ -143,31 +143,15 @@ class Reward extends Model
         };
     }
 
-    /**
-     * 检查学生是否能再买这个奖励
-     *
-     * 说明：StudentRewardInventory 表可能有两种实现：
-     *  1) 每次获得记录一行 (无 quantity 字段) -> 使用 count()
-     *  2) 表含 quantity 字段 -> 使用 sum(quantity)
-     *
-     * 该方法会自动兼容两种实现。
-     */
     public function canStudentOwn(int $studentId): bool
     {
-        if ($this->max_owned < 0) {
-            return true; // 无限制
+        if (($this->max_owned ?? -1) < 0) {
+            return true;
         }
 
-        // 优先尝试用 quantity 字段（如果存在）
-        $inventoryQuery = StudentRewardInventory::where('student_id', $studentId)
-            ->where('reward_id', $this->reward_id);
-
-        // 如果字段 quantity 存在，则用 sum；否则用 count
-        $hasQuantityCol = Schema::hasColumn((new StudentRewardInventory)->getTable(), 'quantity');
-
-        $ownCount = $hasQuantityCol
-            ? (int) $inventoryQuery->sum('quantity')
-            : (int) $inventoryQuery->count();
+        $ownCount = (int) StudentRewardInventory::where('student_id', $studentId)
+            ->where('reward_id', $this->reward_id)
+            ->sum('quantity');
 
         return $ownCount < $this->max_owned;
     }
