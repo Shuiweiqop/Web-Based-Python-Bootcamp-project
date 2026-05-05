@@ -121,7 +121,7 @@ class GlobalAudioPlayer {
         })
         .catch(error => {
           console.warn('Music playback error:', error);
-          this.state.error = `无法播放`;
+          this.state.error = 'Unable to play audio';
           this.state.isLoading = false;
           this.notifyListeners('error', error);
         });

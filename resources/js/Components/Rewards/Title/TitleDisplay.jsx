@@ -1,27 +1,8 @@
 import React from 'react';
 import { Crown, Star, Sparkles, Zap } from 'lucide-react';
 
-/**
- * 称号显示组件
- * 
- * @param {Object} props
- * @param {string} props.titleText - 称号文字
- * @param {string} props.textColor - 文字颜色
- * @param {Object} props.gradient - 渐变配置
- * @param {string} props.gradient.from - 渐变起始色
- * @param {string} props.gradient.to - 渐变结束色
- * @param {boolean} props.gradient.enabled - 是否启用渐变
- * @param {Object} props.effects - 特效配置
- * @param {boolean} props.effects.glow - 发光效果
- * @param {boolean} props.effects.sparkle - 闪光效果
- * @param {boolean} props.effects.wave - 波浪动画
- * @param {string} props.size - 尺寸: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
- * @param {string} props.rarity - 稀有度
- * @param {string} props.position - 位置: 'before' | 'after' | 'above' | 'below'
- * @param {string} props.icon - 图标类型: 'crown' | 'star' | 'sparkle' | 'zap' | 'none'
- */
 export default function TitleDisplay({
-  titleText = '称号',
+  titleText = 'Title',
   textColor = '#3B82F6',
   gradient = {
     enabled: false,
@@ -35,11 +16,10 @@ export default function TitleDisplay({
   },
   size = 'md',
   rarity = 'common',
-  position = 'after', // before username, after username, above, below
+  position = 'after',
   icon = 'none',
   className = '',
 }) {
-  // 尺寸配置
   const sizeConfig = {
     xs: {
       text: 'text-xs',
@@ -73,7 +53,6 @@ export default function TitleDisplay({
     },
   };
 
-  // 稀有度配置
   const rarityConfig = {
     common: {
       borderColor: 'border-gray-300',
@@ -97,7 +76,6 @@ export default function TitleDisplay({
     },
   };
 
-  // 图标组件
   const iconComponents = {
     crown: Crown,
     star: Star,
@@ -110,7 +88,6 @@ export default function TitleDisplay({
   const currentRarity = rarityConfig[rarity] || rarityConfig.common;
   const IconComponent = iconComponents[icon];
 
-  // 构建文字样式
   const getTextStyle = () => {
     if (gradient.enabled) {
       return {
@@ -120,9 +97,8 @@ export default function TitleDisplay({
         backgroundClip: 'text',
       };
     }
-    return {
-      color: textColor,
-    };
+
+    return { color: textColor };
   };
 
   return (
@@ -132,20 +108,14 @@ export default function TitleDisplay({
           effects.glow ? `shadow-lg ${currentRarity.shadowColor}` : ''
         } ${effects.wave ? 'animate-wave' : ''}`}
       >
-        {/* 发光背景 */}
         {effects.glow && (
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
         )}
 
-        {/* 图标（左侧） */}
         {IconComponent && position !== 'above' && position !== 'below' && (
-          <IconComponent
-            className={`${currentSize.icon} relative z-10`}
-            style={getTextStyle()}
-          />
+          <IconComponent className={`${currentSize.icon} relative z-10`} style={getTextStyle()} />
         )}
 
-        {/* 称号文字 */}
         <span
           className={`${currentSize.text} relative z-10 whitespace-nowrap`}
           style={getTextStyle()}
@@ -153,7 +123,6 @@ export default function TitleDisplay({
           {titleText}
         </span>
 
-        {/* 闪光效果 */}
         {effects.sparkle && (
           <>
             <Sparkles
@@ -165,13 +134,9 @@ export default function TitleDisplay({
           </>
         )}
 
-        {/* 传说级特效 */}
         {rarity === 'legendary' && (
           <>
-            {/* 金色边框动画 */}
             <div className="absolute inset-0 rounded-full border-2 border-yellow-400 animate-ping opacity-50" />
-            
-            {/* 星星装饰 */}
             <Star
               className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 text-yellow-400 animate-pulse"
               fill="currentColor"
@@ -180,10 +145,10 @@ export default function TitleDisplay({
         )}
       </div>
 
-      {/* CSS 动画 */}
       <style jsx>{`
         @keyframes wave {
-          0%, 100% {
+          0%,
+          100% {
             transform: translateY(0px);
           }
           50% {
@@ -192,7 +157,8 @@ export default function TitleDisplay({
         }
 
         @keyframes sparkle {
-          0%, 100% {
+          0%,
+          100% {
             opacity: 0;
             transform: scale(0.8) rotate(0deg);
           }
@@ -218,13 +184,10 @@ export default function TitleDisplay({
   );
 }
 
-/**
- * 称号 + 用户名组合显示
- */
 export function TitleWithUsername({
   userName,
   title,
-  titlePosition = 'after', // before, after, above, below
+  titlePosition = 'after',
   size = 'md',
 }) {
   const sizeConfig = {
@@ -241,7 +204,6 @@ export function TitleWithUsername({
     return <span className={`font-semibold ${textSize}`}>{userName}</span>;
   }
 
-  // 上下排列
   if (titlePosition === 'above' || titlePosition === 'below') {
     return (
       <div className="flex flex-col items-center gap-1">
@@ -272,7 +234,6 @@ export function TitleWithUsername({
     );
   }
 
-  // 左右排列
   return (
     <div className="inline-flex items-center gap-2">
       {titlePosition === 'before' && (
@@ -302,9 +263,6 @@ export function TitleWithUsername({
   );
 }
 
-/**
- * 简化版称号 - 纯文字
- */
 export function SimpleTitle({ titleText, textColor = '#3B82F6', size = 'sm' }) {
   return (
     <TitleDisplay
@@ -317,9 +275,6 @@ export function SimpleTitle({ titleText, textColor = '#3B82F6', size = 'sm' }) {
   );
 }
 
-/**
- * 豪华版称号 - 所有特效
- */
 export function PremiumTitle({
   titleText,
   gradient = { enabled: true, from: '#FFD700', to: '#FFA500' },

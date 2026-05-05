@@ -1,12 +1,9 @@
 import React from 'react';
 import { Sparkles, Star, Crown, Gem } from 'lucide-react';
 
-/**
- * 稀有度配置
- */
 const RARITY_CONFIG = {
   common: {
-    label: '普通',
+    label: 'Common',
     color: 'gray',
     bgColor: 'bg-gray-100',
     textColor: 'text-gray-700',
@@ -15,7 +12,7 @@ const RARITY_CONFIG = {
     icon: null,
   },
   uncommon: {
-    label: '少见',
+    label: 'Uncommon',
     color: 'green',
     bgColor: 'bg-green-100',
     textColor: 'text-green-700',
@@ -24,7 +21,7 @@ const RARITY_CONFIG = {
     icon: Star,
   },
   rare: {
-    label: '稀有',
+    label: 'Rare',
     color: 'blue',
     bgColor: 'bg-blue-100',
     textColor: 'text-blue-700',
@@ -33,7 +30,7 @@ const RARITY_CONFIG = {
     icon: Sparkles,
   },
   epic: {
-    label: '史诗',
+    label: 'Epic',
     color: 'purple',
     bgColor: 'bg-purple-100',
     textColor: 'text-purple-700',
@@ -42,7 +39,7 @@ const RARITY_CONFIG = {
     icon: Crown,
   },
   legendary: {
-    label: '传说',
+    label: 'Legendary',
     color: 'amber',
     bgColor: 'bg-gradient-to-r from-amber-100 to-orange-100',
     textColor: 'text-amber-700',
@@ -52,18 +49,6 @@ const RARITY_CONFIG = {
   },
 };
 
-/**
- * 稀有度徽章组件
- * 
- * @param {Object} props
- * @param {string} props.rarity - 稀有度: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
- * @param {string} props.size - 尺寸: 'xs' | 'sm' | 'md' | 'lg'
- * @param {boolean} props.showIcon - 是否显示图标
- * @param {boolean} props.showLabel - 是否显示文字标签
- * @param {boolean} props.showGlow - 是否显示光晕效果
- * @param {string} props.variant - 变体: 'default' | 'outlined' | 'minimal'
- * @param {string} props.className - 额外的类名
- */
 export default function RarityBadge({
   rarity = 'common',
   size = 'sm',
@@ -76,7 +61,6 @@ export default function RarityBadge({
   const config = RARITY_CONFIG[rarity] || RARITY_CONFIG.common;
   const Icon = config.icon;
 
-  // 尺寸配置
   const sizeClasses = {
     xs: {
       container: 'px-1.5 py-0.5 text-xs gap-1',
@@ -98,7 +82,6 @@ export default function RarityBadge({
 
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
 
-  // 变体样式
   const variantClasses = {
     default: `${config.bgColor} ${config.textColor} border ${config.borderColor}`,
     outlined: `bg-white ${config.textColor} border-2 ${config.borderColor}`,
@@ -118,25 +101,16 @@ export default function RarityBadge({
   return (
     <span className={baseClasses}>
       {showIcon && Icon && (
-        <Icon 
+        <Icon
           className={`${sizeClass.icon} ${rarity === 'legendary' ? 'animate-spin-slow' : ''}`}
         />
       )}
-      {showLabel && (
-        <span className="font-semibold whitespace-nowrap">
-          {config.label}
-        </span>
-      )}
+      {showLabel && <span className="font-semibold whitespace-nowrap">{config.label}</span>}
     </span>
   );
 }
 
-/**
- * 稀有度边框组件 - 用于包裹卡片
- */
 export function RarityBorder({ rarity = 'common', children, className = '' }) {
-  const config = RARITY_CONFIG[rarity] || RARITY_CONFIG.common;
-
   const borderStyles = {
     common: 'border-2 border-gray-300',
     uncommon: 'border-2 border-green-400',
@@ -145,16 +119,9 @@ export function RarityBorder({ rarity = 'common', children, className = '' }) {
     legendary: 'border-3 border-amber-500 shadow-2xl shadow-amber-400 animate-pulse',
   };
 
-  return (
-    <div className={`rounded-xl ${borderStyles[rarity]} ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`rounded-xl ${borderStyles[rarity]} ${className}`}>{children}</div>;
 }
 
-/**
- * 稀有度背景组件 - 用于卡片背景
- */
 export function RarityBackground({ rarity = 'common', children, className = '' }) {
   const bgStyles = {
     common: 'bg-gray-50',
@@ -164,23 +131,13 @@ export function RarityBackground({ rarity = 'common', children, className = '' }
     legendary: 'bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50',
   };
 
-  return (
-    <div className={`${bgStyles[rarity]} ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`${bgStyles[rarity]} ${className}`}>{children}</div>;
 }
 
-/**
- * 获取稀有度配置
- */
 export function getRarityConfig(rarity) {
   return RARITY_CONFIG[rarity] || RARITY_CONFIG.common;
 }
 
-/**
- * 稀有度图标组件（仅图标）
- */
 export function RarityIcon({ rarity = 'common', size = 'md', className = '' }) {
   const config = RARITY_CONFIG[rarity] || RARITY_CONFIG.common;
   const Icon = config.icon;
@@ -193,24 +150,14 @@ export function RarityIcon({ rarity = 'common', size = 'md', className = '' }) {
     xl: 'w-8 h-8',
   };
 
-  if (!Icon) return null;
+  if (!Icon) {
+    return null;
+  }
 
-  return (
-    <Icon 
-      className={`${sizeClasses[size]} ${config.textColor} ${className}`}
-    />
-  );
+  return <Icon className={`${sizeClasses[size]} ${config.textColor} ${className}`} />;
 }
 
-/**
- * 稀有度标签（仅文字）
- */
 export function RarityLabel({ rarity = 'common', className = '' }) {
   const config = RARITY_CONFIG[rarity] || RARITY_CONFIG.common;
-  
-  return (
-    <span className={`font-medium ${config.textColor} ${className}`}>
-      {config.label}
-    </span>
-  );
+  return <span className={`font-medium ${config.textColor} ${className}`}>{config.label}</span>;
 }
