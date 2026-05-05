@@ -68,16 +68,16 @@ class RewardController extends Controller
             ->groupBy('reward_id')
             ->pluck('total', 'reward_id'); // Collection keyed by reward_id
 
-        // 为每个奖励添加拥有数量信息与是否可购买（注意主键不一定叫 reward_id）
         $rewards->getCollection()->transform(function ($reward) use ($ownedQuantities, $studentProfile) {
-            // 使用 model 的主键值以防不同命名（id / reward_id）
             $pk = $reward->getKey();
-            $reward->owned_quantity = (int) ($ownedQuantities->get($pk, 0));
+            $owned = (int) $ownedQuantities->get($pk, 0);
+            $reward->owned_quantity = $owned;
 
-            // 注意：确保 Reward 模型有 canPurchase() 和 canStudentOwn($student_id) 方法
+            $withinOwnershipLimit = ($reward->max_owned ?? -1) < 0 || $owned < $reward->max_owned;
+
             $reward->can_purchase = ($studentProfile->current_points >= ($reward->point_cost ?? 0))
-                && (method_exists($reward, 'canPurchase') ? $reward->canPurchase() : true)
-                && (method_exists($reward, 'canStudentOwn') ? $reward->canStudentOwn($studentProfile->student_id) : true);
+                && $reward->canPurchase()
+                && $withinOwnershipLimit;
 
             return $reward;
         });
