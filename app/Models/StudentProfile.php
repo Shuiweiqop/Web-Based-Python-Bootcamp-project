@@ -724,8 +724,11 @@ class StudentProfile extends Model
 
     public function getCompletionPercentageAttribute(): int
     {
-        $totalLessons = 100;
-        return min(100, (int) round(($this->total_lessons_completed / max(1, $totalLessons)) * 100));
+        $totalLessons = \Illuminate\Support\Facades\Cache::remember(
+            'active_lesson_count', 300, fn () => Lesson::where('is_active', true)->count()
+        );
+        if ($totalLessons === 0) return 0;
+        return min(100, (int) round(($this->total_lessons_completed / $totalLessons) * 100));
     }
 
     public function getStreakStatusAttribute(): string
