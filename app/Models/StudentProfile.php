@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Jobs\UpdateStudentPathProgress;
 use App\Models\LessonProgress;
 use App\Models\SubmissionAnswer;
 use App\Models\TestSubmission;
@@ -454,10 +455,7 @@ class StudentProfile extends Model
     {
         $this->increment('total_lessons_completed');
         $this->updateLastActivity();
-
-        // ← 新增：更新学习路径进度
-        $this->updateAllPathProgress();
-
+        UpdateStudentPathProgress::dispatch($this->student_id);
         $this->refresh();
         return $this;
     }
