@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { Head } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle, Trophy } from 'lucide-react';
@@ -15,6 +15,8 @@ import GameContainer from './components/GameContainer';
 import DragDropGame from './components/DragDropGame';
 import AdventureGame from './components/AdventureGame';
 import MazeGame from './components/MazeGame';
+import SimulationGame from './components/SimulationGame';
+import SortingExercise from './components/SortingExercise';
 import CodingExercise from './components/CodingExercise';
 import FillBlankExercise from './components/FillBlankExercise';
 import DefaultGamePlaceholder from './components/DefaultGamePlaceholder';
@@ -30,19 +32,13 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
   const [missionProgress, setMissionProgress] = useState(null);
+  const [startedAt, setStartedAt] = useState(null);
 
   // 🔥 检查 exercise 类型
   const isCodingExercise = exercise.exercise_type === 'coding' || exercise.type === 'coding';
   const isFillBlankExercise = exercise.exercise_type === 'fill_blank' || exercise.type === 'fill_blank';
 
-  const timer = useTimer(
-    exercise.time_limit, 
-    gameStarted,
-    () => {
-      // Time's up callback - use current score
-      handleGameComplete();
-    }
-  );
+  const timer = useTimer(exercise.time_limit, gameStarted);
 
   const score = useScore(
     exercise.max_score,
@@ -51,11 +47,20 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     }
   );
 
+  useEffect(() => {
+    if (isFillBlankExercise && !gameStarted) {
+      setGameStarted(true);
+      setStartedAt(Date.now());
+      timer.start();
+    }
+  }, [isFillBlankExercise, gameStarted]);
+
   const handleGameStart = () => {
     console.log('🎮 Starting exercise:', exercise.title);
     
     setGameStarted(true);
     setGameCompleted(false);
+    setStartedAt(Date.now());
     timer.start();
     score.resetScore();
   };
@@ -64,9 +69,12 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     if (gameCompleted || isSubmitting) return;
 
     setIsSubmitting(true);
-    const timeTaken = exercise.time_limit_sec 
-      ? exercise.time_limit_sec - timer.timeLeft 
-      : timer.timeLeft;
+    const timeLimit = Number(exercise.time_limit_sec || exercise.time_limit || 0);
+    const timeTaken = timeLimit > 0
+      ? Math.max(0, timeLimit - timer.timeLeft)
+      : startedAt
+        ? Math.max(0, Math.floor((Date.now() - startedAt) / 1000))
+        : 0;
     
     // 🔥 Use provided score if available, otherwise use hook's score
     const achievedScore = providedScore !== undefined ? providedScore : score.currentScore;
@@ -85,7 +93,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
         route('lessons.exercises.api.submit', { lesson: lessonId, exercise: exerciseId }),
         {
           answer: {
-            completed: true,
+            completed: achievedScore >= (Number(exercise.max_score || 0) * 0.7),
             score: achievedScore,  // 🔥 确保分数在 answer 里
           },
           score: achievedScore,  // 🔥 也在顶层传递
@@ -150,6 +158,10 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
         return <AdventureGame {...gameProps} />;
       case 'maze_game':
         return <MazeGame {...gameProps} />;
+      case 'simulation':
+        return <SimulationGame {...gameProps} />;
+      case 'sorting':
+        return <SortingExercise {...gameProps} />;
       default:
         return <DefaultGamePlaceholder exercise={exercise} />;
     }

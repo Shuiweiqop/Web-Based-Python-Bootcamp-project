@@ -235,7 +235,7 @@ class DashboardController extends Controller
                 'streak_days' => $studentProfile->streak_days,
                 'points_level' => $studentProfile->points_level ?? 'Newbie',
                 'completion_percentage' => $studentProfile->completion_percentage ?? 0,
-                'streak_status' => $studentProfile->streak_status ?? 'Ready to Start! ðŸš€',
+                'streak_status' => $studentProfile->streak_status ?? 'Ready to Start!',
                 'last_activity_date' => $studentProfile->last_activity_date?->format('Y-m-d'),
             ] : null,
             'recentLessons' => $recentLessons,

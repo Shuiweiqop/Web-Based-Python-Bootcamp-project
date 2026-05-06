@@ -7,7 +7,8 @@ import { useState, useEffect, useRef } from 'react';
  * @param {function} onTimeUp - 时间到时的回调
  */
 export const useTimer = (initialTime = 0, isActive = false, onTimeUp = null) => {
-  const [timeLeft, setTimeLeft] = useState(initialTime);
+  const hasTimeLimit = Number(initialTime) > 0;
+  const [timeLeft, setTimeLeft] = useState(hasTimeLimit ? Number(initialTime) : 0);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef(null);
 
@@ -20,6 +21,7 @@ export const useTimer = (initialTime = 0, isActive = false, onTimeUp = null) => 
 
   // 开始计时
   const start = () => {
+    if (!hasTimeLimit) return;
     setIsRunning(true);
   };
 
@@ -30,13 +32,14 @@ export const useTimer = (initialTime = 0, isActive = false, onTimeUp = null) => 
 
   // 重置计时器
   const reset = (newTime = initialTime) => {
-    setTimeLeft(newTime);
+    const nextTime = Number(newTime) > 0 ? Number(newTime) : 0;
+    setTimeLeft(nextTime);
     setIsRunning(false);
   };
 
   // 计时逻辑
   useEffect(() => {
-    if (isActive && isRunning && timeLeft > 0) {
+    if (hasTimeLimit && isActive && isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -58,12 +61,13 @@ export const useTimer = (initialTime = 0, isActive = false, onTimeUp = null) => 
         clearInterval(intervalRef.current);
       }
     };
-  }, [isActive, isRunning, timeLeft, onTimeUp]);
+  }, [hasTimeLimit, isActive, isRunning, timeLeft, onTimeUp]);
 
   return {
     timeLeft,
     isRunning,
-    isTimeUp: timeLeft === 0,
+    hasTimeLimit,
+    isTimeUp: hasTimeLimit && timeLeft === 0,
     formattedTime: formatTime(timeLeft),
     start,
     pause,
