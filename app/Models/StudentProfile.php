@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\TestSubmission;
 use App\Models\LessonProgress;
+use App\Models\SubmissionAnswer;
+use App\Models\TestSubmission;
 use Illuminate\Support\Facades\Log;
 
 class StudentProfile extends Model
@@ -678,34 +679,26 @@ class StudentProfile extends Model
 
     public function getQuestionTypeStats(): array
     {
-        $submissions = $this->testSubmissions()
-            ->with(['answers.question'])
-            ->whereIn('status', ['submitted', 'timeout'])
-            ->get();
+        $rows = SubmissionAnswer::query()
+            ->join('test_submissions', 'submission_answers.submission_id', '=', 'test_submissions.submission_id')
+            ->join('questions', 'submission_answers.question_id', '=', 'questions.question_id')
+            ->where('test_submissions.student_id', $this->student_id)
+            ->whereIn('test_submissions.status', ['submitted', 'timeout'])
+            ->selectRaw('questions.type, COUNT(*) as total, SUM(submission_answers.is_correct) as correct')
+            ->groupBy('questions.type')
+            ->get()
+            ->keyBy('type');
 
-        $stats = [
-            'mcq' => ['total' => 0, 'correct' => 0],
-            'coding' => ['total' => 0, 'correct' => 0],
-            'true_false' => ['total' => 0, 'correct' => 0],
-            'short_answer' => ['total' => 0, 'correct' => 0],
-        ];
-
-        foreach ($submissions as $submission) {
-            foreach ($submission->answers as $answer) {
-                $type = $answer->question->type;
-                if (isset($stats[$type])) {
-                    $stats[$type]['total']++;
-                    if ($answer->is_correct) {
-                        $stats[$type]['correct']++;
-                    }
-                }
-            }
-        }
-
-        foreach ($stats as $type => &$data) {
-            $data['accuracy'] = $data['total'] > 0
-                ? round(($data['correct'] / $data['total']) * 100, 2)
-                : 0;
+        $stats = [];
+        foreach (['mcq', 'coding', 'true_false', 'short_answer'] as $type) {
+            $row = $rows->get($type);
+            $total = $row ? (int) $row->total : 0;
+            $correct = $row ? (int) $row->correct : 0;
+            $stats[$type] = [
+                'total'    => $total,
+                'correct'  => $correct,
+                'accuracy' => $total > 0 ? round(($correct / $total) * 100, 2) : 0,
+            ];
         }
 
         return $stats;
