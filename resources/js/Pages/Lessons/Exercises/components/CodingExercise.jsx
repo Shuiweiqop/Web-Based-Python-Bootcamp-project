@@ -34,6 +34,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
     const [testResults, setTestResults] = useState([]);
     const [score, setScore] = useState(0);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [hasRunCode, setHasRunCode] = useState(false);
     const [startTime] = useState(Date.now());
     const editorRef = useRef(null);
     
@@ -80,6 +81,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
 
             setOutput(response.data.output || '✅ Code executed successfully!');
             setTestResults(response.data.test_results || []);
+            setHasRunCode(true);
             
             // 计算分数（但不提交）
             if (response.data.test_results) {
@@ -98,6 +100,8 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
 
     // 提交代码（保存到数据库）
     const handleSubmitCode = async () => {
+        if (isSubmitted || isRunning) return;
+
         setIsRunning(true);
         
         try {
@@ -139,6 +143,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
 
             setScore(finalScore);
             setTestResults(testResults);
+            setHasRunCode(true);
             setOutput(`✅ Submitted! Score: ${finalScore}/${exercise.max_score || 100}`);
             setIsSubmitted(true);
 
@@ -296,6 +301,16 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
     const passedTests = testResults.filter(t => t.passed).length;
     const totalTests = testResults.length;
     const allTestsPassed = totalTests > 0 && passedTests === totalTests;
+    const hasTestFeedback = testResults.length > 0;
+    const nextActionMessage = isSubmitted
+        ? allTestsPassed
+            ? 'Submitted successfully. All tests passed.'
+            : 'Submitted with failing tests. Review the failed cases below.'
+        : hasTestFeedback
+            ? allTestsPassed
+                ? 'All tests pass. You are ready to submit.'
+                : 'Some tests are still failing. Use the failed cases to debug before submitting.'
+            : 'Run your code first to see test feedback before submitting.';
 
     return (
         <StudentLayout user={auth.user}>
@@ -417,6 +432,17 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
                                         </div>
                                     </div>
                                 )}
+
+                                <div className={`mt-6 p-4 rounded-lg border ${
+                                    allTestsPassed
+                                        ? 'bg-green-900/30 border-green-500/50 text-green-200'
+                                        : hasTestFeedback
+                                            ? 'bg-yellow-900/30 border-yellow-500/50 text-yellow-100'
+                                            : 'bg-blue-900/30 border-blue-500/50 text-blue-100'
+                                }`}>
+                                    <div className="font-semibold mb-1">Next step</div>
+                                    <p className="text-sm">{nextActionMessage}</p>
+                                </div>
                             </div>
 
                             {/* AI Assistant Button */}
@@ -648,7 +674,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
                                         </button>
                                         <button
                                             onClick={handleSubmitCode}
-                                            disabled={isRunning}
+                                            disabled={isRunning || isSubmitted}
                                             className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2 shadow-lg disabled:cursor-not-allowed"
                                         >
                                             {isRunning ? (
@@ -656,7 +682,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
                                             ) : (
                                                 <Send className="w-4 h-4" />
                                             )}
-                                            {isRunning ? 'Submitting...' : 'Submit'}
+                                            {isSubmitted ? 'Submitted' : isRunning ? 'Submitting...' : 'Submit'}
                                         </button>
                                     </div>
                                 </div>

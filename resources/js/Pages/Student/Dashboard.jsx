@@ -26,7 +26,7 @@ export default function StudentDashboard({
         streak_days: 0,
         points_level: 'Newbie',
         completion_percentage: 0,
-        streak_status: 'Ready to Start! 🚀'
+        streak_status: 'Ready to Start!'
     };
 
     const stats = [
@@ -60,15 +60,9 @@ export default function StudentDashboard({
         }
     ];
 
-    const recentAchievements = [
-        { title: "Python Basics Master", description: "Completed fundamental concepts", icon: "🏆", color: "text-yellow-400" },
-        { title: "Code Warrior", description: "Solved 50+ practice problems", icon: "⚔️", color: "text-blue-400" },
-        { title: "Streak Legend", description: "7-day learning streak", icon: "🔥", color: "text-red-400" }
-    ];
-
     const quickActions = [
         {
-            icon: "📖",
+            icon: BookOpen,
             title: "Continue Learning",
             description: nextLesson ? `Next: ${nextLesson.title}` : "Pick up where you left off",
             color: "from-blue-500 to-purple-600",
@@ -76,7 +70,7 @@ export default function StudentDashboard({
             href: nextLesson ? route('lessons.show', nextLesson.lesson_id) : route('student.paths.index')
         },
         {
-            icon: "🗺️",
+            icon: Target,
             title: "My Learning Path",
             description: "Track progress and continue your path",
             color: "from-purple-500 to-indigo-600",
@@ -84,7 +78,7 @@ export default function StudentDashboard({
             href: route('student.paths.index')
         },
         {
-            icon: "💬",
+            icon: MessageCircle,
             title: "Join Discussion",
             description: "Connect with peers in the forum",
             color: "from-indigo-500 to-blue-600",
@@ -92,7 +86,7 @@ export default function StudentDashboard({
             href: route('forum.index')
         },
         {
-            icon: "✨",
+            icon: Sparkles,
             title: "Browse Paths",
             description: "Explore other available learning paths",
             color: "from-orange-500 to-red-600",
@@ -224,7 +218,6 @@ export default function StudentDashboard({
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] animate-bounceIn">
                 Welcome back,
                 <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"> {auth.user.name}! </span>
-                👋
             </h1>
             
             <p className="text-lg text-gray-100 mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] animate-fadeIn">
@@ -502,36 +495,40 @@ export default function StudentDashboard({
                     </h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                        {quickActions.map((action, index) => (
-                            <Link
-                                key={index}
-                                href={action.href}
-                                className={cn(
-                                    "bg-gradient-to-r text-white p-8 rounded-2xl font-semibold",
-                                    "transition-all duration-300 transform hover:scale-105 hover:shadow-2xl",
-                                    "group relative overflow-hidden border border-white/30 shadow-xl",
-                                    "ripple-effect active-scale",
-                                    action.color,
-                                    action.hoverColor
-                                )}
-                            >
-                                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                <div className="relative z-10">
-                                    <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300 drop-shadow-xl animate-float">
-                                        {action.icon}
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-xl font-bold mb-2 flex items-center drop-shadow-lg">
-                                            {action.title}
-                                            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        {quickActions.map((action, index) => {
+                            const ActionIcon = action.icon;
+
+                            return (
+                                <Link
+                                    key={index}
+                                    href={action.href}
+                                    className={cn(
+                                        "bg-gradient-to-r text-white p-8 rounded-2xl font-semibold",
+                                        "transition-all duration-300 transform hover:scale-105 hover:shadow-2xl",
+                                        "group relative overflow-hidden border border-white/30 shadow-xl",
+                                        "ripple-effect active-scale",
+                                        action.color,
+                                        action.hoverColor
+                                    )}
+                                >
+                                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    <div className="relative z-10">
+                                        <div className="mb-4 inline-flex rounded-2xl bg-white/15 p-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-xl animate-float">
+                                            <ActionIcon className="h-8 w-8" />
                                         </div>
-                                        <div className="text-white text-sm drop-shadow-lg font-medium">
-                                            {action.description}
+                                        <div className="text-left">
+                                            <div className="text-xl font-bold mb-2 flex items-center drop-shadow-lg">
+                                                {action.title}
+                                                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                            </div>
+                                            <div className="text-white text-sm drop-shadow-lg font-medium">
+                                                {action.description}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Link>
-                        ))}
+                                </Link>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -667,7 +664,7 @@ export default function StudentDashboard({
                                 "border border-white/30 ripple-effect"
                             )}
                         >
-                            <span className="drop-shadow-lg">🚀 Continue Your Journey</span>
+                            <span className="drop-shadow-lg">Continue Your Journey</span>
                             <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform drop-shadow-lg" />
                         </Link>
                         <Link

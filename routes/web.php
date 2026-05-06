@@ -34,10 +34,10 @@ use App\Http\Controllers\AILessonController;
 use App\Http\Controllers\AdminPlacementTestController;
 use App\Http\Controllers\AdminStudentController;
 use App\Http\Controllers\QuestionImportController;
-// ==================== 公开路由 ====================
+// ==================== Public Routes ====================
 Route::get('/', [DashboardController::class, 'home'])->name('home');
 
-// ==================== 需要认证的路由 ====================
+// ==================== Authenticated Routes ====================
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==================== Dashboard ====================
@@ -52,7 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/lessons/{lesson}/complete', [LessonController::class, 'completeLesson'])->name('lessons.complete');
     Route::get('/my-registrations', [LessonController::class, 'myRegistrations'])->name('lessons.my-registrations');
 
-    // ==================== 学生游戏/练习路由 ====================
+    // ==================== Student Exercise Routes ====================
     Route::prefix('lessons/{lesson}/exercises')->name('lessons.exercises.')->group(function () {
         Route::get('/', [LessonController::class, 'exerciseIndex'])->name('index');
         Route::get('/{exercise}', [LessonController::class, 'exerciseShow'])->name('show');
@@ -63,7 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
-    // ==================== 代码执行 API 路由 ====================
+    // ==================== Code Execution API Routes ====================
     Route::post('/api/code/execute', [CodeExecutionController::class, 'execute'])
         ->middleware('throttle:20,1')
         ->name('code.execute');
@@ -71,47 +71,47 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:15,1')
         ->name('gemini.chat');
 
-    // ==================== 搜索 API ====================
+    // ==================== Search API ====================
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('/search', [SearchController::class, 'search'])->name('search');
         Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
     });
 
-    // ==================== 论坛路由 ====================
+    // ==================== Forum Routes ====================
     Route::prefix('forum')->name('forum.')->group(function () {
-        // 论坛首页
+        // Forum home
         Route::get('/', [ForumController::class, 'index'])->name('index');
 
-        // 创建帖子
+        // Create posts
         Route::get('/create', [ForumController::class, 'create'])->name('create');
         Route::post('/', [ForumController::class, 'store'])
             ->middleware('throttle:5,1')
             ->name('store');
 
-        // 个人页面（具体路径优先）
+        // Personal forum pages, with specific paths first
         Route::get('/user/my-posts', [ForumController::class, 'myPosts'])->name('my-posts');
         Route::get('/user/my-favorites', [ForumController::class, 'myFavorites'])->name('my-favorites');
 
-        // 查看帖子
+        // View posts
         Route::get('/{id}', [ForumController::class, 'show'])->name('show');
 
-        // 编辑帖子
+        // Edit posts
         Route::get('/{id}/edit', [ForumController::class, 'edit'])->name('edit');
         Route::put('/{id}', [ForumController::class, 'update'])->name('update');
 
-        // 删除帖子
+        // Delete posts
         Route::delete('/{id}', [ForumController::class, 'destroy'])->name('destroy');
 
-        // 帖子互动操作
+        // Post interactions
         Route::post('/{id}/like', [ForumController::class, 'toggleLike'])->name('like');
         Route::post('/{id}/favorite', [ForumController::class, 'toggleFavorite'])->name('favorite');
         Route::post('/{id}/report', [ForumController::class, 'reportPost'])->name('report');
 
-        // Admin 专用操作
+        // Admin-only post actions
         Route::post('/{id}/pin', [ForumController::class, 'togglePin'])->name('pin');
         Route::post('/{id}/lock', [ForumController::class, 'toggleLock'])->name('lock');
 
-        // 回复相关
+        // Reply routes
         Route::post('/{id}/reply', [ForumController::class, 'reply'])
             ->middleware('throttle:10,1')
             ->name('reply');
@@ -122,10 +122,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/reply/{replyId}/mark-solution', [ForumController::class, 'markSolution'])->name('reply.mark-solution');
     });
 
-    // ==================== 学生端路由 ====================
+    // ==================== Student Area Routes ====================
     Route::prefix('student')->name('student.')->group(function () {
 
-        // ==================== 入学评估（Onboarding）====================
+        // ==================== Onboarding Assessment ====================
         Route::prefix('onboarding')->name('onboarding.')->group(function () {
             Route::get('/', [OnboardingController::class, 'index'])->name('index');
             Route::get('/start-test', [OnboardingController::class, 'startTest'])->name('start-test');
@@ -135,7 +135,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/skip', [OnboardingController::class, 'skip'])->name('skip');
         });
 
-        // ==================== 学习路径路由 ====================
+        // ==================== Learning Path Routes ====================
         Route::prefix('paths')->name('paths.')->group(function () {
             Route::get('/', [LearningPathController::class, 'index'])->name('index');
             Route::get('/browse', [LearningPathController::class, 'browse'])->name('browse');
@@ -152,7 +152,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/missions/history', [MissionController::class, 'history'])->name('missions.history');
         Route::get('/missions/archive', [MissionController::class, 'archive'])->name('missions.archive');
 
-        // ==================== 学生个人资料路由 ====================
+        // ==================== Student Profile Routes ====================
         Route::prefix('profile')->name('profile.')->group(function () {
             Route::get('/', [StudentProfileController::class, 'show'])->name('show');
             Route::get('/edit', [StudentProfileController::class, 'edit'])->name('edit');
@@ -163,9 +163,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/points', [StudentProfileController::class, 'points'])->name('points');
         });
 
-        // ==================== 测验相关路由 ====================
+        // ==================== Student Test Routes ====================
         Route::middleware(['role:student'])->group(function () {
-            // 课程测验列表和详情
+            // Lesson test listing and details
             Route::get('lessons/{lesson}/tests', [StudentTestController::class, 'index'])
                 ->name('lessons.tests.index');
             Route::get('lessons/{lesson}/tests/{test}', [StudentTestController::class, 'show'])
@@ -174,7 +174,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('lessons.tests.start');
 
 
-            // 提交答案
+            // Submit answers
             Route::get('submissions/{submission}', [StudentTestController::class, 'taking'])
                 ->name('submissions.taking');
             Route::post('submissions/{submission}/answer', [StudentTestController::class, 'submitAnswer'])
@@ -185,9 +185,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('submissions.result');
         });
 
-        // ==================== 通知系统路由 ====================
+        // ==================== Notification Routes ====================
         Route::prefix('notifications')->name('notifications.')->group(function () {
-            // API 路由（具体路径优先）
+            // API routes, with specific paths first
             Route::get('/unread', [NotificationController::class, 'unread'])
                 ->name('unread');
             Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])
@@ -195,24 +195,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/read-multiple', [NotificationController::class, 'markMultipleAsRead'])
                 ->name('read-multiple');
 
-            // 批量操作
+            // Bulk actions
             Route::delete('/bulk/delete', [NotificationController::class, 'destroyMultiple'])
                 ->name('destroy-multiple');
             Route::delete('/clear/read', [NotificationController::class, 'clearRead'])
                 ->name('clear-read');
 
-            // 通知中心页面
+            // Notification center page
             Route::get('/', [NotificationController::class, 'index'])
                 ->name('index');
 
-            // 单个通知操作（参数路由放最后）
+            // Single-notification actions, with parameter routes last
             Route::post('/{notification}/read', [NotificationController::class, 'markAsRead'])
                 ->name('read');
             Route::delete('/{notification}', [NotificationController::class, 'destroy'])
                 ->name('destroy');
         });
 
-        // ==================== 学生奖励系统路由 ====================
+        // ==================== Student Reward Routes ====================
         Route::get('/rewards', [StudentRewardController::class, 'index'])->name('rewards.index');
         Route::get('/rewards/history', [StudentRewardController::class, 'history'])->name('rewards.history');
         Route::get('/rewards/{id}', [StudentRewardController::class, 'show'])->name('rewards.show');
@@ -220,7 +220,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('throttle:5,1')
             ->name('rewards.purchase');
 
-        // ==================== 统一的库存管理路由 ====================
+        // ==================== Student Inventory Routes ====================
         Route::controller(StudentInventoryController::class)->prefix('inventory')->name('inventory.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/equipped', 'equipped')->name('equipped');
@@ -230,10 +230,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
-    // ==================== Admin 区域 ====================
+    // ==================== Admin Area ====================
     Route::prefix('admin')->name('admin.')->middleware(['role:administrator'])->group(function () {
 
-        // ==================== 学生管理 ====================
+        // ==================== Student Management ====================
         Route::prefix('students')->name('students.')->group(function () {
             Route::get('/', [AdminStudentController::class, 'index'])->name('index');
             Route::get('/{student}', [AdminStudentController::class, 'show'])->name('show');
@@ -244,9 +244,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{student}/reset-password', [AdminStudentController::class, 'resetPassword'])->name('reset-password');
         });
 
-        // ==================== 入学评估测试管理（独立，不需要 lesson）====================
+        // ==================== Placement Test Management ====================
         Route::prefix('placement-tests')->name('placement-tests.')->group(function () {
-            // 基础 CRUD（具体路径优先）
+            // Basic CRUD routes, with specific paths first
             Route::get('/', [AdminPlacementTestController::class, 'index'])
                 ->name('index');
             Route::get('/create', [AdminPlacementTestController::class, 'create'])
@@ -259,11 +259,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('questions.import');
             Route::get('/questions/template/{format}', [QuestionImportController::class, 'downloadTemplate'])
                 ->name('questions.template');
-            // 特殊操作路由（在参数路由之前）
+            // Special action routes before parameter routes
             Route::post('/bulk-update', [AdminPlacementTestController::class, 'bulkUpdate'])
                 ->name('bulk-update');
 
-            // 单个测试操作（参数路由）
+            // Single test actions
             Route::get('/{testId}', [AdminPlacementTestController::class, 'show'])
                 ->name('show');
             Route::get('/{testId}/edit', [AdminPlacementTestController::class, 'edit'])
@@ -273,7 +273,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/{testId}', [AdminPlacementTestController::class, 'destroy'])
                 ->name('destroy');
 
-            // 测试相关操作
+            // Test-related actions
             Route::post('/{testId}/set-default', [AdminPlacementTestController::class, 'setAsDefault'])
                 ->name('set-default');
             Route::post('/{testId}/duplicate', [AdminPlacementTestController::class, 'duplicate'])
@@ -283,15 +283,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/{testId}/analytics', [AdminPlacementTestController::class, 'analytics'])
                 ->name('analytics');
 
-            // 题目管理（嵌套在 placement test 下）
+            // Question management nested under placement tests
             Route::prefix('{testId}/questions')->name('questions.')->group(function () {
-                // 批量操作（具体路径优先）
+                // Bulk actions, with specific paths first
                 Route::post('/bulk-update', [AdminQuestionController::class, 'bulkUpdateForPlacementTest'])
                     ->name('bulk-update');
                 Route::post('/reorder', [AdminQuestionController::class, 'reorderForPlacementTest'])
                     ->name('reorder');
 
-                // CRUD 操作
+                // CRUD actions
                 Route::get('/', [AdminQuestionController::class, 'indexForPlacementTest'])
                     ->name('index');
                 Route::get('/create', [AdminQuestionController::class, 'createForPlacementTest'])
@@ -299,7 +299,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('/', [AdminQuestionController::class, 'storeForPlacementTest'])
                     ->name('store');
 
-                // 单个题目操作（参数路由）
+                // Single question actions
                 Route::get('/{question}', [AdminQuestionController::class, 'showForPlacementTest'])
                     ->name('show');
                 Route::get('/{question}/edit', [AdminQuestionController::class, 'editForPlacementTest'])
@@ -313,7 +313,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             });
         });
 
-        // ==================== 全局测试管理（查看所有测试）====================
+        // ==================== Global Test Management ====================
         Route::prefix('tests')->name('tests.')->group(function () {
             Route::get('/', [AdminTestController::class, 'index'])->name('index');
             Route::get('/{test}', [AdminTestController::class, 'show'])->name('show');
@@ -324,7 +324,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/{test}/preview', [AdminTestController::class, 'preview'])->name('preview');
         });
 
-        // ==================== AI 课程生成路由 ====================
+        // ==================== AI Lesson Generation Routes ====================
         Route::prefix('ai-lessons')->name('ai-lessons.')->group(function () {
             Route::get('/create', [AILessonController::class, 'create'])->name('create');
             Route::post('/generate', [AILessonController::class, 'generate'])->name('generate');
@@ -332,13 +332,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/test-connection', [AILessonController::class, 'testConnection'])->name('test-connection');
         });
 
-        // ==================== 学生学习路径管理路由 ====================
+        // ==================== Student Learning Path Assignment Routes ====================
         Route::prefix('student-paths')->name('student-paths.')->group(function () {
-            // 分析报告（具体路径优先）
+            // Analytics report, with specific paths first
             Route::get('/analytics/overview', [AdminStudentPathController::class, 'analytics'])
                 ->name('analytics');
 
-            // 批量操作
+            // Bulk actions
             Route::post('/bulk-assign', [AdminStudentPathController::class, 'bulkAssign'])
                 ->name('bulk-assign');
 
@@ -351,13 +351,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/{studentPath}', [AdminStudentPathController::class, 'update'])->name('update');
             Route::delete('/{studentPath}', [AdminStudentPathController::class, 'destroy'])->name('destroy');
 
-            // 操作路由
+            // Status action routes
             Route::post('/{studentPath}/pause', [AdminStudentPathController::class, 'pause'])->name('pause');
             Route::post('/{studentPath}/resume', [AdminStudentPathController::class, 'resume'])->name('resume');
             Route::post('/{studentPath}/update-progress', [AdminStudentPathController::class, 'updateProgress'])->name('update-progress');
         });
 
-        // ==================== 学习路径管理路由 ====================
+        // ==================== Learning Path Management Routes ====================
         Route::prefix('learning-paths')->name('learning-paths.')->group(function () {
             // CRUD
             Route::get('/', [AdminLearningPathController::class, 'index'])->name('index');
@@ -369,38 +369,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/{path}', [AdminLearningPathController::class, 'destroy'])->name('destroy');
             Route::post('/{path}/restore', [AdminLearningPathController::class, 'restore'])->name('restore');
 
-            // 课程管理
+            // Lesson management
             Route::get('/{path}/lessons', [AdminLearningPathController::class, 'manageLessons'])->name('lessons.manage');
             Route::post('/{path}/lessons', [AdminLearningPathController::class, 'addLesson'])->name('lessons.add');
             Route::delete('/{path}/lessons/{lesson}', [AdminLearningPathController::class, 'removeLesson'])->name('lessons.remove');
             Route::post('/{path}/lessons/reorder', [AdminLearningPathController::class, 'reorderLessons'])->name('lessons.reorder');
             Route::put('/{path}/lessons/{lesson}/settings', [AdminLearningPathController::class, 'updateLessonSettings'])->name('lessons.settings');
 
-            // 其他操作
+            // Other actions
             Route::post('/{path}/clone', [AdminLearningPathController::class, 'clone'])->name('clone');
             Route::get('/{path}/statistics', [AdminLearningPathController::class, 'statistics'])->name('statistics');
         });
 
-        // ==================== 课程进度管理路由 ====================
+        // ==================== Progress Management Routes ====================
         Route::prefix('progress')->name('progress.')->group(function () {
-            // 总览和导出（具体路径优先）
+            // Overview and export, with specific paths first
             Route::get('/', [AdminProgressController::class, 'index'])->name('index');
             Route::get('/export', [AdminProgressController::class, 'export'])->name('export');
 
-            // 课程进度
+            // Lesson progress
             Route::get('/lesson/{lesson}', [AdminProgressController::class, 'showLesson'])->name('lesson');
             Route::post('/lesson/{lesson}/recalculate', [AdminProgressController::class, 'recalculateLesson'])->name('lesson.recalculate');
 
-            // 学生进度
+            // Student progress
             Route::get('/student/{student}', [AdminProgressController::class, 'showStudent'])->name('student');
 
-            // 单个进度详情（参数路由放最后）
+            // Single progress details, with parameter routes last
             Route::get('/{progress}', [AdminProgressController::class, 'show'])->name('show');
             Route::post('/{progress}/recalculate', [AdminProgressController::class, 'recalculate'])->name('recalculate');
             Route::post('/{progress}/reset', [AdminProgressController::class, 'reset'])->name('reset');
         });
 
-        // ==================== Resource 路由 ====================
+        // ==================== Resource Routes ====================
         Route::post('lessons/quick-draft', [AdminLessonController::class, 'quickDraft'])
             ->name('lessons.quick-draft');
         Route::resource('lessons', AdminLessonController::class);
@@ -411,7 +411,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('daily-challenges/{dailyChallengeDefinition}', [AdminDailyChallengeController::class, 'update'])
             ->name('daily-challenges.update');
 
-        // ==================== 奖励自定义路由 ====================
+        // ==================== Reward Customization Routes ====================
         Route::get('rewards/background/create', [AdminRewardController::class, 'createBackground'])
             ->name('rewards.background.create');
         Route::post('rewards/background', [AdminRewardController::class, 'storeBackground'])
@@ -423,9 +423,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('rewards/stats', [AdminRewardController::class, 'getStats'])
             ->name('rewards.stats');
 
-        // ==================== 课程练习管理路由 ====================
+        // ==================== Lesson Exercise Management Routes ====================
         Route::prefix('lessons/{lesson}/exercises')->name('lessons.exercises.')->group(function () {
-            // Coding Exercise 专用路由（具体路径优先）
+            // Coding exercise routes, with specific paths first
             Route::get('/coding/create', [AdminExerciseController::class, 'createCodingExercise'])
                 ->name('coding.create');
 
@@ -438,14 +438,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/{exercise}', [AdminExerciseController::class, 'updateForLesson'])->name('update');
             Route::delete('/{exercise}', [AdminExerciseController::class, 'destroyForLesson'])->name('destroy');
 
-            // Coding Exercise 编辑
+            // Coding exercise editing
             Route::get('/{exercise}/coding/edit', [AdminExerciseController::class, 'editCodingExercise'])
                 ->name('coding.edit');
         });
 
-        // ==================== 课程测试管理路由（需要 lesson 上下文）====================
+        // ==================== Lesson Test Management Routes ====================
         Route::prefix('lessons/{lesson}/tests')->name('lessons.tests.')->group(function () {
-            // 批量操作（具体路径优先）
+            // Bulk actions, with specific paths first
             Route::post('/bulk-update', [AdminTestController::class, 'bulkUpdate'])->name('bulk-update');
             Route::post('/reorder', [AdminTestController::class, 'reorder'])->name('reorder');
 
@@ -458,13 +458,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/{test}', [AdminTestController::class, 'updateForLesson'])->name('update');
             Route::delete('/{test}', [AdminTestController::class, 'destroyForLesson'])->name('destroy');
 
-            // 测试操作
+            // Test actions
             Route::post('/{test}/duplicate', [AdminTestController::class, 'duplicate'])->name('duplicate');
             Route::get('/{test}/preview', [AdminTestController::class, 'preview'])->name('preview');
 
-            // 题目管理路由（嵌套在 test 下）
+            // Question management nested under tests
             Route::prefix('{test}/questions')->name('questions.')->group(function () {
-                // 批量操作（具体路径优先）
+                // Bulk actions, with specific paths first
                 Route::post('/bulk-update', [AdminQuestionController::class, 'bulkUpdate'])->name('bulk-update');
                 Route::post('/reorder', [AdminQuestionController::class, 'reorder'])->name('reorder');
 
@@ -477,50 +477,50 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::put('/{question}', [AdminQuestionController::class, 'updateForTest'])->name('update');
                 Route::delete('/{question}', [AdminQuestionController::class, 'destroyForTest'])->name('destroy');
 
-                // 题目操作
+                // Question actions
                 Route::post('/{question}/duplicate', [AdminQuestionController::class, 'duplicate'])->name('duplicate');
             });
         });
 
-        // ==================== 论坛举报管理路由 ====================
+        // ==================== Forum Report Management Routes ====================
         Route::prefix('forum/reports')->name('forum.reports.')->group(function () {
-            // 批量操作（具体路径优先）
+            // Bulk actions, with specific paths first
             Route::post('/batch-update', [ForumReportController::class, 'batchUpdate'])->name('batch-update');
 
-            // 举报列表
+            // Report list
             Route::get('/', [ForumReportController::class, 'index'])->name('index');
 
-            // 单个举报操作
+            // Single report actions
             Route::get('/{id}', [ForumReportController::class, 'show'])->name('show');
             Route::post('/{id}/status', [ForumReportController::class, 'updateStatus'])->name('status');
             Route::post('/{id}/delete-content', [ForumReportController::class, 'deleteContent'])->name('delete-content');
             Route::delete('/{id}', [ForumReportController::class, 'destroy'])->name('destroy');
         });
 
-        // ==================== AI 日志管理路由 ====================
+        // ==================== AI Log Management Routes ====================
         Route::prefix('ai-logs')->name('ai-logs.')->group(function () {
-            // 批量操作（具体路径优先）
+            // Bulk actions, with specific paths first
             Route::post('/bulk-delete', [AdminAILogController::class, 'bulkDelete'])->name('bulk-delete');
             Route::post('/delete-preview', [AdminAILogController::class, 'deletePreview'])->name('delete-preview');
 
-            // 主页面
+            // Main page
             Route::get('/', [AdminAILogController::class, 'index'])->name('index');
 
-            // 查看会话
+            // View sessions
             Route::get('/session/{sessionId}', [AdminAILogController::class, 'showSession'])->name('session');
             Route::delete('/session/{sessionId}', [AdminAILogController::class, 'deleteSession'])->name('delete-session');
         });
     });
 });
 
-// ==================== 用户个人资料路由 ====================
+// ==================== User Profile Routes ====================
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// ==================== 测试路由（仅限本地管理员）====================
+// ==================== Local Test Routes ====================
 if (app()->environment('local')) {
     Route::middleware(['auth', 'role:administrator'])->get('/test-gemini', function () {
         try {

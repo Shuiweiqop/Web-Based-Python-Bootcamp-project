@@ -23,7 +23,7 @@ class ExerciseSubmissionService
     ): array {
         return DB::transaction(function () use ($student, $lesson, $exercise, $answer, $timeSpent) {
             $score     = (int) round(min(max($answer['score'], 0), $exercise->max_score));
-            $completed = $this->determineCompletionStatus($exercise, $answer);
+            $completed = $this->determineCompletionStatus($exercise, $answer, $score);
 
             $submission = ExerciseSubmission::create([
                 'exercise_id'  => $exercise->exercise_id,
@@ -95,10 +95,18 @@ class ExerciseSubmissionService
      * For coding exercises, all test cases must pass.
      * For other types, trust the client-reported completed flag.
      */
-    private function determineCompletionStatus(InteractiveExercise $exercise, array $answer): bool
+    private function determineCompletionStatus(InteractiveExercise $exercise, array $answer, int $score): bool
     {
         if ($exercise->exercise_type !== 'coding') {
-            return (bool) ($answer['completed'] ?? false);
+            if (($answer['completed'] ?? true) === false) {
+                return false;
+            }
+
+            if ((int) $exercise->max_score <= 0) {
+                return false;
+            }
+
+            return ($score / (int) $exercise->max_score) >= 0.7;
         }
 
         $testResults = $answer['test_results'] ?? null;
