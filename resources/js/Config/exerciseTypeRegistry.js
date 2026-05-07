@@ -9,6 +9,7 @@ import FillBlankConfig from '@/Pages/Lessons/Exercises/components/FillBlankConfi
 // ❌ 已删除: import MatchingConfig from '@/Pages/Lessons/Exercises/components/MatchingConfig';
 import SortingConfig from '@/Pages/Lessons/Exercises/components/SortingConfig';
 import SimulationConfig from '@/Pages/Lessons/Exercises/components/SimulationConfig';
+import MemoryMatchConfig from '@/Pages/Lessons/Exercises/components/MemoryMatchConfig';
 
 /**
  * 🎮 练习类型注册中心
@@ -135,6 +136,24 @@ export const EXERCISE_TYPES = {
   },
 
   // 🎮 模拟器
+  memory_match: {
+    value: 'memory_match',
+    label: 'Memory Match',
+    icon: 'Memory',
+    emoji: 'Memory',
+    description: 'Flip cards and match concepts with answers',
+    color: 'violet',
+    category: 'basic',
+    component: MemoryMatchConfig,
+    requiresSpecialConfig: true,
+    defaultContent: {
+      instructions: 'Match each card with its correct partner.',
+      pairs: [],
+    },
+    features: ['memory', 'matching', 'instant_feedback'],
+    recommendedFor: ['vocabulary', 'concepts', 'data_types', 'syntax'],
+  },
+
   simulation: {
     value: 'simulation',
     label: 'Simulation',
@@ -207,6 +226,13 @@ export const COLOR_SCHEMES = {
     button: 'bg-teal-600 hover:bg-teal-700',
     text: 'text-teal-900',
     badge: 'bg-teal-100 text-teal-800',
+  },
+  violet: {
+    bg: 'from-violet-50 to-sky-50',
+    border: 'border-violet-200',
+    button: 'bg-violet-600 hover:bg-violet-700',
+    text: 'text-violet-900',
+    badge: 'bg-violet-100 text-violet-800',
   },
 };
 

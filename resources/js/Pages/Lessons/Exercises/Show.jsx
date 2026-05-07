@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { Head } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle, Trophy } from 'lucide-react';
+import { ArrowLeft, CheckCircle, RotateCcw, Star, Trophy } from 'lucide-react';
 import axios from 'axios';
 import MissionProgressToast from '@/Components/Student/Missions/MissionProgressToast';
 import StudentLayout from '@/Layouts/StudentLayout';
@@ -19,6 +19,7 @@ import SimulationGame from './components/SimulationGame';
 import SortingExercise from './components/SortingExercise';
 import CodingExercise from './components/CodingExercise';
 import FillBlankExercise from './components/FillBlankExercise';
+import MemoryMatchGame from './components/MemoryMatchGame';
 import DefaultGamePlaceholder from './components/DefaultGamePlaceholder';
 
 // 导入 hooks
@@ -38,7 +39,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const isCodingExercise = exercise.exercise_type === 'coding' || exercise.type === 'coding';
   const isFillBlankExercise = exercise.exercise_type === 'fill_blank' || exercise.type === 'fill_blank';
 
-  const timer = useTimer(exercise.time_limit, gameStarted);
+  const configuredTimeLimit = Number(exercise.time_limit_sec || exercise.time_limit || 0);
+  const timer = useTimer(configuredTimeLimit, gameStarted);
 
   const score = useScore(
     exercise.max_score,
@@ -69,9 +71,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     if (gameCompleted || isSubmitting) return;
 
     setIsSubmitting(true);
-    const timeLimit = Number(exercise.time_limit_sec || exercise.time_limit || 0);
-    const timeTaken = timeLimit > 0
-      ? Math.max(0, timeLimit - timer.timeLeft)
+    const timeTaken = configuredTimeLimit > 0
+      ? Math.max(0, configuredTimeLimit - timer.timeLeft)
       : startedAt
         ? Math.max(0, Math.floor((Date.now() - startedAt) / 1000))
         : 0;
@@ -162,6 +163,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
         return <SimulationGame {...gameProps} />;
       case 'sorting':
         return <SortingExercise {...gameProps} />;
+      case 'memory_match':
+        return <MemoryMatchGame {...gameProps} />;
       default:
         return <DefaultGamePlaceholder exercise={exercise} />;
     }
@@ -272,7 +275,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                 setGameCompleted(false);
                 setSubmissionResult(null);
                 score.resetScore();
-                timer.reset(exercise.time_limit);
+                timer.reset(configuredTimeLimit);
               }}
               className="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
             >
@@ -285,6 +288,93 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   };
 
   // 🔥 Coding Exercise 使用独立布局（全屏）
+  const renderGameResults = () => {
+    const maxScore = Number(exercise.max_score) || 100;
+    const scorePercentage = maxScore > 0 ? (finalScore / maxScore) * 100 : 0;
+    const isPerfect = scorePercentage >= 100;
+    const isGood = scorePercentage >= 70;
+    const grade = isPerfect ? 'S' : scorePercentage >= 85 ? 'A' : scorePercentage >= 70 ? 'B' : scorePercentage >= 50 ? 'C' : 'Keep Going';
+    const lessonCompleted = submissionResult?.lesson_progress?.lesson_completed;
+    const pointsAwarded = submissionResult?.lesson_progress?.points_amount;
+
+    return (
+      <div className="flex min-h-[600px] items-center justify-center bg-[radial-gradient(circle_at_top_left,#fef3c7,transparent_32%),linear-gradient(135deg,#f8fafc,#eef2ff_46%,#ecfeff)] p-6">
+        <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/80 bg-white/90 shadow-2xl shadow-indigo-100 backdrop-blur">
+          <div className="bg-gradient-to-r from-indigo-700 via-violet-700 to-sky-700 p-8 text-center text-white">
+            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 ring-1 ring-white/20">
+              {isPerfect ? <Trophy className="h-12 w-12 text-amber-200" /> : <CheckCircle className="h-12 w-12 text-emerald-200" />}
+            </div>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-bold ring-1 ring-white/20">
+              <Star className="h-4 w-4 text-amber-200" />
+              Grade {grade}
+            </div>
+            <h2 className="text-3xl font-black">{isPerfect ? 'Perfect Score!' : isGood ? 'Great Run!' : 'Run Complete'}</h2>
+            <p className="mt-2 text-indigo-50">
+              {isPerfect ? 'You mastered this exercise.' : isGood ? 'Solid work. Your score is safely above the pass line.' : 'You finished the run. A replay can push the score higher.'}
+            </p>
+          </div>
+
+          <div className="p-8">
+            <div className="mb-6 rounded-2xl bg-slate-950 p-6 text-white">
+              <div className="mb-2 text-sm font-semibold text-slate-300">Final Score</div>
+              <div className="text-6xl font-black">
+                {finalScore}
+                <span className="text-xl text-slate-400">/{maxScore}</span>
+              </div>
+              <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className={`h-full rounded-full transition-all duration-1000 ${isPerfect ? 'bg-gradient-to-r from-amber-300 to-orange-400' : isGood ? 'bg-gradient-to-r from-emerald-300 to-teal-400' : 'bg-gradient-to-r from-sky-300 to-indigo-400'}`}
+                  style={{ width: `${Math.min(100, scorePercentage)}%` }}
+                />
+              </div>
+              <div className="mt-2 text-right text-sm font-semibold text-slate-300">{scorePercentage.toFixed(0)}%</div>
+            </div>
+
+            {lessonCompleted && (
+              <div className="mb-5 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4">
+                <div className="mb-1 text-lg font-black text-amber-900">Lesson Completed</div>
+                <div className="text-amber-800">
+                  You earned <span className="font-bold">{pointsAwarded}</span> bonus points!
+                </div>
+              </div>
+            )}
+
+            {submissionResult?.lesson_progress && !lessonCompleted && (
+              <div className="mb-5 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
+                Exercises: {submissionResult.lesson_progress.exercises_completed}/{lesson.required_exercises || '?'} |
+                Tests: {submissionResult.lesson_progress.tests_passed}/{lesson.required_tests || '?'}
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={handleReturnToLesson}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 px-6 py-3 font-black text-white shadow-lg shadow-indigo-100 transition hover:from-indigo-700 hover:to-sky-700"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                Return to Lesson
+              </button>
+
+              <button
+                onClick={() => {
+                  setGameStarted(false);
+                  setGameCompleted(false);
+                  setSubmissionResult(null);
+                  score.resetScore();
+                  timer.reset(configuredTimeLimit);
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-6 py-3 font-black text-slate-700 transition hover:bg-slate-50"
+              >
+                <RotateCcw className="h-5 w-5" />
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (isCodingExercise) {
     return (
       <>
@@ -303,7 +393,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
           payload={missionProgress}
           onDismiss={() => setMissionProgress(null)}
         />
-        {gameCompleted ? renderCompletionScreen() : renderGameContent()}
+        {gameCompleted ? renderGameResults() : renderGameContent()}
       </StudentLayout>
     );
   }
@@ -317,13 +407,13 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
         onDismiss={() => setMissionProgress(null)}
       />
       
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="mx-auto max-w-7xl bg-[radial-gradient(circle_at_top_left,#e0f2fe,transparent_28%),linear-gradient(135deg,#f8fafc,#eef2ff_48%,#ecfeff)] p-4 sm:p-6">
         {/* 游戏头部 */}
         <GameHeader lesson={lesson} exercise={exercise} />
 
         {/* 主要游戏区域 */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="flex">
+        <div className="overflow-hidden rounded-3xl border border-white/80 bg-white/70 shadow-2xl shadow-indigo-100/70 backdrop-blur">
+          <div className="flex flex-col xl:flex-row">
             {/* 游戏内容区域 */}
             <div className="flex-1">
               {!gameStarted ? (
@@ -332,7 +422,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                   onGameStart={handleGameStart}
                 />
               ) : gameCompleted ? (
-                renderCompletionScreen()
+                renderGameResults()
               ) : (
                 <div className="min-h-[600px]">
                   {renderGameContent()}
@@ -342,17 +432,30 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
 
             {/* 状态面板 - 只在游戏进行中显示 */}
             {gameStarted && !gameCompleted && (
-              <div className="w-64 border-l border-gray-200 p-4">
+              <div className="border-t border-white/70 bg-slate-50/80 p-4 xl:w-72 xl:border-l xl:border-t-0">
                 <GameStatusPanel
                   currentScore={score.currentScore}
                   maxScore={score.maxScore}
                   formattedTime={timer.formattedTime}
                   isTimeUp={timer.isTimeUp}
-                  hasTimeLimit={!!exercise.time_limit}
+                  hasTimeLimit={configuredTimeLimit > 0}
+                  isRunning={timer.isRunning}
+                  isSubmitting={isSubmitting}
+                  onToggleTimer={timer.isRunning ? timer.pause : timer.start}
+                  onFinish={handleGameComplete}
+                  onRestart={() => {
+                    if (confirm('Are you sure you want to restart?')) {
+                      setGameStarted(false);
+                      setGameCompleted(false);
+                      setSubmissionResult(null);
+                      timer.reset(configuredTimeLimit);
+                      score.resetScore();
+                    }
+                  }}
                 />
                 
                 {/* 游戏控制按钮 */}
-                <div className="mt-4 space-y-2">
+                <div className="hidden">
                   <button
                     onClick={timer.isRunning ? timer.pause : timer.start}
                     className="w-full px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"

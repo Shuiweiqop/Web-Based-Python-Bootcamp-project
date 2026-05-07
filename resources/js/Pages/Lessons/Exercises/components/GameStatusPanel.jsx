@@ -1,84 +1,115 @@
 import React from 'react';
-import { ClockIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import { Clock, Gauge, Pause, Play, RotateCcw, Send, Trophy } from 'lucide-react';
 
-// 适配 Inertia.js 的组件 - 可放在 resources/js/Components/Games/
-
-/**
- * 游戏状态面板 - 显示分数、时间等信息
- * @param {number} currentScore - 当前分数
- * @param {number} maxScore - 最大分数
- * @param {string} formattedTime - 格式化的时间字符串
- * @param {boolean} isTimeUp - 是否时间到
- * @param {boolean} hasTimeLimit - 是否有时间限制
- * @param {string} className - 自定义样式类
- */
 const GameStatusPanel = ({
   currentScore = 0,
   maxScore = 100,
-  formattedTime = "0:00",
+  formattedTime = '0:00',
   isTimeUp = false,
   hasTimeLimit = true,
-  className = "",
+  isRunning = false,
+  isSubmitting = false,
+  onToggleTimer,
+  onFinish,
+  onRestart,
+  className = '',
 }) => {
-  const scorePercentage = Math.round((currentScore / maxScore) * 100);
-  
-  // 根据分数百分比确定颜色
-  const getScoreColor = () => {
-    if (scorePercentage >= 80) return 'text-green-600';
-    if (scorePercentage >= 60) return 'text-yellow-600';
-    return 'text-blue-600';
-  };
+  const safeMaxScore = Number(maxScore) || 100;
+  const scorePercentage = Math.min(100, Math.max(0, Math.round((Number(currentScore) / safeMaxScore) * 100)));
 
-  // 根据时间状态确定时间颜色
-  const getTimeColor = () => {
-    if (isTimeUp) return 'text-red-600';
-    if (formattedTime.startsWith('0:') && parseInt(formattedTime.split(':')[1]) <= 30) {
-      return 'text-orange-600';
-    }
-    return 'text-blue-600';
-  };
+  const grade = scorePercentage >= 90
+    ? 'Mastery'
+    : scorePercentage >= 70
+      ? 'Strong'
+      : scorePercentage >= 40
+        ? 'Building'
+        : 'Warming up';
+
+  const scoreColor = scorePercentage >= 80
+    ? 'from-emerald-400 to-teal-500'
+    : scorePercentage >= 60
+      ? 'from-amber-400 to-orange-500'
+      : 'from-sky-400 to-indigo-500';
 
   return (
-    <div className={`bg-gray-50 rounded-lg p-4 min-w-[200px] ${className}`}>
-      <div className="text-center">
-        {/* 分数显示 */}
-        <div className="mb-4">
-          <div className={`text-2xl font-bold mb-1 ${getScoreColor()}`}>
-            {currentScore}/{maxScore}
-          </div>
-          <div className="text-sm text-gray-600 mb-2">Score</div>
-          
-          {/* 分数进度条 */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${scorePercentage}%` }}
-            />
-          </div>
-          <div className="text-xs text-gray-500 mt-1">{scorePercentage}%</div>
+    <aside className={`rounded-2xl border border-white/70 bg-white/90 p-4 shadow-xl shadow-slate-200/60 backdrop-blur ${className}`}>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Run Panel</div>
+          <div className="text-lg font-black text-slate-950">{grade}</div>
         </div>
-        
-        {/* 时间显示 */}
-        {hasTimeLimit && (
-          <div className={`flex items-center justify-center gap-2 ${getTimeColor()}`}>
-            <ClockIcon className="w-4 h-4" />
-            {isTimeUp ? (
-              <span className="font-semibold">Time's Up!</span>
-            ) : (
-              <span className="font-mono font-bold">{formattedTime}</span>
-            )}
+        <div className="rounded-xl bg-violet-50 p-2 text-violet-700">
+          <Gauge className="h-5 w-5" />
+        </div>
+      </div>
+
+      <div className="rounded-2xl bg-slate-950 p-4 text-white">
+        <div className="mb-2 flex items-center justify-between text-sm text-slate-300">
+          <span>Score</span>
+          <Trophy className="h-4 w-4 text-amber-300" />
+        </div>
+        <div className="text-3xl font-black">
+          {currentScore}
+          <span className="text-base font-semibold text-slate-400">/{safeMaxScore}</span>
+        </div>
+        <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+          <div
+            className={`h-full rounded-full bg-gradient-to-r ${scoreColor} transition-all duration-500`}
+            style={{ width: `${scorePercentage}%` }}
+          />
+        </div>
+        <div className="mt-2 text-right text-xs font-semibold text-slate-300">{scorePercentage}%</div>
+      </div>
+
+      {hasTimeLimit && (
+        <div className={`mt-3 rounded-xl border p-3 ${isTimeUp ? 'border-red-200 bg-red-50 text-red-700' : 'border-sky-100 bg-sky-50 text-sky-800'}`}>
+          <div className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide">
+            <Clock className="h-4 w-4" />
+            Time
           </div>
+          <div className="font-mono text-2xl font-black">
+            {isTimeUp ? 'Time up' : formattedTime}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 space-y-2">
+        {onToggleTimer && (
+          <button
+            type="button"
+            onClick={onToggleTimer}
+            disabled={isTimeUp}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {isRunning ? 'Pause' : 'Resume'}
+          </button>
         )}
 
-        {/* 完成状态 */}
-        {currentScore === maxScore && (
-          <div className="mt-3 flex items-center justify-center gap-2 text-green-600">
-            <TrophyIcon className="w-4 h-4" />
-            <span className="text-sm font-semibold">Perfect!</span>
-          </div>
+        {onFinish && (
+          <button
+            type="button"
+            onClick={onFinish}
+            disabled={isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-100 transition hover:from-emerald-600 hover:to-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Send className="h-4 w-4" />
+            {isSubmitting ? 'Submitting...' : 'Finish & Submit'}
+          </button>
+        )}
+
+        {onRestart && (
+          <button
+            type="button"
+            onClick={onRestart}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-700 transition hover:bg-rose-100"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Restart
+          </button>
         )}
       </div>
-    </div>
+    </aside>
   );
 };
 
