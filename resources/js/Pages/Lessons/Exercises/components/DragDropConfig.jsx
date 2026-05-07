@@ -20,9 +20,10 @@ export default function DragDropConfig({ data, setData, errors }) {
     return () => window.removeEventListener('theme-changed', updateTheme);
   }, []);
 
-  const updateContent = (newItems, newDropZones) => {
+  const updateContent = (newItems, newDropZones, instructions = data.content?.instructions) => {
     setData('content', {
       ...data.content,
+      instructions,
       items: newItems,
       drop_zones: newDropZones,
     });
@@ -88,52 +89,63 @@ export default function DragDropConfig({ data, setData, errors }) {
   };
 
   const quickSetupTemplates = {
-    pythonBasics: {
-      name: 'Python Basics',
+    bugClinic: {
+      name: 'Bug Clinic',
+      instructions: 'A junior developer mixed symptoms, causes, and fixes. Sort each card into the right debugging board.',
       drop_zones: [
-        { id: 'zone-variables', name: 'Variables', description: 'Variable declarations and assignments', max_items: null },
-        { id: 'zone-functions', name: 'Functions', description: 'Function definitions and calls', max_items: null },
-        { id: 'zone-loops', name: 'Loops', description: 'Loop statements', max_items: null },
+        { id: 'zone-symptom', name: 'Symptom', description: 'What the user or program is showing', max_items: 3, color: '#2563eb' },
+        { id: 'zone-cause', name: 'Likely Cause', description: 'The bug hiding behind the symptom', max_items: 3, color: '#f97316' },
+        { id: 'zone-fix', name: 'Best Fix', description: 'The action that solves the issue cleanly', max_items: 3, color: '#16a34a' },
       ],
       items: [
-        { id: 'item-1', text: 'x = 10', correct_zone: 'zone-variables', description: 'Integer variable' },
-        { id: 'item-2', text: 'def greet():', correct_zone: 'zone-functions', description: 'Function definition' },
-        { id: 'item-3', text: 'for i in range(5):', correct_zone: 'zone-loops', description: 'For loop' },
-        { id: 'item-4', text: 'name = "Alice"', correct_zone: 'zone-variables', description: 'String variable' },
-        { id: 'item-5', text: 'return value', correct_zone: 'zone-functions', description: 'Return statement' },
-        { id: 'item-6', text: 'while True:', correct_zone: 'zone-loops', description: 'While loop' },
+        { id: 'item-1', text: 'NameError: name score is not defined', correct_zone: 'zone-symptom', description: 'The error message shown in terminal' },
+        { id: 'item-2', text: 'The variable was never created before use', correct_zone: 'zone-cause', description: 'Root cause behind the NameError' },
+        { id: 'item-3', text: 'Assign score = 0 before the loop starts', correct_zone: 'zone-fix', description: 'A safe initialization fix' },
+        { id: 'item-4', text: 'Program repeats forever', correct_zone: 'zone-symptom', description: 'The app never reaches the next line' },
+        { id: 'item-5', text: 'Loop condition never becomes False', correct_zone: 'zone-cause', description: 'Common infinite loop cause' },
+        { id: 'item-6', text: 'Update the counter inside the loop', correct_zone: 'zone-fix', description: 'Makes progress toward stopping' },
+        { id: 'item-7', text: 'Output says 01234 instead of 12345', correct_zone: 'zone-symptom', description: 'The result is close but shifted' },
+        { id: 'item-8', text: 'range(5) starts at 0 and stops before 5', correct_zone: 'zone-cause', description: 'Python range boundary behavior' },
+        { id: 'item-9', text: 'Use range(1, 6)', correct_zone: 'zone-fix', description: 'Includes 1 through 5' },
       ],
     },
-    dataTypes: {
-      name: 'Data Types',
+    dataDetective: {
+      name: 'Data Detective',
+      instructions: 'Classify each clue by the data type a Python program should use.',
       drop_zones: [
-        { id: 'zone-numbers', name: 'Numbers', description: 'Numeric data types', max_items: null },
-        { id: 'zone-strings', name: 'Strings', description: 'Text data types', max_items: null },
-        { id: 'zone-collections', name: 'Collections', description: 'Lists, dicts, sets', max_items: null },
+        { id: 'zone-number', name: 'Number', description: 'Use for counting, scoring, and calculations', max_items: null, color: '#7c3aed' },
+        { id: 'zone-string', name: 'String', description: 'Use for names, labels, and messages', max_items: null, color: '#db2777' },
+        { id: 'zone-list', name: 'List', description: 'Use for ordered groups of values', max_items: null, color: '#0891b2' },
+        { id: 'zone-boolean', name: 'Boolean', description: 'Use for yes/no decisions', max_items: null, color: '#65a30d' },
       ],
       items: [
-        { id: 'item-1', text: '42', correct_zone: 'zone-numbers', description: 'Integer' },
-        { id: 'item-2', text: '"Hello"', correct_zone: 'zone-strings', description: 'Double-quoted string' },
-        { id: 'item-3', text: '[1, 2, 3]', correct_zone: 'zone-collections', description: 'List' },
-        { id: 'item-4', text: '3.14', correct_zone: 'zone-numbers', description: 'Float' },
-        { id: 'item-5', text: "'World'", correct_zone: 'zone-strings', description: 'Single-quoted string' },
-        { id: 'item-6', text: '{key: value}', correct_zone: 'zone-collections', description: 'Dictionary' },
+        { id: 'item-1', text: 'player_score = 1250', correct_zone: 'zone-number', description: 'A value used in math' },
+        { id: 'item-2', text: 'username = "Maya"', correct_zone: 'zone-string', description: 'Text shown to people' },
+        { id: 'item-3', text: 'inventory = ["key", "map", "coin"]', correct_zone: 'zone-list', description: 'Multiple ordered items' },
+        { id: 'item-4', text: 'is_logged_in = True', correct_zone: 'zone-boolean', description: 'A yes/no state' },
+        { id: 'item-5', text: 'temperature = 36.8', correct_zone: 'zone-number', description: 'A decimal measurement' },
+        { id: 'item-6', text: 'error_message = "Try again"', correct_zone: 'zone-string', description: 'A message for the user' },
+        { id: 'item-7', text: 'quiz_answers = ["A", "C", "B"]', correct_zone: 'zone-list', description: 'A sequence of answers' },
+        { id: 'item-8', text: 'has_finished = False', correct_zone: 'zone-boolean', description: 'Tracks completion' },
       ],
     },
-    operators: {
-      name: 'Operators',
+    controlRoom: {
+      name: 'Control Room',
+      instructions: 'A robot only follows commands if the operator is used correctly. Sort the operators by job.',
       drop_zones: [
-        { id: 'zone-arithmetic', name: 'Arithmetic', description: 'Math operators', max_items: null },
-        { id: 'zone-comparison', name: 'Comparison', description: 'Comparison operators', max_items: null },
-        { id: 'zone-logical', name: 'Logical', description: 'Boolean operators', max_items: null },
+        { id: 'zone-math', name: 'Math', description: 'Changes numeric values', max_items: null, color: '#ea580c' },
+        { id: 'zone-compare', name: 'Compare', description: 'Checks relationships between values', max_items: null, color: '#2563eb' },
+        { id: 'zone-logic', name: 'Logic', description: 'Combines True/False conditions', max_items: null, color: '#16a34a' },
       ],
       items: [
-        { id: 'item-1', text: '+', correct_zone: 'zone-arithmetic', description: 'Addition' },
-        { id: 'item-2', text: '==', correct_zone: 'zone-comparison', description: 'Equal to' },
-        { id: 'item-3', text: 'and', correct_zone: 'zone-logical', description: 'Logical AND' },
-        { id: 'item-4', text: '*', correct_zone: 'zone-arithmetic', description: 'Multiplication' },
-        { id: 'item-5', text: '!=', correct_zone: 'zone-comparison', description: 'Not equal to' },
-        { id: 'item-6', text: 'or', correct_zone: 'zone-logical', description: 'Logical OR' },
+        { id: 'item-1', text: 'energy + 10', correct_zone: 'zone-math', description: 'Increase the robot energy' },
+        { id: 'item-2', text: 'battery <= 20', correct_zone: 'zone-compare', description: 'Check whether battery is low' },
+        { id: 'item-3', text: 'door_open and has_key', correct_zone: 'zone-logic', description: 'Both conditions must be true' },
+        { id: 'item-4', text: 'speed * 2', correct_zone: 'zone-math', description: 'Double the speed' },
+        { id: 'item-5', text: 'password == saved_password', correct_zone: 'zone-compare', description: 'Check for equality' },
+        { id: 'item-6', text: 'is_admin or is_teacher', correct_zone: 'zone-logic', description: 'Either role can pass' },
+        { id: 'item-7', text: 'coins % 2', correct_zone: 'zone-math', description: 'Find the remainder' },
+        { id: 'item-8', text: 'lives != 0', correct_zone: 'zone-compare', description: 'Check whether player is still alive' },
       ],
     },
   };
@@ -142,7 +154,7 @@ export default function DragDropConfig({ data, setData, errors }) {
     const template = quickSetupTemplates[templateKey];
     setDropZones(template.drop_zones);
     setItems(template.items);
-    updateContent(template.items, template.drop_zones);
+    updateContent(template.items, template.drop_zones, template.instructions);
     setShowQuickSetup(false);
     alert(`✅ Applied "${template.name}" template! Edit the items to customize.`);
   };
