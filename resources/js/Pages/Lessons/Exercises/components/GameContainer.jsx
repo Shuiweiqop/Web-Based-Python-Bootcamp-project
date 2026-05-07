@@ -17,6 +17,9 @@ const GameContainer = ({
   isLoading = false 
 }) => {
   // 根据游戏类型获取图标
+  const exerciseType = exercise.exercise_type || exercise.type;
+  const timeLimit = Number(exercise.time_limit_sec || exercise.time_limit || 0);
+
   const getGameIcon = (type) => {
     switch (type) {
       case 'drag_drop':
@@ -29,6 +32,8 @@ const GameContainer = ({
         return '🔧';
       case 'collection_game':
         return '🍎';
+      case 'memory_match':
+        return 'MM';
       default:
         return '🎮';
     }
@@ -42,17 +47,18 @@ const GameContainer = ({
       maze_game: 'Navigate through challenges using programming logic',
       puzzle_game: 'Arrange code pieces to solve problems',
       collection_game: 'Collect items while learning data structures',
+      memory_match: 'Flip cards and match Python concepts with their partners',
     };
     return descriptions[type] || 'Interactive coding challenge';
   };
 
   return (
-    <div className="p-12 text-center bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="p-8 text-center bg-[radial-gradient(circle_at_top_left,#dbeafe,transparent_35%),linear-gradient(135deg,#f8fafc,#eef2ff_48%,#ecfeff)] sm:p-12">
       <div className="max-w-md mx-auto">
         {/* 游戏图标和标题 */}
         <div className="mb-8">
-          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg border border-gray-100">
-            <span className="text-4xl">{getGameIcon(exercise.type)}</span>
+          <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-100 border border-white">
+            <span className="text-3xl font-black text-indigo-700">{getGameIcon(exerciseType)}</span>
           </div>
           
           <h3 className="text-2xl font-bold text-gray-900 mb-3">
@@ -60,7 +66,7 @@ const GameContainer = ({
           </h3>
           
           <p className="text-gray-600 text-lg mb-2">
-            {getGameTypeDescription(exercise.type)}
+            {getGameTypeDescription(exerciseType)}
           </p>
           
           <p className="text-gray-500">
@@ -80,13 +86,13 @@ const GameContainer = ({
             <div className="text-sm text-gray-600">Max Points</div>
           </div>
           
-          {exercise.time_limit && (
+          {timeLimit > 0 && (
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-center gap-2 text-blue-600 mb-2">
                 <ClockIcon className="w-5 h-5" />
               </div>
               <div className="text-2xl font-bold text-gray-900">
-                {Math.floor(exercise.time_limit / 60)}m
+                {Math.max(1, Math.ceil(timeLimit / 60))}m
               </div>
               <div className="text-sm text-gray-600">Time Limit</div>
             </div>
