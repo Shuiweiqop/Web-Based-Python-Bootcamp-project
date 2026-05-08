@@ -129,7 +129,16 @@ const LessonContent = ({
   useEffect(() => {
     if (!lesson.content) {
       setContentScrolledToBottom(true);
+      return;
     }
+    // If content is short enough that no scrollbar appears, mark as bottom immediately
+    const id = requestAnimationFrame(() => {
+      const node = contentScrollRef.current;
+      if (node && node.scrollHeight <= node.clientHeight + 2) {
+        setContentScrolledToBottom(true);
+      }
+    });
+    return () => cancelAnimationFrame(id);
   }, [lesson.content]);
 
   useEffect(() => {

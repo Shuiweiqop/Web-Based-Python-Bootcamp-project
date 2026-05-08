@@ -97,7 +97,6 @@ export default function Edit({ auth, lesson: propLesson, sections: propSections 
   }, []);
 
   const canContinueToStepTwo = data.title.trim().length > 0 && data.content_type.trim().length > 0;
-  const normalizedDuration = Number(data.estimated_duration) || 0;
 
   const summaryItems = useMemo(() => [
     {
@@ -165,7 +164,12 @@ export default function Edit({ auth, lesson: propLesson, sections: propSections 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    put(safeRoute('admin.lessons.update', lessonId), {
+    if (currentStep !== 2) {
+      setCurrentStep(2);
+      return;
+    }
+
+    put(`/admin/lessons/${lessonId}`, {
       preserveScroll: true,
       onError: (submitErrors) => {
         if (Object.keys(submitErrors).some((key) => ['title', 'content', 'content_type', 'video_url', 'difficulty', 'estimated_duration'].includes(key))) {
@@ -931,8 +935,13 @@ export default function Edit({ auth, lesson: propLesson, sections: propSections 
 
                   {currentStep === 1 ? (
                     <button
+                      key="continue-btn"
                       type="button"
-                      onClick={() => setCurrentStep(2)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCurrentStep(2);
+                      }}
                       disabled={!canContinueToStepTwo}
                       className={cn(
                         'rounded-xl px-8 py-3 font-bold text-white shadow-lg transition-all',
@@ -945,6 +954,7 @@ export default function Edit({ auth, lesson: propLesson, sections: propSections 
                     </button>
                   ) : (
                     <button
+                      key="save-btn"
                       type="submit"
                       disabled={processing}
                       className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-10 py-4 font-bold text-white shadow-lg transition-all hover:from-cyan-400 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-50"

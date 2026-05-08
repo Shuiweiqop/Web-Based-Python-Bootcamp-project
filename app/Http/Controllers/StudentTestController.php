@@ -139,12 +139,25 @@ class StudentTestController extends Controller
             ->orderBy('attempt_number', 'desc')
             ->get();
 
-        $attemptsUsed = $submissions->count();
+        // Only count finished attempts (not in-progress) against the limit
+        $completedSubmissions = $submissions->whereIn('status', ['submitted', 'timeout']);
+        $attemptsUsed = $completedSubmissions->count();
         $canStart = $test->max_attempts === null || $attemptsUsed < $test->max_attempts;
         $hasInProgress = $submissions->where('status', 'in_progress')->isNotEmpty();
         $inProgressSubmission = $hasInProgress ? $submissions->where('status', 'in_progress')->first() : null;
 
-        $previousAttempts = $submissions->whereIn('status', ['submitted', 'timeout'])->map(function ($submission) {
+        $lastCompleted = $completedSubmissions->first();
+        $lastSubmissionData = $lastCompleted ? [
+            'submission_id' => $lastCompleted->submission_id,
+            'attempt_number' => $lastCompleted->attempt_number,
+            'score' => $lastCompleted->score,
+            'passed' => $lastCompleted->score >= $test->passing_score,
+            'status' => $lastCompleted->status,
+            'submitted_at' => $lastCompleted->submitted_at,
+            'time_spent' => $lastCompleted->time_spent,
+        ] : null;
+
+        $previousAttempts = $completedSubmissions->map(function ($submission) {
             return [
                 'submission_id' => $submission->submission_id,
                 'attempt_number' => $submission->attempt_number,
@@ -172,10 +185,13 @@ class StudentTestController extends Controller
                 'total_points' => $test->total_points,
                 'shuffle_questions' => $test->shuffle_questions,
             ],
-            'attempts_used' => $attemptsUsed,
-            'can_start' => $canStart,
-            'has_in_progress' => $hasInProgress,
-            'in_progress_submission_id' => $inProgressSubmission ? $inProgressSubmission->submission_id : null,
+            // Prop names must match what Show.jsx destructures
+            'canAttempt' => $canStart,
+            'remainingAttempts' => $test->max_attempts !== null ? max(0, $test->max_attempts - $attemptsUsed) : 999,
+            'inProgressSubmission' => $inProgressSubmission
+                ? ['submission_id' => $inProgressSubmission->submission_id]
+                : null,
+            'lastSubmission' => $lastSubmissionData,
             'previous_attempts' => $previousAttempts,
         ]);
     }
