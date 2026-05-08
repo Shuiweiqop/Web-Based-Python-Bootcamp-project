@@ -33,6 +33,7 @@ export default function DragDropGame({
   const [completedItems, setCompletedItems] = useState(new Set());
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [feedback, setFeedback] = useState(null);
+  const [placementFeedback, setPlacementFeedback] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const submittedRef = useRef(false);
 
@@ -63,10 +64,17 @@ export default function DragDropGame({
     }
 
     const newDraggedItems = { ...draggedItems, [item.id]: zoneId };
+    const feedbackType = zoneId === item.correct_zone ? 'success' : 'error';
     setDraggedItems(newDraggedItems);
     setSelectedItemId(null);
+    setPlacementFeedback({
+      type: feedbackType,
+      itemId: item.id,
+      zoneId,
+      key: `${item.id}-${zoneId}-${Date.now()}`,
+    });
 
-    if (zoneId === item.correct_zone) {
+    if (feedbackType === 'success') {
       setCompletedItems((previous) => new Set([...previous, item.id]));
       setFeedback({ type: 'success', text: `Correct: "${item.text}" belongs in ${zone.name || 'this zone'}.` });
     } else {
@@ -87,11 +95,18 @@ export default function DragDropGame({
 
     submittedRef.current = true;
     const finalScore = calculateScore();
+    const correctCount = content.items.filter((item) => draggedItems[item.id] === item.correct_zone).length;
+    const totalItems = content.items.length;
     setIsSubmitted(true);
     onScoreUpdate?.(finalScore);
 
     setTimeout(() => {
-      onComplete?.(finalScore);
+      onComplete?.(finalScore, {
+        correctCount,
+        totalItems,
+        accuracy: totalItems > 0 ? Math.round((correctCount / totalItems) * 100) : 0,
+        isPerfect: correctCount === totalItems,
+      });
     }, 1200);
   };
 
@@ -100,6 +115,16 @@ export default function DragDropGame({
       handleSubmit();
     }
   }, [isTimeUp]);
+
+  useEffect(() => {
+    if (!placementFeedback) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setPlacementFeedback(null);
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [placementFeedback]);
 
   const handleDragStart = (event, item) => {
     if (isTimeUp || completedItems.has(item.id) || isSubmitted) {
@@ -236,6 +261,7 @@ export default function DragDropGame({
               const isIncorrect = isPlaced && !isCorrect;
               const isSelected = selectedItemId === item.id;
               const canMove = !isTimeUp && !isCorrect && !isSubmitted;
+              const itemFeedback = placementFeedback?.itemId === item.id ? placementFeedback.type : null;
 
               let itemClass = 'p-4 rounded-lg border-2 border-dashed transition-all duration-300 ';
               if (isCorrect) {
@@ -251,6 +277,11 @@ export default function DragDropGame({
               }
 
               if (!canMove) itemClass += ' cursor-not-allowed';
+              if (itemFeedback === 'success') {
+                itemClass += ' animate-[dragDropSuccess_700ms_ease-out] ring-4 ring-emerald-200 shadow-[0_0_28px_rgba(16,185,129,0.35)]';
+              } else if (itemFeedback === 'error') {
+                itemClass += ' animate-[dragDropShake_520ms_ease-in-out] ring-4 ring-red-200 shadow-[0_0_22px_rgba(239,68,68,0.22)]';
+              }
 
               return (
                 <div key={item.id} className="relative">
@@ -318,6 +349,7 @@ export default function DragDropGame({
               const isHighlighted = dragOverZone === zone.id;
               const maxItems = zone.max_items || Infinity;
               const isFull = placedItems.length >= maxItems;
+              const zoneFeedback = placementFeedback?.zoneId === zone.id ? placementFeedback.type : null;
 
               let zoneClass = 'min-h-[120px] rounded-lg border-2 border-dashed p-4 transition-all duration-300 ';
               if (isHighlighted && !isFull && !isSubmitted) {
@@ -328,6 +360,11 @@ export default function DragDropGame({
                 zoneClass += 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer';
               } else {
                 zoneClass += 'border-gray-300 bg-gray-50 hover:bg-gray-100';
+              }
+              if (zoneFeedback === 'success') {
+                zoneClass += ' animate-[dropZonePop_620ms_ease-out] ring-4 ring-emerald-200 shadow-[0_0_34px_rgba(16,185,129,0.28)]';
+              } else if (zoneFeedback === 'error') {
+                zoneClass += ' animate-[dragDropShake_520ms_ease-in-out] ring-4 ring-red-200 shadow-[0_0_24px_rgba(239,68,68,0.2)]';
               }
 
               return (
@@ -365,6 +402,7 @@ export default function DragDropGame({
                     <div className="space-y-2">
                       {placedItems.map((item) => {
                         const isCorrect = item.correct_zone === zone.id;
+                        const placedItemFeedback = placementFeedback?.itemId === item.id ? placementFeedback.type : null;
                         return (
                           <div
                             key={item.id}
@@ -372,6 +410,12 @@ export default function DragDropGame({
                               isCorrect
                                 ? 'bg-green-100 text-green-800 border-green-300'
                                 : 'bg-red-100 text-red-800 border-red-300'
+                            } ${
+                              placedItemFeedback === 'success'
+                                ? 'animate-[dragDropSuccess_700ms_ease-out] ring-2 ring-emerald-300'
+                                : placedItemFeedback === 'error'
+                                  ? 'animate-[dragDropShake_520ms_ease-in-out] ring-2 ring-red-300'
+                                  : ''
                             }`}
                           >
                             <code className="text-xs">{item.text}</code>
@@ -415,6 +459,30 @@ export default function DragDropGame({
           </p>
         </div>
       )}
+
+      <style>{`
+        @keyframes dragDropSuccess {
+          0% { transform: scale(1); }
+          35% { transform: scale(1.035); }
+          68% { transform: scale(0.995); }
+          100% { transform: scale(1); }
+        }
+
+        @keyframes dropZonePop {
+          0% { transform: scale(1); }
+          35% { transform: scale(1.025); }
+          70% { transform: scale(0.998); }
+          100% { transform: scale(1); }
+        }
+
+        @keyframes dragDropShake {
+          0%, 100% { transform: translateX(0); }
+          18% { transform: translateX(-7px); }
+          36% { transform: translateX(6px); }
+          54% { transform: translateX(-4px); }
+          72% { transform: translateX(3px); }
+        }
+      `}</style>
     </div>
   );
 }

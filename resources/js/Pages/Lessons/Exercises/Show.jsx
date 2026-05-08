@@ -30,6 +30,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameCompleted, setGameCompleted] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  const [completionSummary, setCompletionSummary] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
   const [missionProgress, setMissionProgress] = useState(null);
@@ -62,12 +63,13 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     
     setGameStarted(true);
     setGameCompleted(false);
+    setCompletionSummary(null);
     setStartedAt(Date.now());
     timer.start();
     score.resetScore();
   };
 
-  const handleGameComplete = async (providedScore) => {
+  const handleGameComplete = async (providedScore, extraSummary = null) => {
     if (gameCompleted || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -83,6 +85,11 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     console.log('🏆 Completing with score:', achievedScore, '(provided:', providedScore, ', current:', score.currentScore, ')');
 
     setFinalScore(achievedScore);
+    setCompletionSummary({
+      ...(extraSummary || {}),
+      timeTaken,
+      isTimeUp: timer.isTimeUp,
+    });
     setGameCompleted(true);
     timer.pause();
 
@@ -123,6 +130,16 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const handleReturnToLesson = () => {
     sessionStorage.setItem('refresh_lesson_progress', 'true');
     router.visit(`/lessons/${lesson.lesson_id}`);
+  };
+
+  const formatElapsedTime = (seconds = 0) => {
+    const totalSeconds = Math.max(0, Number(seconds) || 0);
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainingSeconds = totalSeconds % 60;
+
+    return minutes > 0
+      ? `${minutes}:${String(remainingSeconds).padStart(2, '0')}`
+      : `${remainingSeconds}s`;
   };
 
   const renderGameContent = () => {
@@ -296,38 +313,111 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     const grade = isPerfect ? 'S' : scorePercentage >= 85 ? 'A' : scorePercentage >= 70 ? 'B' : scorePercentage >= 50 ? 'C' : 'Keep Going';
     const lessonCompleted = submissionResult?.lesson_progress?.lesson_completed;
     const pointsAwarded = submissionResult?.lesson_progress?.points_amount;
+    const correctCount = completionSummary?.correctCount ?? null;
+    const totalItems = completionSummary?.totalItems ?? null;
+    const hasAccuracyBreakdown = Number.isFinite(correctCount) && Number.isFinite(totalItems) && totalItems > 0;
+    const timeTaken = completionSummary?.timeTaken ?? 0;
+    const runStateLabel = completionSummary?.isTimeUp
+      ? 'Time limit reached'
+      : isPerfect
+        ? 'Perfect clear'
+        : isGood
+          ? 'Challenge complete'
+          : 'Practice run';
+    const encouragement = isPerfect
+      ? 'Perfect run. Every move landed exactly where it should.'
+      : isGood
+        ? 'Nice work. You stayed in control and finished strong.'
+        : hasAccuracyBreakdown && (correctCount / totalItems) >= 0.5
+          ? 'Almost there. One more run should push this over the line.'
+          : 'Good first pass. A replay will help lock the pattern in.';
 
     return (
-      <div className="flex min-h-[600px] items-center justify-center bg-[radial-gradient(circle_at_top_left,#fef3c7,transparent_32%),linear-gradient(135deg,#f8fafc,#eef2ff_46%,#ecfeff)] p-6">
-        <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/80 bg-white/90 shadow-2xl shadow-indigo-100 backdrop-blur">
-          <div className="bg-gradient-to-r from-indigo-700 via-violet-700 to-sky-700 p-8 text-center text-white">
+      <div className="flex min-h-[600px] items-center justify-center bg-[radial-gradient(circle_at_top_left,#fde68a,transparent_26%),radial-gradient(circle_at_bottom_right,#bfdbfe,transparent_24%),linear-gradient(135deg,#f8fafc,#eff6ff_42%,#ecfeff)] p-6">
+        <div className="w-full max-w-3xl overflow-hidden rounded-[32px] border border-white/80 bg-white/90 shadow-2xl shadow-sky-100 backdrop-blur">
+          <div className="bg-[radial-gradient(circle_at_top,#ffffff30,transparent_40%),linear-gradient(120deg,#0f172a,#1d4ed8_54%,#0f766e)] p-8 text-center text-white">
             <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 ring-1 ring-white/20">
               {isPerfect ? <Trophy className="h-12 w-12 text-amber-200" /> : <CheckCircle className="h-12 w-12 text-emerald-200" />}
             </div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-bold ring-1 ring-white/20">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-bold ring-1 ring-white/20">
               <Star className="h-4 w-4 text-amber-200" />
               Grade {grade}
             </div>
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.32em] text-cyan-100">{runStateLabel}</div>
             <h2 className="text-3xl font-black">{isPerfect ? 'Perfect Score!' : isGood ? 'Great Run!' : 'Run Complete'}</h2>
-            <p className="mt-2 text-indigo-50">
-              {isPerfect ? 'You mastered this exercise.' : isGood ? 'Solid work. Your score is safely above the pass line.' : 'You finished the run. A replay can push the score higher.'}
+            <p className="mx-auto mt-2 max-w-xl text-sm text-sky-50 sm:text-base">
+              {encouragement}
             </p>
           </div>
 
           <div className="p-8">
-            <div className="mb-6 rounded-2xl bg-slate-950 p-6 text-white">
-              <div className="mb-2 text-sm font-semibold text-slate-300">Final Score</div>
-              <div className="text-6xl font-black">
-                {finalScore}
-                <span className="text-xl text-slate-400">/{maxScore}</span>
+            <div className="mb-6 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
+              <div className="rounded-3xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-200">
+                <div className="mb-2 text-sm font-semibold text-slate-300">Final Score</div>
+                <div className="text-6xl font-black">
+                  {finalScore}
+                  <span className="text-xl text-slate-400">/{maxScore}</span>
+                </div>
+                <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ${isPerfect ? 'bg-gradient-to-r from-amber-300 to-orange-400' : isGood ? 'bg-gradient-to-r from-emerald-300 to-teal-400' : 'bg-gradient-to-r from-sky-300 to-indigo-400'}`}
+                    style={{ width: `${Math.min(100, scorePercentage)}%` }}
+                  />
+                </div>
+                <div className="mt-2 text-right text-sm font-semibold text-slate-300">{scorePercentage.toFixed(0)}%</div>
               </div>
-              <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className={`h-full rounded-full transition-all duration-1000 ${isPerfect ? 'bg-gradient-to-r from-amber-300 to-orange-400' : isGood ? 'bg-gradient-to-r from-emerald-300 to-teal-400' : 'bg-gradient-to-r from-sky-300 to-indigo-400'}`}
-                  style={{ width: `${Math.min(100, scorePercentage)}%` }}
-                />
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                  <div className="text-xs font-bold uppercase tracking-wide text-emerald-700">Correct</div>
+                  <div className="mt-1 text-3xl font-black text-emerald-950">
+                    {hasAccuracyBreakdown ? `${correctCount}/${totalItems}` : `${scorePercentage.toFixed(0)}%`}
+                  </div>
+                  <div className="mt-1 text-sm text-emerald-800">
+                    {hasAccuracyBreakdown ? 'Accurate placements' : 'Overall accuracy'}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+                  <div className="text-xs font-bold uppercase tracking-wide text-sky-700">Time</div>
+                  <div className="mt-1 text-3xl font-black text-sky-950">{formatElapsedTime(timeTaken)}</div>
+                  <div className="mt-1 text-sm text-sky-800">
+                    {completionSummary?.isTimeUp ? 'Finished at the buzzer' : 'Clear time'}
+                  </div>
+                </div>
+
+                <div className={`rounded-2xl border p-4 sm:col-span-2 lg:col-span-1 ${isPerfect ? 'border-amber-200 bg-amber-50' : isGood ? 'border-indigo-100 bg-indigo-50' : 'border-slate-200 bg-slate-50'}`}>
+                  <div className={`text-xs font-bold uppercase tracking-wide ${isPerfect ? 'text-amber-700' : isGood ? 'text-indigo-700' : 'text-slate-600'}`}>Status</div>
+                  <div className={`mt-1 text-2xl font-black ${isPerfect ? 'text-amber-950' : isGood ? 'text-indigo-950' : 'text-slate-900'}`}>
+                    {isPerfect ? 'All Clear' : isGood ? 'Passed' : 'Needs Another Run'}
+                  </div>
+                  <div className={`mt-1 text-sm ${isPerfect ? 'text-amber-800' : isGood ? 'text-indigo-800' : 'text-slate-700'}`}>
+                    {completionSummary?.isTimeUp ? 'The timer ended this run.' : 'You can replay immediately for a higher result.'}
+                  </div>
+                </div>
               </div>
-              <div className="mt-2 text-right text-sm font-semibold text-slate-300">{scorePercentage.toFixed(0)}%</div>
+            </div>
+
+            <div className="mb-6 rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#ffffff,#f8fafc_55%,#eef2ff)] p-5">
+              <div className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Run Summary</div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Performance</div>
+                  <div className="mt-1 text-lg font-black text-slate-900">
+                    {isPerfect ? 'Perfect run' : isGood ? 'Strong finish' : 'Warm-up run'}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Score Rate</div>
+                  <div className="mt-1 text-lg font-black text-slate-900">{scorePercentage.toFixed(0)}%</div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Result</div>
+                  <div className="mt-1 text-lg font-black text-slate-900">
+                    {completionSummary?.isTimeUp ? 'Timed out' : lessonCompleted ? 'Lesson cleared' : 'Exercise cleared'}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {lessonCompleted && (
@@ -359,6 +449,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                 onClick={() => {
                   setGameStarted(false);
                   setGameCompleted(false);
+                  setCompletionSummary(null);
                   setSubmissionResult(null);
                   score.resetScore();
                   timer.reset(configuredTimeLimit);
@@ -447,6 +538,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                     if (confirm('Are you sure you want to restart?')) {
                       setGameStarted(false);
                       setGameCompleted(false);
+                      setCompletionSummary(null);
                       setSubmissionResult(null);
                       timer.reset(configuredTimeLimit);
                       score.resetScore();
@@ -477,6 +569,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                       if (confirm('Are you sure you want to restart?')) {
                         setGameStarted(false);
                         setGameCompleted(false);
+                        setCompletionSummary(null);
+                        setSubmissionResult(null);
                         timer.reset(exercise.time_limit);
                         score.resetScore();
                       }
