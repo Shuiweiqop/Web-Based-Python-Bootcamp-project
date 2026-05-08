@@ -343,7 +343,8 @@ class AdminLessonController extends Controller
 
             return back()
                 ->withErrors(['error' => 'Failed to update lesson: ' . $e->getMessage()])
-                ->withInput();
+                ->withInput()
+                ->setStatusCode(303);
         }
     }
 

@@ -223,6 +223,7 @@ class LearningPathController extends Controller
                 'in_progress' => $progressDetails['in_progress'],
                 'not_started' => $progressDetails['not_started'],
             ],
+            'recentActivity' => [],
         ]);
     }
 

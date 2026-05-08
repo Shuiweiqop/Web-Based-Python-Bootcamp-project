@@ -26,7 +26,7 @@ class UpdateLessonRequest extends FormRequest
             'required_tests'             => ['nullable', 'integer', 'min:0'],
             'min_exercise_score_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'sections'                   => ['nullable', 'array'],
-            'sections.*.id'              => ['nullable', 'integer'],
+            'sections.*.id'              => ['nullable'],
             'sections.*.title'           => ['required_with:sections', 'string', 'max:255'],
             'sections.*.content'         => ['required_with:sections', 'string'],
             'sections.*.order_index'     => ['required_with:sections', 'integer', 'min:1'],
