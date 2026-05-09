@@ -72,7 +72,7 @@ const ImageUpload = ({ onFileSelect, isUploading }) => {
 
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
           <Sparkles className="w-4 h-4" />
-          Supports JPG, PNG, WebP — max 10MB
+          Supports JPG, PNG, WebP — max 20MB
         </div>
 
         <p className="text-xs text-gray-500 mt-3">
@@ -751,7 +751,7 @@ const BackgroundUpload = ({ value, onChange, error, existingImageUrl, isEditing 
           fileType: file.type,
           isWidescreen: img.width / img.height >= 1.5,
           isOptimalSize: img.width >= 1920 && img.width <= 3840,
-          isLargeFile: file.size > 2 * 1024 * 1024,
+          isLargeFile: file.size > 10 * 1024 * 1024,
         };
 
         URL.revokeObjectURL(url);
@@ -776,8 +776,8 @@ const BackgroundUpload = ({ value, onChange, error, existingImageUrl, isEditing 
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert('❌ File too large — maximum 10MB');
+    if (file.size > 20 * 1024 * 1024) {
+      alert('❌ File too large — maximum 20MB');
       return;
     }
 

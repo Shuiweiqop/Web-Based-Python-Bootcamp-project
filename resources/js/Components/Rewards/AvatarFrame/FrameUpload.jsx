@@ -110,9 +110,9 @@ export default function AvatarFrameUpload({
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('❌ File too large — maximum 5MB');
+    // Validate file size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      alert('❌ File too large — maximum 20MB');
       return;
     }
 
@@ -232,7 +232,7 @@ export default function AvatarFrameUpload({
 
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
               <Sparkles className="w-4 h-4" />
-              Supports PNG, SVG, GIF — max 5MB
+              Supports PNG, SVG, GIF — max 20MB
             </div>
           </div>
         </div>

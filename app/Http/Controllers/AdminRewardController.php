@@ -123,7 +123,7 @@ class AdminRewardController extends Controller
             'max_owned' => 'required|integer|min:-1',
             'apply_instructions' => 'nullable|string',
             'metadata' => 'nullable|string',
-            'reward_image' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:5120',
+            'reward_image' => 'nullable|image|mimes:png,jpg,jpeg,svg,gif,webp|max:20480',
         ]);
 
         try {
@@ -199,7 +199,7 @@ class AdminRewardController extends Controller
                 'max_owned' => $validated['max_owned'],
                 'image_url' => $imageUrl,
                 'apply_instructions' => $validated['apply_instructions'] ?? null,
-                'metadata' => $metadata ? json_encode($metadata) : null,
+                'metadata' => $metadata ?: null,
                 'is_active' => filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOLEAN),
             ]);
 
@@ -382,7 +382,7 @@ class AdminRewardController extends Controller
             'apply_instructions' => 'nullable|string',
             'metadata' => 'nullable|string',
             'is_active' => 'nullable|boolean',
-            'reward_image' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:5120',
+            'reward_image' => 'nullable|image|mimes:png,jpg,jpeg,svg,gif,webp|max:20480',
         ]);
 
         Log::info('✅ 验证通过', ['validated' => $validated]);
@@ -464,10 +464,10 @@ class AdminRewardController extends Controller
                         ]);
                     }
 
-                    $metadata = json_encode($decodedMetadata);
+                    $metadata = $decodedMetadata;
                 } else {
                     // 其他类型直接保存
-                    $metadata = json_encode($decodedMetadata);
+                    $metadata = $decodedMetadata;
                 }
 
                 Log::info('✅ Metadata 处理完成');
@@ -480,7 +480,7 @@ class AdminRewardController extends Controller
                 'name' => $validated['name'],
                 'is_active' => $isActive,
                 'has_new_image' => $imageUrl !== $reward->image_url,
-                'metadata_length' => strlen($metadata ?? ''),
+                'metadata_length' => is_string($metadata) ? strlen($metadata) : strlen(json_encode($metadata ?? [])),
             ]);
 
             // 更新奖励
@@ -692,7 +692,7 @@ class AdminRewardController extends Controller
                 'point_cost' => $validated['point_cost'],
                 'max_owned' => 1,
                 'image_url' => $imageUrl,
-                'metadata' => json_encode($metadata),
+                'metadata' => $metadata,
                 'is_active' => true,
             ]);
 
