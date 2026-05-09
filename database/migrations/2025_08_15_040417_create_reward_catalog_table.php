@@ -16,11 +16,13 @@ return new class extends Migration
             $table->string('name', 255); // Increased from 10 for better flexibility
             $table->text('description'); // Changed to TEXT for longer descriptions
             $table->enum('reward_type', [
-                'badge',           // Virtual badges/achievements
-                'certificate',     // Completion certificates
-                'avatar',          // Profile avatar items
-                'theme'            // UI themes/skins
-            ]);
+                'avatar_frame',
+                'profile_background',
+                'badge',
+                'title',
+                'theme',
+                'effect',
+            ])->default('badge');
             $table->integer('stock_quantity')->default(0)->comment('Use -1 for unlimited stock');
             $table->integer('point_cost')->default(0);
             $table->text('image_url')->nullable();

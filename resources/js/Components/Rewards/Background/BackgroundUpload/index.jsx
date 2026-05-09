@@ -116,8 +116,8 @@ const updateEffects = (category, newValues) => {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert('❌ File too large — maximum 10MB');
+    if (file.size > 20 * 1024 * 1024) {
+      alert('❌ File too large — maximum 20MB');
       return;
     }
 

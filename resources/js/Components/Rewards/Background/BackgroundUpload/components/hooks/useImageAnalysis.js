@@ -19,7 +19,7 @@ export const useImageAnalysis = () => {
           fileType: file.type,
           isWidescreen: img.width / img.height >= 1.5,
           isOptimalSize: img.width >= 1920 && img.width <= 3840,
-          isLargeFile: file.size > 2 * 1024 * 1024,
+          isLargeFile: file.size > 10 * 1024 * 1024,
         };
 
         URL.revokeObjectURL(url);
