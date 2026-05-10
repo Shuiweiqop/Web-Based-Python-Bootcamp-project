@@ -24,10 +24,10 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $payload = [
-            'id' => $user->id,
+            'id' => $user->getKey(),
             'name' => $user->name,
             'email' => $user->email,
-            'avatar' => $user->avatar ? Storage::url($user->avatar) : null,
+            'avatar' => $user->profile_picture,
             'email_verified' => (bool) $user->email_verified_at,
         ];
 
@@ -46,7 +46,7 @@ class ProfileController extends Controller
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users')->ignore($user->id),
+                Rule::unique('users', 'email')->ignore($user->getKey(), $user->getKeyName()),
             ],
             'avatar' => ['nullable', 'image', 'max:2048'],
             'password' => ['nullable', 'confirmed', Password::min(8)],
@@ -57,12 +57,13 @@ class ProfileController extends Controller
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
             $path = $file->store('avatars', 'public');
+            $oldPath = $user->getRawOriginal('profile_picture');
 
-            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-                Storage::disk('public')->delete($user->avatar);
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
             }
 
-            $user->avatar = $path;
+            $user->profile_picture = $path;
         }
 
         if ($validated['email'] !== $user->email) {
@@ -103,11 +104,13 @@ class ProfileController extends Controller
             ]);
         }
 
-        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-            Storage::disk('public')->delete($user->avatar);
+        $profilePicture = $user->getRawOriginal('profile_picture');
+
+        if ($profilePicture && Storage::disk('public')->exists($profilePicture)) {
+            Storage::disk('public')->delete($profilePicture);
         }
 
-        $userId = $user->id;
+        $userId = $user->getKey();
 
         Auth::logout();
         $request->session()->invalidate();
