@@ -5,6 +5,7 @@ const appPort = process.env.PLAYWRIGHT_APP_PORT || '8010';
 const vitePort = process.env.PLAYWRIGHT_VITE_PORT || '5174';
 const appUrl = `http://127.0.0.1:${appPort}`;
 const e2eDatabase = path.resolve('database/e2e.sqlite');
+const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL || (process.env.CI ? undefined : 'chrome');
 
 const e2eEnv = {
   APP_ENV: 'testing',
@@ -51,7 +52,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || 'chrome',
+        ...(browserChannel ? { channel: browserChannel } : {}),
       },
     },
   ],
