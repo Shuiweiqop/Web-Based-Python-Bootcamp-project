@@ -16,6 +16,8 @@
 /public/build
 /public/hot
 /public/storage
+/test-results
+/database/e2e.sqlite
 /storage/*.key
 /storage/pail
 /vendor
