@@ -263,7 +263,7 @@ export default function Index({ auth, lesson, test, questions = [], filters }) {
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {safeQuestions.map((question) => (
-                                            <tr key={question.id} className="hover:bg-gray-50">
+                                            <tr key={question.question_id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4">
                                                     <div className="max-w-xs">
                                                         <p className="text-sm font-medium text-gray-900 truncate">
