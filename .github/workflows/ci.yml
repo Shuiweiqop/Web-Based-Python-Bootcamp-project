@@ -30,17 +30,17 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Install Node dependencies
-        run: npm ci
-
       - name: Prepare Laravel environment
         run: |
           cp .env.example .env
           php artisan key:generate --ansi
           touch database/database.sqlite
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
