@@ -46,6 +46,7 @@ jobs:
           php artisan key:generate --ansi
           touch database/database.sqlite
           php artisan package:discover --ansi
+          php artisan storage:link
 
       - name: Install Node dependencies
         run: npm ci
