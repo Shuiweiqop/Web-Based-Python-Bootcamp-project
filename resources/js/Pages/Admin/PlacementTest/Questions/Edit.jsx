@@ -16,7 +16,11 @@ export default function Edit({ auth, test, question, typeOptions, difficultyOpti
         order: question.order || '',
         status: question.status || 'active',
         metadata: question.metadata || {},
-        options: question.options?.length > 0 ? question.options : [
+        options: question.options?.length > 0 ? question.options.map((option) => ({
+            label: option.label ?? option.option_label,
+            text: option.text ?? option.option_text,
+            is_correct: option.is_correct,
+        })) : [
             { label: 'A', text: '', is_correct: false },
             { label: 'B', text: '', is_correct: false },
             { label: 'C', text: '', is_correct: false },

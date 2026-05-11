@@ -69,6 +69,37 @@ async function createSeedLesson() {
   ]);
 }
 
+async function createSeedQuestionFixtures() {
+  artisan([
+    'tinker',
+    '--execute',
+    [
+      "$admin = App\\Models\\User::where('email', 'admin-models@example.com')->firstOrFail();",
+      "$lesson = App\\Models\\Lesson::where('title', 'Smoke Seed Lesson')->firstOrFail();",
+      "App\\Models\\Test::updateOrCreate(['title' => 'Smoke Seed Lesson Test'], [",
+      "'lesson_id' => $lesson->lesson_id,",
+      "'description' => 'Seed lesson test for question smoke tests.',",
+      "'instructions' => 'Answer the questions.',",
+      "'time_limit' => 15,",
+      "'max_attempts' => 3,",
+      "'passing_score' => 70,",
+      "'status' => 'draft',",
+      "'test_type' => 'lesson',",
+      "]);",
+      "App\\Models\\Test::updateOrCreate(['title' => 'Smoke Seed Placement Test'], [",
+      "'lesson_id' => null,",
+      "'description' => 'Seed placement test for question smoke tests.',",
+      "'instructions' => 'Complete the placement questions.',",
+      "'time_limit' => 20,",
+      "'max_attempts' => 1,",
+      "'passing_score' => 70,",
+      "'status' => 'draft',",
+      "'test_type' => 'placement',",
+      "]);",
+    ].join(' '),
+  ]);
+}
+
 test.beforeAll(() => {
   const databaseDir = path.dirname(e2eDatabase);
   if (!existsSync(databaseDir)) {
@@ -93,6 +124,7 @@ test.beforeAll(() => {
     ].join(' '),
   ]);
   createSeedLesson();
+  createSeedQuestionFixtures();
 });
 
 test.beforeEach(async ({ page }) => {
@@ -231,4 +263,75 @@ test('admin can create and edit a learning path', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/admin\/learning-paths\/\d+$/);
   await expect(page.getByText(editedPathName)).toBeVisible();
+});
+
+test('admin can create and edit a lesson test question', async ({ page }) => {
+  const questionText = `Smoke lesson question ${runId}`;
+  const editedQuestionText = `${questionText} edited`;
+
+  await page.goto('/admin/lessons/1/tests/1/questions/create');
+  await expect(page.getByRole('heading', { name: /add question to:/i })).toBeVisible();
+
+  await page.getByPlaceholder('Enter your question here...').fill(questionText);
+  await page.getByPlaceholder('Option A').fill('print("hello")');
+  await page.getByPlaceholder('Option B').fill('echo "hello"');
+  await page.getByPlaceholder('Option C').fill('say hello');
+  await page.getByPlaceholder('Option D').fill('hello()');
+  await page.locator('input[name="correct_option"]').first().check();
+  await page.getByRole('button', { name: /^add question$/i }).click();
+
+  await expect(page).toHaveURL(/\/admin\/lessons\/\d+\/tests\/\d+\/questions$/);
+  await expect(page.getByText(questionText)).toBeVisible();
+
+  await page
+    .locator('tr')
+    .filter({ hasText: questionText })
+    .locator('a[title="Edit"]')
+    .click();
+
+  await expect(page.getByRole('heading', { name: /edit question:/i })).toBeVisible();
+  await page.getByPlaceholder('Enter your question here...').fill(editedQuestionText);
+  await page.getByRole('button', { name: /save changes/i }).click();
+
+  await expect(page).toHaveURL(/\/admin\/lessons\/\d+\/tests\/\d+\/questions$/);
+  await expect(page.getByText(editedQuestionText)).toBeVisible();
+});
+
+test('admin can create and edit a placement test question', async ({ page }) => {
+  const questionText = `Smoke placement question ${runId}`;
+  const editedQuestionText = `${questionText} edited`;
+
+  await page.goto('/admin/placement-tests');
+  await page
+    .locator('tr')
+    .filter({ hasText: 'Smoke Seed Placement Test' })
+    .locator('a[href*="/admin/placement-tests/"]')
+    .first()
+    .click();
+  await page.getByRole('button', { name: /^add question$/i }).click();
+  await expect(page.getByRole('heading', { name: /create new question/i })).toBeVisible();
+
+  await page.getByPlaceholder('Enter the question text...').fill(questionText);
+  await page.getByPlaceholder('Option A').fill('A Python list');
+  await page.getByPlaceholder('Option B').fill('A Python string');
+  await page.getByPlaceholder('Option C').fill('A Python integer');
+  await page.getByPlaceholder('Option D').fill('A Python function');
+  await page.locator('input[type="checkbox"][title="Mark as correct answer"]').first().check();
+  await page.getByRole('button', { name: /^create question$/i }).click();
+
+  await expect(page).toHaveURL(/\/admin\/placement-tests\/\d+\/questions$/);
+  await expect(page.getByText(questionText)).toBeVisible();
+
+  await page
+    .locator('tr')
+    .filter({ hasText: questionText })
+    .locator('a[title="Edit"]')
+    .click();
+
+  await expect(page.getByRole('heading', { name: /edit question/i })).toBeVisible();
+  await page.getByPlaceholder('Enter the question text...').fill(editedQuestionText);
+  await page.getByRole('button', { name: /^update question$/i }).click();
+
+  await expect(page).toHaveURL(/\/admin\/placement-tests\/\d+\/questions$/);
+  await expect(page.getByText(editedQuestionText)).toBeVisible();
 });
