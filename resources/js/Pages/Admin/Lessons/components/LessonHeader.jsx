@@ -157,7 +157,7 @@ export default function LessonHeader({ lesson, routes, onDelete, isDark = true }
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes pulse-slow {
           0%, 100% {
             opacity: 0.2;

@@ -425,7 +425,7 @@ export default function Show({ lesson: propLesson, sections: propSections = [], 
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .ripple-effect {
           position: relative;
           overflow: hidden;

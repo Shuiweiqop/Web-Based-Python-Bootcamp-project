@@ -7,7 +7,7 @@ import React from 'react';
  * This component has no props and is purely for styling
  */
 const AnimationStyles = () => (
-  <style jsx>{`
+  <style>{`
     /* Background Scale Animation */
     @keyframes bg-scale {
       0%, 100% { 

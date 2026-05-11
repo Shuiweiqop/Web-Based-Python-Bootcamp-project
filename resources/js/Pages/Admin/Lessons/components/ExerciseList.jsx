@@ -225,7 +225,7 @@ export default function ExerciseList({ exercises, lessonId, createRoute, isDark 
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .ripple-effect {
           position: relative;
           overflow: hidden;

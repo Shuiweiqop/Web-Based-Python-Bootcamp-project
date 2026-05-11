@@ -490,7 +490,7 @@ export default function LessonContent({ content, contentType = 'markdown', isDar
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }

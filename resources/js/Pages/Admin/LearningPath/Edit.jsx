@@ -69,7 +69,7 @@ export default function Edit({ auth, path, difficultyOptions }) {
                     </div>
 
                     {/* Form */}
-                    <div className="bg-white rounded-lg shadow">
+                    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow">
                         <div className="p-6 space-y-6">
                             {/* Basic Information */}
                             <div>
@@ -356,14 +356,14 @@ export default function Edit({ auth, path, difficultyOptions }) {
                                 Cancel
                             </Link>
                             <button
-                                onClick={handleSubmit}
+                                type="submit"
                                 disabled={processing}
                                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
                             >
                                 {processing ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </AuthenticatedLayout>

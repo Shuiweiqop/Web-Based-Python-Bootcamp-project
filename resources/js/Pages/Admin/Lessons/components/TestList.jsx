@@ -322,7 +322,7 @@ export default function TestList({ tests, lessonId, createRoute, isDark = true }
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .ripple-effect {
           position: relative;
           overflow: hidden;

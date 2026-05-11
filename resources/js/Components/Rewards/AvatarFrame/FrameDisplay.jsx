@@ -183,7 +183,7 @@ export default function AvatarFrameDisplay({
       </div>
 
       {/* CSS 动画定义 */}
-      <style jsx>{`
+      <style>{`
         @keyframes sparkle {
           0%, 100% {
             opacity: 0;

@@ -531,7 +531,7 @@ export default function Show({ auth, progress, exerciseProgress = [], testProgre
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

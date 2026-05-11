@@ -26,6 +26,7 @@ export default defineConfig({
     timeout: 10_000,
   },
   fullyParallel: false,
+  workers: 1,
   reporter: [['list']],
   use: {
     baseURL: appUrl,
@@ -45,6 +46,9 @@ export default defineConfig({
       url: `http://127.0.0.1:${vitePort}/@vite/client`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+      env: {
+        LARAVEL_BYPASS_ENV_CHECK: '1',
+      },
     },
   ],
   projects: [
