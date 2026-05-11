@@ -465,7 +465,7 @@ export default function Index({ auth, reports, stats, filters, reasons = {}, sta
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes fadeIn {
                     from {
                         opacity: 0;

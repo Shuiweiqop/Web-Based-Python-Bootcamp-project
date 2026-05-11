@@ -116,11 +116,12 @@ export default function Edit(props) {
       finalData.content = JSON.stringify(data.content);
     }
 
-    const routeParams = lessonId 
-      ? { lesson: lessonId, exercise: exerciseId } 
-      : { exercise: exerciseId };
+    const isNestedLessonRoute = lessonId && window.location.pathname.startsWith(`/admin/lessons/${lessonId}/exercises/`);
+    const updateUrl = isNestedLessonRoute
+      ? route('admin.lessons.exercises.update', { lesson: lessonId, exercise: exerciseId })
+      : route('admin.exercises.update', { exercise: exerciseId });
 
-    put(route('admin.lessons.exercises.update', routeParams), {
+    put(updateUrl, {
       preserveScroll: true,
     });
   }

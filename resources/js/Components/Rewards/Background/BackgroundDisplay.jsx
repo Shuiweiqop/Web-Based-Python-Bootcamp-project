@@ -216,7 +216,7 @@ export default function BackgroundDisplay({
       </div>
 
       {/* CSS animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes pulse-slow {
           0%, 100% {
             opacity: 0.3;

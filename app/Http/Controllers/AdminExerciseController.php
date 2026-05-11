@@ -110,7 +110,8 @@ class AdminExerciseController extends Controller
 
         return redirect()
             ->route('admin.exercises.show', ['exercise' => $exercise->exercise_id])
-            ->with('success', 'Exercise updated.');
+            ->with('success', 'Exercise updated.')
+            ->setStatusCode(303);
     }
 
     public function destroy(InteractiveExercise $exercise): RedirectResponse
@@ -211,7 +212,8 @@ class AdminExerciseController extends Controller
 
         return redirect()
             ->route('admin.lessons.show', ['lesson' => $lesson->lesson_id])
-            ->with('success', 'Exercise updated successfully.');
+            ->with('success', 'Exercise updated successfully.')
+            ->setStatusCode(303);
     }
 
     public function destroyForLesson(Lesson $lesson, InteractiveExercise $exercise): RedirectResponse

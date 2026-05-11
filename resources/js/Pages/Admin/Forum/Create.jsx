@@ -418,7 +418,7 @@ export default function Create({ auth, categories }) {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes fadeIn {
                     from {
                         opacity: 0;

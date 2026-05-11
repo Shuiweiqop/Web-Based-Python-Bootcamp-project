@@ -369,7 +369,7 @@ export default function Index({ auth, paths, stats, filters, difficultyOptions }
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes fadeIn {
                     from {
                         opacity: 0;

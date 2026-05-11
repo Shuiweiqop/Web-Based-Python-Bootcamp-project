@@ -499,7 +499,7 @@ export default function Show({ auth, report, statuses }) {
         isDark={isDark}
       />
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

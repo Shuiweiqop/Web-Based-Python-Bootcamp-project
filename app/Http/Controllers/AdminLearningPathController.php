@@ -339,10 +339,12 @@ class AdminLearningPathController extends Controller
             ]);
 
             return redirect()->route('admin.learning-paths.show', $path->path_id)
-                ->with('success', 'Learning path updated successfully!');
+                ->with('success', 'Learning path updated successfully!')
+                ->setStatusCode(303);
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to update learning path: ' . $e->getMessage()])
-                ->withInput();
+                ->withInput()
+                ->setStatusCode(303);
         }
     }
 

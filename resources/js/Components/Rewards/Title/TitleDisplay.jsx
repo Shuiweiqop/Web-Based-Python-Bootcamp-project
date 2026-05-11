@@ -145,7 +145,7 @@ export default function TitleDisplay({
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes wave {
           0%,
           100% {

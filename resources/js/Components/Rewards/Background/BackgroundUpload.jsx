@@ -192,7 +192,7 @@ const Preview = ({ preview, effects }) => {
       </div>
 
       {/* CSS Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes bg-scale {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.1); }
