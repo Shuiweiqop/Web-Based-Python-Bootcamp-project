@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { expectNoBrowserFailures, installBrowserFailureGuards } from './support/browser-failure-guards.js';
 
 const adminEmail = 'admin-models@example.com';
 const adminPassword = 'password';
@@ -95,29 +96,13 @@ test.beforeAll(() => {
 });
 
 test.beforeEach(async ({ page }) => {
-  page.on('pageerror', (error) => {
-    console.error(`Browser page error: ${error.message}`);
-  });
-  page.on('console', (message) => {
-    if (message.type() === 'error') {
-      console.error(`Browser console error: ${message.text()}`);
-    }
-  });
-  page.on('response', (response) => {
-    if (response.status() >= 400) {
-      console.error(`Browser response error: ${response.request().method()} ${response.status()} ${response.url()}`);
-    }
-  });
-  page.on('requestfailed', (request) => {
-    const failureText = request.failure()?.errorText ?? '';
-    if (failureText === 'net::ERR_ABORTED' && request.url().includes('/audio/bgm/')) {
-      return;
-    }
-
-    console.error(`Browser request failed: ${request.method()} ${request.url()} ${failureText}`);
-  });
+  installBrowserFailureGuards(page);
 
   await loginAsAdmin(page);
+});
+
+test.afterEach(async ({ page }) => {
+  expectNoBrowserFailures(page);
 });
 
 test('admin can create and edit a lesson', async ({ page }) => {

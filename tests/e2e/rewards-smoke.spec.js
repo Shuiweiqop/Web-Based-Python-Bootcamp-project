@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { deflateSync } from 'node:zlib';
+import { expectNoBrowserFailures, installBrowserFailureGuards } from './support/browser-failure-guards.js';
 
 const adminEmail = 'reward-admin@example.com';
 const adminPassword = 'password';
@@ -198,7 +199,12 @@ async function createAndEditReward(page, rewardType) {
 }
 
 test.beforeEach(async ({ page }) => {
+  installBrowserFailureGuards(page);
   await loginAsAdmin(page);
+});
+
+test.afterEach(async ({ page }) => {
+  expectNoBrowserFailures(page);
 });
 
 for (const rewardType of ['badge', 'avatar_frame', 'profile_background', 'title', 'theme', 'effect']) {
