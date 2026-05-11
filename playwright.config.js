@@ -41,15 +41,15 @@ export default defineConfig({
       timeout: 120_000,
       env: e2eEnv,
     },
-    {
+    ...(!process.env.CI ? [{
       command: `npm run dev -- --host 127.0.0.1 --port ${vitePort}`,
       url: `http://127.0.0.1:${vitePort}/@vite/client`,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       timeout: 120_000,
       env: {
         LARAVEL_BYPASS_ENV_CHECK: '1',
       },
-    },
+    }] : []),
   ],
   projects: [
     {

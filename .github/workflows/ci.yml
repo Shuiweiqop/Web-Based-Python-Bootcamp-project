@@ -30,6 +30,13 @@ jobs:
           node-version: '22'
           cache: npm
 
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
 
@@ -45,6 +52,12 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Prepare e2e database
+        run: |
+          touch database/e2e.sqlite
+          DB_CONNECTION=sqlite DB_DATABASE=database/e2e.sqlite php artisan migrate --force
+          DB_CONNECTION=sqlite DB_DATABASE=database/e2e.sqlite php artisan db:seed --force
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
