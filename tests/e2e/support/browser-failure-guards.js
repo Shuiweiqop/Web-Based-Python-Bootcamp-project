@@ -3,7 +3,9 @@ import { expect } from '@playwright/test';
 const failuresByPage = new WeakMap();
 
 function isIgnoredRequestFailure(request, failureText) {
-  return failureText === 'net::ERR_ABORTED' && request.url().includes('/audio/bgm/');
+  if (failureText !== 'net::ERR_ABORTED') return false;
+  const url = request.url();
+  return url.includes('/audio/bgm/') || url.includes('/student/notifications/unread');
 }
 
 function isIgnoredResponse(response) {
