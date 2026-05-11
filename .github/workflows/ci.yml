@@ -43,6 +43,9 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Build frontend
+        run: npm run build
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -54,6 +57,3 @@ jobs:
 
       - name: Run reward browser smoke tests
         run: npm run test:e2e
-
-      - name: Build frontend
-        run: npm run build
