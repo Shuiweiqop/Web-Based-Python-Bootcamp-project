@@ -61,9 +61,7 @@ test.beforeAll(() => {
       "'role' => 'student',",
       "]);",
       "$student->forceFill(['email_verified_at' => now(), 'failed_login_attempts' => 0, 'locked_until' => null])->save();",
-      "if (!App\\Models\\StudentProfile::where('user_Id', \$student->user_Id)->exists()) {",
-      "  App\\Models\\StudentProfile::create(['user_Id' => \$student->user_Id, 'current_points' => 0]);",
-      "}",
+      "App\\Models\\StudentProfile::firstOrCreate(['user_Id' => \$student->user_Id], ['current_points' => 0]);",
     ].join(' '),
   ]);
 
@@ -130,7 +128,7 @@ test('admin can view a student profile', async ({ page }) => {
   // The show link is an icon-only button with title="View Details"
   await page.getByTitle('View Details').first().click();
   await expect(page).toHaveURL(/\/admin\/students\/\d+/);
-  await expect(page.getByText('Smoke Student')).toBeVisible();
+  await expect(page.getByText('Smoke Student').first()).toBeVisible();
 });
 
 test('admin can assign a learning path to a student', async ({ page }) => {
@@ -192,7 +190,7 @@ test('admin can manage lessons in a learning path', async ({ page }) => {
   await page.getByRole('button', { name: /^add lesson$/i }).first().click();
   await expect(page.getByText(/add lesson to path/i)).toBeVisible();
 
-  await page.getByRole('combobox').last().selectOption({ label: 'Smoke Seed Lesson' });
+  await page.getByRole('combobox').last().selectOption({ label: 'Smoke Seed Lesson (beginner)' });
   await page.getByRole('button', { name: /^add lesson$/i }).last().click();
 
   await expect(page.getByText('Smoke Seed Lesson')).toBeVisible();
