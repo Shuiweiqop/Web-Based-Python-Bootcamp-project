@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { X, Check, Loader2, AlertCircle } from 'lucide-react';
-import { useEquip } from '@/Contexts/EquipContext';
 import RarityBadge from '@/Components/Rewards/RarityBadge';
 
 /**
@@ -9,7 +8,6 @@ import RarityBadge from '@/Components/Rewards/RarityBadge';
  * Equip / Unequip reward modal with Optimistic UI
  */
 export default function EquipModal({ item, isOpen, onClose }) {
-  const { equipItem, unequipItem, rollbackEquipped } = useEquip();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -26,9 +24,6 @@ export default function EquipModal({ item, isOpen, onClose }) {
     setIsLoading(true);
     setError(null);
 
-    // Optimistic update
-    equipItem(item);
-
     try {
       await new Promise((resolve, reject) => {
         router.post(
@@ -42,7 +37,6 @@ export default function EquipModal({ item, isOpen, onClose }) {
               setTimeout(onClose, 500);
             },
             onError: (errors) => {
-              rollbackEquipped();
               setError(errors.message || 'Failed to equip. Please try again.');
               reject(errors);
             },
@@ -63,9 +57,6 @@ export default function EquipModal({ item, isOpen, onClose }) {
     setIsLoading(true);
     setError(null);
 
-    // Optimistic update
-    unequipItem(itemType);
-
     try {
       await new Promise((resolve, reject) => {
         router.post(
@@ -79,7 +70,6 @@ export default function EquipModal({ item, isOpen, onClose }) {
               setTimeout(onClose, 500);
             },
             onError: (errors) => {
-              rollbackEquipped();
               setError(errors.message || 'Failed to unequip. Please try again.');
               reject(errors);
             },

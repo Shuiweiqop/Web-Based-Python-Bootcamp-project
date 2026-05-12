@@ -106,7 +106,9 @@ export default function AvatarSelector({
       : equipped?.avatar;
     
     if (!currentEquipped) return false;
-    return (item.id || item.reward_id) === (currentEquipped.id || currentEquipped.reward_id);
+    const itemRewardId = item.reward_id || item.reward?.reward_id;
+    const equippedRewardId = currentEquipped.reward_id || currentEquipped.id;
+    return itemRewardId === equippedRewardId;
   };
 
   // 处理卡片点击
@@ -142,11 +144,13 @@ export default function AvatarSelector({
   const handleUnequip = async () => {
     if (!selectedItem || isEquipping) return;
     
+    const inventoryId = selectedItem.inventory_id || selectedItem.id;
     const itemType = selectedItem.reward_type || selectedItem.type;
+    if (!inventoryId || !itemType) return;
     
     setIsEquipping(true);
     try {
-      await unequipItem(itemType);
+      await unequipItem(inventoryId, itemType);
       setSelectedItem(null);
       setPreviewItem(null);
     } catch (error) {
