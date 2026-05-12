@@ -90,9 +90,6 @@ export default function ShowReward({ auth, reward, distribution_stats }) {
     setIsDeleting(true);
     router.delete(`/admin/rewards/${reward.reward_id}`, {
       preserveScroll: true,
-      onSuccess: () => {
-        console.log('✅ Deletion successful');
-      },
       onError: (errors) => {
         console.error('❌ Deletion failed:', errors);
         alert('Deletion failed: ' + (errors?.error || 'Please try again later'));
@@ -122,11 +119,9 @@ const getPreviewData = () => {
       // 如果是字符串，解析它
       if (typeof reward.metadata === 'string') {
         parsedMetadata = JSON.parse(reward.metadata);
-        console.log('📦 [Show] Parsed metadata from string:', parsedMetadata);
       } else {
         // 如果已经是对象，直接使用
         parsedMetadata = reward.metadata;
-        console.log('📦 [Show] Metadata is already object:', parsedMetadata);
       }
     } catch (error) {
       console.error('❌ [Show] Failed to parse metadata:', error);
@@ -137,8 +132,6 @@ const getPreviewData = () => {
     parsedMetadata = {};
   }
 
-  console.log('🔍 [Show] Final parsed metadata:', parsedMetadata);
-  console.log('🔍 [Show] Reward type:', reward.reward_type);
 
   const formData = {
     name: reward.name,
@@ -163,7 +156,6 @@ const getPreviewData = () => {
       info: parsedMetadata?.frame_dimensions || {},
       config: parsedMetadata || {},
     };
-    console.log('🖼️ [Show] Avatar frame data:', avatarFrameData);
   } else if (reward.reward_type === 'profile_background') {
     // ✅ 关键修复：兼容新旧两种格式
     let effects = null;
@@ -171,11 +163,9 @@ const getPreviewData = () => {
     // 新格式：直接有 effects 字段
     if (parsedMetadata?.effects) {
       effects = parsedMetadata.effects;
-      console.log('✅ [Show] Using NEW format - effects found:', effects);
     } 
     // 旧格式：需要从 metadata 中转换
     else if (parsedMetadata?.animated !== undefined) {
-      console.log('⚠️ [Show] Detected OLD format - converting to new format');
       
       // 从旧格式转换为新格式
       effects = {
@@ -216,11 +206,9 @@ const getPreviewData = () => {
         },
       };
       
-      console.log('✅ [Show] Converted OLD format to NEW format:', effects);
     }
     // 完全没有配置，使用默认值
     else {
-      console.log('⚠️ [Show] No effects found, using defaults');
       effects = {
         basic: { blur: 0, opacity: 1 },
         transform: { scale: 1, positionX: 50, positionY: 50, objectFit: 'cover' },
@@ -238,8 +226,6 @@ const getPreviewData = () => {
       };
     }
 
-    console.log('🎨 [Show] Final background effects:', effects);
-    console.log('🎬 [Show] Animation state:', effects.animation);
 
     backgroundData = {
       type: parsedMetadata?.background_type || 'image',
@@ -249,7 +235,6 @@ const getPreviewData = () => {
       effects: effects,
     };
     
-    console.log('✅ [Show] Final background data:', backgroundData);
   } else if (reward.reward_type === 'badge') {
     badgeData = {
       url: reward.image_url,
@@ -261,7 +246,6 @@ const getPreviewData = () => {
         backgroundColor: parsedMetadata?.background_color || null,
       },
     };
-    console.log('🏅 [Show] Badge data:', badgeData);
   } else if (reward.reward_type === 'title') {
     titleConfig = {
       title_text: parsedMetadata?.title_text || reward.name || 'Untitled',
@@ -291,7 +275,6 @@ const getPreviewData = () => {
       },
       icon: parsedMetadata?.icon || 'none',
     };
-    console.log('🏆 [Show] Title config:', titleConfig);
   }
 
   return {
