@@ -56,8 +56,6 @@ export default function EditReward({ reward, rewardTypes, rarities }) {
   const [backgroundData, setBackgroundData] = useState(() => {
     if (reward.reward_type !== 'profile_background') return null;
     
-    console.log('🎨 [Edit.jsx INIT] Starting background initialization');
-    console.log('🎨 [Edit.jsx INIT] reward.metadata:', reward.metadata);
     
     // 解析 metadata
     let parsedMetadata = {};
@@ -71,13 +69,10 @@ export default function EditReward({ reward, rewardTypes, rarities }) {
       console.error('❌ [Edit.jsx INIT] Failed to parse metadata:', error);
     }
     
-    console.log('🎨 [Edit.jsx INIT] parsedMetadata:', parsedMetadata);
     
     // 解析 effects
     let effects = parsedMetadata?.effects;
     
-    console.log('🎨 [Edit.jsx INIT] Raw effects:', effects);
-    console.log('🎨 [Edit.jsx INIT] Effects type:', Array.isArray(effects) ? 'array' : typeof effects);
     
     // ✅ 关键修复：验证 effects 是否为有效对象
     const isValidEffects = effects && 
@@ -87,14 +82,9 @@ export default function EditReward({ reward, rewardTypes, rarities }) {
     
     if (!isValidEffects) {
       console.warn('⚠️ [Edit.jsx INIT] Invalid effects detected, using DEFAULT_EFFECTS');
-      console.log('⚠️ [Edit.jsx INIT] Original effects:', effects);
-      console.log('⚠️ [Edit.jsx INIT] Is array?', Array.isArray(effects));
-      console.log('⚠️ [Edit.jsx INIT] Keys:', effects ? Object.keys(effects) : 'null');
       effects = DEFAULT_EFFECTS;
     }
     
-    console.log('✅ [Edit.jsx INIT] Final effects:', effects);
-    console.log('✅ [Edit.jsx INIT] Animation state:', effects.animation);
     
     return {
       type: parsedMetadata?.background_type || 'image',
@@ -190,10 +180,6 @@ export default function EditReward({ reward, rewardTypes, rarities }) {
       
       case 'profile_background':
         if (backgroundData) {
-          console.log('💾 [Edit.jsx SUBMIT] Processing profile_background');
-          console.log('💾 [Edit.jsx SUBMIT] backgroundData:', backgroundData);
-          console.log('💾 [Edit.jsx SUBMIT] backgroundData.effects:', backgroundData.effects);
-          console.log('💾 [Edit.jsx SUBMIT] Is effects an array?', Array.isArray(backgroundData.effects));
           
           // ✅ 关键修复：验证 effects
           let effects = backgroundData.effects;
@@ -201,12 +187,9 @@ export default function EditReward({ reward, rewardTypes, rarities }) {
           // 如果 effects 无效（数组、空对象等），使用默认值
           if (!effects || Array.isArray(effects) || Object.keys(effects).length === 0) {
             console.warn('⚠️ [Edit.jsx SUBMIT] Invalid effects in backgroundData, using DEFAULT_EFFECTS');
-            console.log('⚠️ [Edit.jsx SUBMIT] Original effects:', effects);
             effects = DEFAULT_EFFECTS;
           }
           
-          console.log('💾 [Edit.jsx SUBMIT] Final effects to save:', effects);
-          console.log('💾 [Edit.jsx SUBMIT] Animation state:', effects.animation);
           
           metadata = {
             background_type: backgroundData.type || 'image',
@@ -219,7 +202,6 @@ export default function EditReward({ reward, rewardTypes, rarities }) {
             imageFile = backgroundData.file;
           }
           
-          console.log('💾 [Edit.jsx SUBMIT] Final metadata:', metadata);
         }
         break;
       
@@ -253,7 +235,6 @@ export default function EditReward({ reward, rewardTypes, rarities }) {
         break;
     }
 
-    console.log('💾 [Edit.jsx SUBMIT] Final metadata before JSON.stringify:', metadata);
     submitData.append('metadata', JSON.stringify(metadata));
     if (imageFile) submitData.append('reward_image', imageFile);
 
@@ -264,10 +245,6 @@ export default function EditReward({ reward, rewardTypes, rarities }) {
       onError: (errors) => {
         console.error('❌ [Edit.jsx SUBMIT] Submit error:', errors);
         setErrors(errors);
-        setIsSubmitting(false);
-      },
-      onSuccess: () => {
-        console.log('✅ [Edit.jsx SUBMIT] Submit successful');
         setIsSubmitting(false);
       },
       onFinish: () => {

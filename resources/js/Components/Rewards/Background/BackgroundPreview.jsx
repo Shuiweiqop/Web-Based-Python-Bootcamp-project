@@ -51,13 +51,6 @@ const getAnimationClass = () => {
   // 检查新的嵌套结构
   const animation = backgroundData?.effects?.animation;
   
-  console.log('Animation check:', {
-    showEffects,
-    animation,
-    enabled: animation?.enabled,
-    type: animation?.type
-  });
-  
   if (!showEffects || !animation?.enabled) return '';
   
   const animationMap = {
@@ -143,14 +136,6 @@ const getAnimationClass = () => {
       </div>
     );
   }
-
-  // Debug: Check if URL exists
-  console.log('BackgroundPreview - backgroundData:', {
-    hasUrl: !!backgroundData?.url,
-    url: backgroundData?.url,
-    effects: backgroundData?.effects,
-    type: backgroundData?.type
-  });
 
   // If no URL, show error message
   if (!backgroundData?.url) {

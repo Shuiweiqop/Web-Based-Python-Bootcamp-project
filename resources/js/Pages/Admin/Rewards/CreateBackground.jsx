@@ -20,7 +20,6 @@ export default function CreateBackground({ rarities }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleBackgroundChange = (backgroundData) => {
-    console.log('📦 Background data received:', backgroundData);
     setFormData(prev => ({
       ...prev,
       metadata: backgroundData,
@@ -75,11 +74,7 @@ export default function CreateBackground({ rarities }) {
         setErrors(err);
         setIsSubmitting(false);
       },
-      onSuccess: () => {
-        console.log('✅ Created successfully!');
-      },
       onFinish: () => {
-        console.log('🏁 Request completed');
         setIsSubmitting(false);
       },
     });

@@ -80,12 +80,9 @@ const isObject = (item) => {
 export const useImageEffects = (onChange, preview, imageInfo, initialEffects = null) => {
   const [effects, setEffects] = useState(() => {
     if (initialEffects) {
-      console.log('🎨 [INIT] Initializing with existing effects:', initialEffects);
       const merged = deepMerge(DEFAULT_EFFECTS, initialEffects);
-      console.log('🎨 [INIT] Merged effects:', merged);
       return merged;
     }
-    console.log('🎨 [INIT] Initializing with DEFAULT_EFFECTS');
     return DEFAULT_EFFECTS;
   });
 
@@ -97,9 +94,7 @@ export const useImageEffects = (onChange, preview, imageInfo, initialEffects = n
     const prevSerialized = JSON.stringify(prevInitialEffectsRef.current);
     
     if (!isFirstRender.current && initialEffects && currentSerialized !== prevSerialized) {
-      console.log('🔄 [UPDATE] initialEffects changed!');
       const merged = deepMerge(DEFAULT_EFFECTS, initialEffects);
-      console.log('🔄 [UPDATE] Setting new effects:', merged);
       setEffects(merged);
     }
     
@@ -110,13 +105,9 @@ export const useImageEffects = (onChange, preview, imageInfo, initialEffects = n
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      console.log('🏁 [MOUNT] First render completed');
       
       // ✅ 编辑模式：只需要 preview 和 onChange
       if (preview && onChange) {
-        console.log('📤 [MOUNT] Sending initial effects to parent (edit mode)');
-        console.log('📤 [MOUNT] Has imageInfo:', !!imageInfo);
-        console.log('📤 [MOUNT] Effects:', effects);
         onChange({
           type: 'image',
           url: preview,
@@ -129,8 +120,6 @@ export const useImageEffects = (onChange, preview, imageInfo, initialEffects = n
     
     // ✅ 后续更新：只需要 preview 和 onChange
     if (preview && onChange) {
-      console.log('📤 [NOTIFY] Sending effects to parent');
-      console.log('📤 [NOTIFY] Animation state:', effects.animation);
       onChange({
         type: 'image',
         url: preview,
@@ -141,10 +130,8 @@ export const useImageEffects = (onChange, preview, imageInfo, initialEffects = n
   }, [effects, preview, onChange]); // ✅ 移除 imageInfo 依赖
 
   const updateEffects = useCallback((category, newValues) => {
-    console.log('🔧 [UPDATE_EFFECTS] Called with:', { category, newValues });
     
     setEffects(prev => {
-      console.log('📦 [UPDATE_EFFECTS] Previous effects:', prev);
       
       const updated = {
         ...prev,
@@ -154,8 +141,6 @@ export const useImageEffects = (onChange, preview, imageInfo, initialEffects = n
         }
       };
       
-      console.log('✅ [UPDATE_EFFECTS] Updated effects:', updated);
-      console.log('🎬 [UPDATE_EFFECTS] Animation section:', updated.animation);
       return updated;
     });
   }, []);

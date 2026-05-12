@@ -88,7 +88,6 @@ const updateEffects = (category, newValues) => {
     };
     
     // ✅ 立即通知父组件
-    console.log('📤 [updateEffects] Notifying parent with updated effects:', updated);
     
     if (preview) {
       onChange?.({
