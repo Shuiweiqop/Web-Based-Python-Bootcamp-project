@@ -23,25 +23,7 @@ export default function BackgroundContainer({ equippedBackground: propBackground
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    console.log('🎨 BackgroundContainer state:', {
-      propBackground,
-      contextBackground: equipped?.background,
-      finalBackground: equippedBackground,
-      isNull: equippedBackground === null,
-      isUndefined: equippedBackground === undefined,
-      timestamp: equipped?.updated_at,
-      refreshKey,
-    });
-  }, [propBackground, equipped, equippedBackground, refreshKey]);
-
-  useEffect(() => {
-    console.log('🔄 Background changed:', {
-      current: equippedBackground,
-      timestamp: equipped?.updated_at,
-    });
-    
     if (equippedBackground === null || equippedBackground === undefined) {
-      console.log('✅ Background is null/undefined, showing default');
       setImageLoaded(false);
       setImageError(false);
       setInitialLoading(false);
@@ -58,7 +40,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
     const analyzeBackgroundBrightness = () => {
       if (!equippedBackground) {
         updateThemeVariant('dark');
-        console.log('🎨 No equipped background, using dark theme');
         return;
       }
 
@@ -66,7 +47,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
       
       if (metadata.theme_variant) {
         updateThemeVariant(metadata.theme_variant);
-        console.log('🎨 Using metadata theme:', metadata.theme_variant);
         return;
       }
 
@@ -74,20 +54,16 @@ export default function BackgroundContainer({ equippedBackground: propBackground
       
       if (bgType === 'gradient') {
         updateThemeVariant('dark');
-        console.log('🎨 Gradient background detected, using dark theme');
       } else if (bgType === 'solid') {
         const color = metadata.solid_color || '#1a1a2e';
         const brightness = getBrightnessFromHex(color);
         const variant = brightness > 128 ? 'light' : 'dark';
         updateThemeVariant(variant);
-        console.log('🎨 Solid color brightness:', brightness, '→', variant);
       } else {
         if (metadata.is_bright !== undefined) {
           updateThemeVariant(metadata.is_bright ? 'light' : 'dark');
-          console.log('🎨 Using metadata is_bright:', metadata.is_bright);
         } else {
           updateThemeVariant('dark');
-          console.log('🎨 Image background, defaulting to dark theme');
         }
       }
     };
@@ -115,7 +91,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
 
   const backgroundData = useMemo(() => {
     if (equippedBackground === null || equippedBackground === undefined) {
-      console.log('🌟 Using default animated background');
       return {
         type: 'gradient',
         gradient: 'from-slate-900 via-purple-900 to-slate-900',
@@ -134,13 +109,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
     const overlay = effects.overlay || {};
     const filters = effects.filters || {};
     const layers = effects.layers || {};
-    
-    console.log('🎬 Animation data:', {
-      enabled: animation.enabled,
-      type: animation.type,
-      duration: animation.duration,
-      intensity: animation.intensity,
-    });
     
     return {
       type: metadata.background_type || 'image',
@@ -179,7 +147,26 @@ export default function BackgroundContainer({ equippedBackground: propBackground
       rarity: equippedBackground.rarity || 'common',
       isDefault: false,
     };
-  }, [equippedBackground, refreshKey]);
+  }, [equippedBackground]);
+
+  const particleStyles = useMemo(() => {
+    if (!backgroundData.particlesEnabled) {
+      return [];
+    }
+
+    return Array.from({ length: backgroundData.particleCount }, () => ({
+      backgroundColor: backgroundData.particleColor,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animationDelay: `${Math.random() * 5}s`,
+      animationDuration: `${5 + Math.random() * 5}s`,
+    }));
+  }, [
+    backgroundData.particlesEnabled,
+    backgroundData.particleCount,
+    backgroundData.particleColor,
+    refreshKey,
+  ]);
 
   useEffect(() => {
     if (backgroundData.type === 'image' && backgroundData.imageUrl) {
@@ -193,7 +180,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
       img.onload = () => {
         setImageLoaded(true);
         setInitialLoading(false);
-        console.log('✅ Background image loaded:', backgroundData.imageUrl);
       };
       
       img.onerror = () => {
@@ -251,13 +237,10 @@ export default function BackgroundContainer({ equippedBackground: propBackground
 
   const getCustomAnimationClass = () => {
     if (!backgroundData.animated || !backgroundData.animationType) {
-      console.log('❌ No animation:', { animated: backgroundData.animated, type: backgroundData.animationType });
       return '';
     }
     
     const type = backgroundData.animationType.toLowerCase();
-    
-    console.log('🎬 Getting animation class for type:', type);
     
     const animationMap = {
       'scale': 'animate-bg-scale',
@@ -267,9 +250,7 @@ export default function BackgroundContainer({ equippedBackground: propBackground
       'kenburns': 'animate-ken-burns',
     };
     
-    const animClass = animationMap[type] || '';
-    console.log('✅ Animation class:', animClass);
-    return animClass;
+    return animationMap[type] || '';
   };
 
   const getAnimationStyle = () => {
@@ -284,11 +265,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
       if (backgroundData.animationType.toLowerCase().includes('ken')) {
         style['--scale-end'] = backgroundData.animationScale || 1.2;
         style.animation = `ken-burns ${duration} ease-in-out infinite`;
-        console.log('🎬 Ken Burns config:', { 
-          scale: style['--scale-end'], 
-          duration,
-          mode: 'infinite loop'
-        });
       } else {
         style.animationDuration = duration;
       }
@@ -299,7 +275,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
 
   const renderBackground = () => {
     if (backgroundData.isDefault) {
-      console.log('🎨 Rendering default gradient background (key:', refreshKey, ')');
       return (
         <div 
           key={`default-bg-${refreshKey}`}
@@ -311,7 +286,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
     switch (backgroundData.type) {
       case 'image':
         if (imageError) {
-          console.log('🎨 Image failed, using fallback gradient');
           return (
             <div 
               key={`fallback-bg-${refreshKey}`}
@@ -321,7 +295,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
         }
         
         const animClass = getCustomAnimationClass();
-        console.log('🎨 Rendering image with animation class:', animClass);
         
         return (
           <React.Fragment key={`image-bg-${refreshKey}`}>
@@ -353,17 +326,11 @@ export default function BackgroundContainer({ equippedBackground: propBackground
             
             {backgroundData.particlesEnabled && imageLoaded && (
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {[...Array(backgroundData.particleCount)].map((_, i) => (
+                {particleStyles.map((style, i) => (
                   <div
                     key={i}
                     className="absolute w-1 h-1 rounded-full animate-particle-float"
-                    style={{
-                      backgroundColor: backgroundData.particleColor,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 5}s`,
-                      animationDuration: `${5 + Math.random() * 5}s`,
-                    }}
+                    style={style}
                   />
                 ))}
               </div>
@@ -388,7 +355,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
         );
 
       case 'gradient':
-        console.log('🎨 Rendering gradient background');
         return (
           <div 
             key={`gradient-bg-${refreshKey}`}
@@ -397,7 +363,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
         );
 
       case 'solid':
-        console.log('🎨 Rendering solid color background');
         return (
           <div 
             key={`solid-bg-${refreshKey}`}
@@ -407,7 +372,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
         );
 
       default:
-        console.log('🎨 Rendering default fallback background');
         return (
           <div 
             key={`default-fallback-${refreshKey}`}
@@ -416,18 +380,6 @@ export default function BackgroundContainer({ equippedBackground: propBackground
         );
     }
   };
-
-  useEffect(() => {
-    console.log('🎨 Render decision:', {
-      isDefault: backgroundData.isDefault,
-      animated: backgroundData.animated,
-      animationType: backgroundData.animationType,
-      shouldShowAnimation,
-      imageLoaded,
-      hasCustomAnimation: !!backgroundData.animationType,
-      equippedBackground: !!equippedBackground,
-    });
-  }, [backgroundData, shouldShowAnimation, imageLoaded, equippedBackground]);
 
   return (
     <>

@@ -28,10 +28,6 @@ export function EquipProvider({ children }) {
   // ✅ 监听 props.equipped 变化
   useEffect(() => {
     if (props.equipped) {
-      console.log('🔄 [EquipContext] Props equipped updated:', {
-        timestamp: props.equipped.updated_at,
-        background: props.equipped.background?.name,
-      });
       setEquipped(props.equipped);
       prevRef.current = props.equipped;
     }
@@ -40,19 +36,10 @@ export function EquipProvider({ children }) {
   // ✅ 监听 flash 消息中的 equipped
   useEffect(() => {
     if (props.flash?.equipped) {
-      console.log('🔄 [EquipContext] Flash equipped received:', props.flash.equipped);
       setEquipped(props.flash.equipped);
       prevRef.current = props.flash.equipped;
     }
   }, [props.flash?.equipped]);
-
-  // Debug 日志
-  useEffect(() => {
-    console.log('📦 [EquipContext] Current state:', {
-      background: equipped.background?.name || 'null',
-      timestamp: equipped.updated_at,
-    });
-  }, [equipped]);
 
   /**
    * ✅ 装备物品（使用 Inertia router.post）
@@ -75,8 +62,6 @@ export function EquipProvider({ children }) {
     pendingRef.current = true;
     setLoading(true);
     setError(null);
-
-    console.log('📤 [EquipContext] Equipping:', { inventoryId, type });
 
     // ✅ Optimistic update
     prevRef.current = equipped;
@@ -105,11 +90,7 @@ export function EquipProvider({ children }) {
         {
           preserveScroll: true,
           preserveState: true,
-          onSuccess: (page) => {
-            console.log('✅ [EquipContext] Equip success');
-            console.log('📥 [EquipContext] New props.equipped:', page.props.equipped);
-            console.log('💬 [EquipContext] Flash message:', page.props.flash?.success);
-            
+          onSuccess: () => {
             pendingRef.current = false;
             setLoading(false);
             
@@ -150,8 +131,6 @@ export function EquipProvider({ children }) {
     
     prevRef.current = equipped;
 
-    console.log('📤 [EquipContext] Unequipping:', { inventoryId, type });
-
     // ✅ Optimistic update - 设置为 null
     const typeKey = type === 'profile_background' ? 'background' : type;
     
@@ -168,11 +147,7 @@ export function EquipProvider({ children }) {
         {
           preserveScroll: true,
           preserveState: true,
-          onSuccess: (page) => {
-            console.log('✅ [EquipContext] Unequip success');
-            console.log('📥 [EquipContext] New props.equipped:', page.props.equipped);
-            console.log('💬 [EquipContext] Flash message:', page.props.flash?.success);
-            
+          onSuccess: () => {
             pendingRef.current = false;
             setLoading(false);
           },
@@ -215,7 +190,6 @@ export function EquipProvider({ children }) {
       }
 
       const data = await response.json();
-      console.log('📡 [EquipContext] Fetched from server:', data);
 
       if (data.success && data.equipped) {
         setEquipped(data.equipped);
@@ -235,7 +209,6 @@ export function EquipProvider({ children }) {
    */
   const rollbackEquipped = useCallback(() => {
     if (prevRef.current) {
-      console.log('↩️ [EquipContext] Rolling back');
       setEquipped(prevRef.current);
       setError(null);
     }
@@ -263,8 +236,7 @@ export function EquipProvider({ children }) {
    */
   const updateThemeVariant = useCallback((variant) => {
     if (variant === 'light' || variant === 'dark') {
-      setThemeVariant(variant);
-      console.log('🎨 [EquipContext] Theme updated:', variant);
+      setThemeVariant(prev => prev === variant ? prev : variant);
     }
   }, []);
 
@@ -272,7 +244,6 @@ export function EquipProvider({ children }) {
    * 强制刷新
    */
   const forceRefresh = useCallback(() => {
-    console.log('🔄 [EquipContext] Force refresh');
     fetchEquipped();
   }, [fetchEquipped]);
 

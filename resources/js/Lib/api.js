@@ -16,11 +16,7 @@ export const api = axios.create({
  */
 export async function equipItem(inventoryId) {
   try {
-    console.log('📤 [API] Equip request:', { inventoryId });
-    
     const response = await api.post(`/student/inventory/${inventoryId}/equip`);
-    
-    console.log('📥 [API] Equip response:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ [API] Equip error:', error);
@@ -35,11 +31,7 @@ export async function equipItem(inventoryId) {
  */
 export async function unequipItem(inventoryId) {
   try {
-    console.log('📤 [API] Unequip request:', { inventoryId });
-    
     const response = await api.post(`/student/inventory/${inventoryId}/unequip`);
-    
-    console.log('📥 [API] Unequip response:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ [API] Unequip error:', error);
@@ -54,11 +46,7 @@ export async function unequipItem(inventoryId) {
  */
 export async function toggleEquip(inventoryId) {
   try {
-    console.log('📤 [API] Toggle request:', { inventoryId });
-    
     const response = await api.post(`/student/inventory/${inventoryId}/toggle`);
-    
-    console.log('📥 [API] Toggle response:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ [API] Toggle error:', error);
@@ -72,11 +60,7 @@ export async function toggleEquip(inventoryId) {
  */
 export async function getEquipped() {
   try {
-    console.log('📤 [API] Get equipped request');
-    
     const response = await api.get('/student/inventory/equipped');
-    
-    console.log('📥 [API] Get equipped response:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ [API] Get equipped error:', error);
