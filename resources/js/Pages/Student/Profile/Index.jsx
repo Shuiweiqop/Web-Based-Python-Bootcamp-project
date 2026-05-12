@@ -36,18 +36,6 @@ function Index({
     return () => window.removeEventListener('theme-changed', updateTheme);
   }, []);
 
-  // 🔍 调试：查看数据
-  useEffect(() => {
-    console.log('=== Profile Index Debug ===');
-    console.log('User:', user);
-    console.log('Profile:', profile);
-    console.log('🔥 Equipped items:', equipped);
-    console.log('📦 Inventory:', inventory);
-    console.log('🎨 Reward Types:', rewardTypes);
-    console.log('Learning paths (snake):', learningPathsFromProps);
-    console.log('Learning paths (camel):', learningPathsCamelCase);
-  }, [user, profile, equipped, inventory, rewardTypes, learningPathsFromProps, learningPathsCamelCase]);
-
   const recentAchievements = achievements?.filter(a => a.unlocked)?.slice(0, 8) || [];
   const topActivities = [
     ...(recent_activity?.tests?.slice(0, 5) || []),
@@ -67,12 +55,6 @@ function Index({
     ? learningPathsCamelCase 
     : learningPathsFromProps;
 
-  // 🔥 当装备发生变化时，刷新页面
-  const handleEquipmentChange = () => {
-    console.log('Equipment changed, reloading page...');
-    window.location.reload();
-  };
-
   return (
     <>
       <Head title="My Profile" />
@@ -88,7 +70,6 @@ function Index({
               equipped={equipped}
               inventoryItems={[...backgrounds, ...avatarFrames, ...titles, ...badges]}
               totalXP={totalXP}
-              onEquipmentChange={handleEquipmentChange}
             />
           </aside>
 
@@ -122,7 +103,6 @@ function Index({
                 equipped={equipped}
                 loading={false}
                 rewardTypes={rewardTypes}
-                onEquipmentChange={handleEquipmentChange}
               />
             )}
 

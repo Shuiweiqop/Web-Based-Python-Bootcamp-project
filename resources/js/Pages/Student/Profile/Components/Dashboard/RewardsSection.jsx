@@ -6,16 +6,21 @@ import InventoryCard from '@/Pages/Student/Inventory/Components/InventoryCard';
 export default function RewardsSection({ backgrounds, avatarFrames, titles, badges, equipped, loading, rewardTypes }) {
   const [processing, setProcessing] = useState(null);
 
-  const handleUnequip = async (rewardType) => {
+  const handleUnequip = async (inventoryId) => {
+    if (!inventoryId) return;
+
+    setProcessing(inventoryId);
     try {
       router.post(
-        route('student.inventory.unequip'),
-        { reward_type: rewardType },
+        route('student.inventory.unequip', inventoryId),
+        {},
         {
           preserveScroll: true,
+          onFinish: () => setProcessing(null),
         }
       );
     } catch (error) {
+      setProcessing(null);
       console.error('Unequip error:', error);
     }
   };
@@ -107,7 +112,7 @@ export default function RewardsSection({ backgrounds, avatarFrames, titles, badg
                   onClick={() => {
                     if (!isProcessing) {
                       if (isEquipped) {
-                        handleUnequip('title');
+                        handleUnequip(item.inventory_id);
                       } else {
                         setProcessing(item.inventory_id);
                         router.post(

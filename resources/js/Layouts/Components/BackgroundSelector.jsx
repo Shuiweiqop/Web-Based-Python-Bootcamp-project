@@ -28,14 +28,7 @@ export default function BackgroundSelector({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [rarityFilter, setRarityFilter] = useState('all');
   const [isEquipping, setIsEquipping] = useState(false);
-  useEffect(() => {
-    console.log('🎨 BackgroundSelector Debug:', {
-      equipped,
-      currentBackground: equipped?.background,
-      items: items.length,
-      firstItem: items[0]
-    });
-  }, [equipped, items]);
+
   // 当前装备的背景
   const currentEquipped = equipped?.background;
 
@@ -47,7 +40,6 @@ export default function BackgroundSelector({
         item.reward_id === currentEquipped.id
       );
       if (current) {
-        console.log('✅ Found current equipped:', current);
         setSelectedItem(current);
         setPreviewItem(current);
       }
@@ -82,7 +74,9 @@ export default function BackgroundSelector({
   // 检查是否已装备
   const isEquipped = (item) => {
     if (!currentEquipped) return false;
-    return (item.id || item.reward_id) === (currentEquipped.id || currentEquipped.reward_id);
+    const itemRewardId = item.reward_id || item.reward?.reward_id;
+    const equippedRewardId = currentEquipped.reward_id || currentEquipped.id;
+    return itemRewardId === equippedRewardId;
   };
 
   // 处理卡片点击
@@ -102,10 +96,12 @@ export default function BackgroundSelector({
     
     setIsEquipping(true);
     try {
-            const itemToEquip = {
+      const itemToEquip = {
+        ...selectedItem,
+        inventory_id: selectedItem.inventory_id || selectedItem.id,
         reward: selectedItem.reward || {
           reward_id: selectedItem.reward_id || selectedItem.id,
-          reward_name: selectedItem.name || selectedItem.reward_name,
+          name: selectedItem.name || selectedItem.reward_name,
           reward_type: 'profile_background',
           image_url: selectedItem.image_url,
           rarity: selectedItem.rarity,
@@ -113,7 +109,6 @@ export default function BackgroundSelector({
         }
       };
       await equipItem(itemToEquip);
-      console.log('✅ Equipped successfully');
       // 装备成功后关闭模态（移动端）
       if (showPreviewModal) {
         setShowPreviewModal(false);
@@ -129,10 +124,13 @@ export default function BackgroundSelector({
   // 处理取消装备
   const handleUnequip = async () => {
     if (isEquipping || !selectedItem) return;
-    console.log('🔓 Unequipping:', selectedItem);
+
+    const inventoryId = selectedItem.inventory_id || selectedItem.id;
+    if (!inventoryId) return;
+
     setIsEquipping(true);
     try {
-      await unequipItem('profile_background');
+      await unequipItem(inventoryId, 'profile_background');
       setSelectedItem(null);
       setPreviewItem(null);
     } catch (error) {
