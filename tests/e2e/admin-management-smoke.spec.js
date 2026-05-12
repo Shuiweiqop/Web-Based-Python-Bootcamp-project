@@ -33,6 +33,28 @@ function artisan(args) {
   });
 }
 
+function ensureStudentPathAssignment() {
+  artisan([
+    'tinker', '--execute',
+    [
+      "$student = App\\Models\\User::where('email', 'student-smoke@example.com')->firstOrFail()->studentProfile;",
+      "$path = App\\Models\\LearningPath::where('title', 'Smoke Seed Path')->firstOrFail();",
+      "$admin = App\\Models\\User::where('email', 'admin-mgmt@example.com')->firstOrFail();",
+      "App\\Models\\StudentLearningPath::updateOrCreate([",
+      "'student_id' => $student->student_id,",
+      "'path_id' => $path->path_id,",
+      "'status' => 'active',",
+      "], [",
+      "'assigned_by' => 'manual',",
+      "'assigned_at' => now(),",
+      "'assigned_by_user_id' => $admin->user_Id,",
+      "'progress_percent' => 0,",
+      "'is_primary' => false,",
+      "]);",
+    ].join(' '),
+  ]);
+}
+
 test.beforeAll(() => {
   const databaseDir = path.dirname(e2eDatabase);
   if (!existsSync(databaseDir)) mkdirSync(databaseDir, { recursive: true });
@@ -141,11 +163,13 @@ test('admin can assign a learning path to a student', async ({ page }) => {
   await page.getByRole('button', { name: /assign path/i }).click();
 
   await expect(page).toHaveURL(/\/admin\/student-paths\/\d+$/);
-  await expect(page.getByText(/Smoke Student/)).toBeVisible();
-  await expect(page.getByText(/Smoke Seed Path/)).toBeVisible();
+  await expect(page.getByText('Smoke Student', { exact: true })).toBeVisible();
+  await expect(page.getByText('Smoke Seed Path', { exact: true })).toBeVisible();
 });
 
 test('admin can edit a student path assignment', async ({ page }) => {
+  ensureStudentPathAssignment();
+
   await page.goto('/admin/student-paths');
   await page.getByRole('link', { name: /view details/i }).first().click();
   await expect(page).toHaveURL(/\/admin\/student-paths\/\d+$/);
