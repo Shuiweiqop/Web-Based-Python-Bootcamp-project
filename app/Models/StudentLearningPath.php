@@ -33,6 +33,7 @@ class StudentLearningPath extends Model
         'initial_skill_assessment',
         'is_primary',
         'target_completion_date',
+        'notes',
         'student_notes',
         'completion_reward_granted',
         'last_activity_at',
@@ -51,6 +52,16 @@ class StudentLearningPath extends Model
         'completion_reward_granted' => 'boolean',
         'last_activity_at' => 'datetime',
     ];
+
+    public function getStudentNotesAttribute(): ?string
+    {
+        return $this->attributes['notes'] ?? null;
+    }
+
+    public function setStudentNotesAttribute(?string $value): void
+    {
+        $this->attributes['notes'] = $value;
+    }
 
     public function student(): BelongsTo
     {

@@ -335,8 +335,8 @@ class AdminStudentPathController extends Controller
                 'status' => 'active',
                 'progress_percent' => 0,
                 'is_primary' => $request->boolean('is_primary', false),
-                'target_completion_date' => $validated['target_completion_date'],
-                'student_notes' => $validated['student_notes'],
+                'target_completion_date' => $validated['target_completion_date'] ?? null,
+                'student_notes' => $validated['student_notes'] ?? null,
             ]);
 
             // Set as primary if requested
@@ -410,8 +410,8 @@ class AdminStudentPathController extends Controller
             $assignment->update([
                 'status' => $validated['status'],
                 'is_primary' => $request->boolean('is_primary'),
-                'target_completion_date' => $validated['target_completion_date'],
-                'student_notes' => $validated['student_notes'],
+                'target_completion_date' => $validated['target_completion_date'] ?? null,
+                'student_notes' => $validated['student_notes'] ?? null,
             ]);
 
             // Set as primary if requested

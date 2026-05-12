@@ -28,7 +28,6 @@ export function NotificationsProvider({ children }) {
     async (notificationId) => {
       try {
         await markAsRead(notificationId);
-        console.log('✅ [NotificationsContext] Marked as read:', notificationId);
       } catch (err) {
         console.error('❌ [NotificationsContext] Mark as read failed:', err);
         throw err;
@@ -40,7 +39,6 @@ export function NotificationsProvider({ children }) {
   const handleMarkAllAsRead = useCallback(async () => {
     try {
       await markAllAsRead();
-      console.log('✅ [NotificationsContext] All marked as read');
     } catch (err) {
       console.error('❌ [NotificationsContext] Mark all failed:', err);
       throw err;
@@ -51,7 +49,6 @@ export function NotificationsProvider({ children }) {
     async (notificationId) => {
       try {
         await deleteNotification(notificationId);
-        console.log('✅ [NotificationsContext] Deleted:', notificationId);
       } catch (err) {
         console.error('❌ [NotificationsContext] Delete failed:', err);
         throw err;
@@ -60,18 +57,13 @@ export function NotificationsProvider({ children }) {
     [deleteNotification]
   );
 
-  const handleRefresh = useCallback(() => {
-    console.log('🔄 [NotificationsContext] Manual refresh');
-    refresh();
-  }, [refresh]);
-
   const value = useMemo(
     () => ({
       notifications,
       unreadCount,
       loading,
       error,
-      refresh: handleRefresh,
+      refresh,
       markAsRead: handleMarkAsRead,
       markAllAsRead: handleMarkAllAsRead,
       deleteNotification: handleDelete,
@@ -81,7 +73,7 @@ export function NotificationsProvider({ children }) {
       unreadCount,
       loading,
       error,
-      handleRefresh,
+      refresh,
       handleMarkAsRead,
       handleMarkAllAsRead,
       handleDelete,
