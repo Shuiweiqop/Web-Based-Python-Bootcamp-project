@@ -82,12 +82,6 @@ function SearchBar() {
     setIsLoading(true);
     setError(null);
 
-    console.log('🔍 Search Request:', {
-      query: searchQuery,
-      category: category,
-      url: '/api/search',
-    });
-
     try {
       const response = await axios.get('/api/search', {
         params: {
@@ -98,12 +92,9 @@ function SearchBar() {
         signal: abortControllerRef.current.signal,
       });
 
-      console.log('✅ Search Response:', response.data);
-
       if (response.data.success) {
         setResults(response.data.results || []);
         saveToRecent(searchQuery);
-        console.log(`📊 Found ${response.data.results?.length || 0} results`);
       } else {
         console.error('❌ Search failed:', response.data.message);
         setError(response.data.message || 'Search failed');
@@ -111,7 +102,6 @@ function SearchBar() {
       }
     } catch (error) {
       if (axios.isCancel(error)) {
-        console.log('🚫 Request cancelled');
         return;
       }
       
@@ -449,7 +439,7 @@ function SearchBar() {
                       <p className="text-red-400 font-medium">Search Error</p>
                       <p className="text-red-300 text-sm mt-1">{error}</p>
                       <p className="text-red-300/70 text-xs mt-2">
-                        Check browser console (F12) for more details
+                        Please try again in a moment.
                       </p>
                     </div>
                   </div>

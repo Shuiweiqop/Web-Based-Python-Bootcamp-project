@@ -47,14 +47,8 @@ export default function InventoryIndex({
   const [floatingPoints, setFloatingPoints] = useState([]);
   const [shakeCard, setShakeCard] = useState(null);
 
-  // ✨ Debug logs + equip animation trigger
+  // ✨ Equip animation trigger
   useEffect(() => {
-    console.log('📦 Inventory Props:', { 
-      inventoryCount: inventory?.length, 
-      stats, 
-      currentPoints 
-    });
-
     // Check for newly equipped item
     const equipped = inventory?.filter(item => item.is_equipped);
     if (equipped && equipped.length > 0) {
