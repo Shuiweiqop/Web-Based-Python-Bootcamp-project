@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Upload,
   X,
@@ -696,7 +696,6 @@ const BackgroundUpload = ({ value, onChange, error, existingImageUrl, isEditing 
     }
     // 编辑模式：如果有现有图片但没有 info，创建一个占位符
     if (isEditing && existingImageUrl) {
-      console.log('🔧 [BackgroundUpload] Creating placeholder imageInfo for edit mode');
       return {
         width: 1920,
         height: 1080,
@@ -714,13 +713,6 @@ const BackgroundUpload = ({ value, onChange, error, existingImageUrl, isEditing 
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
-  console.log('🎨 [BackgroundUpload] Component rendered');
-  console.log('🎨 [BackgroundUpload] value:', value);
-  console.log('🎨 [BackgroundUpload] value.effects:', value?.effects);
-  console.log('🎨 [BackgroundUpload] preview:', preview);
-  console.log('🎨 [BackgroundUpload] imageInfo:', imageInfo);
-  console.log('🎨 [BackgroundUpload] isEditing:', isEditing);
-
   // ✅ 使用 hook
   const { effects, updateEffects } = useImageEffects(
     onChange,
@@ -728,14 +720,6 @@ const BackgroundUpload = ({ value, onChange, error, existingImageUrl, isEditing 
     imageInfo,
     value?.effects || null
   );
-
-  // ✅ 监听 effects 变化
-  useEffect(() => {
-    console.log('🔄 [BackgroundUpload] Effects changed!');
-    console.log('🔄 [BackgroundUpload] New effects:', effects);
-    console.log('🔄 [BackgroundUpload] Animation enabled:', effects.animation?.enabled);
-    console.log('🔄 [BackgroundUpload] Animation type:', effects.animation?.type);
-  }, [effects]);
 
   const detectImageProperties = (file) => {
     return new Promise((resolve, reject) => {
@@ -791,9 +775,6 @@ const BackgroundUpload = ({ value, onChange, error, existingImageUrl, isEditing 
       reader.onload = (e) => {
         const imageUrl = e.target.result;
         setPreview(imageUrl);
-
-        console.log('📤 [BackgroundUpload] New image uploaded, notifying parent');
-        console.log('📤 [BackgroundUpload] Effects:', effects);
 
         if (onChange) {
           onChange({

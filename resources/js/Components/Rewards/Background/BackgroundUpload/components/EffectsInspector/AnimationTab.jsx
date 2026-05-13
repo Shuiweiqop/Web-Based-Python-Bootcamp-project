@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Slider, ToggleSwitch } from '../shared';
 
 const AnimationTab = ({ effects, updateEffects }) => {
@@ -9,11 +9,6 @@ const AnimationTab = ({ effects, updateEffects }) => {
     intensity: 1
   };
 
-  // 🔍 监控 effects 变化
-  useEffect(() => {
-    console.log('🎬 AnimationTab - Current animation effects:', animationEffects);
-  }, [animationEffects]);
-
   const animationTypes = [
     { id: 'scale', label: 'Scale', description: 'Zoom in/out' },
     { id: 'rotate', label: 'Rotate', description: 'Spin 360°' },
@@ -22,25 +17,11 @@ const AnimationTab = ({ effects, updateEffects }) => {
   ];
 
   const handleToggle = (val) => {
-    console.log('🔧 AnimationTab - Calling updateEffects with:', { 
-      category: 'animation', 
-      newValues: { enabled: val } 
-    });
     updateEffects('animation', { enabled: val });
-    
-    // 延迟检查是否更新成功
-    setTimeout(() => {
-      console.log('⏰ After 100ms - animation effects:', effects?.animation);
-    }, 100);
   };
 
   return (
     <div className="space-y-4">
-      {/* Debug Info */}
-      <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-        <strong>Debug:</strong> enabled = {String(animationEffects.enabled)}
-      </div>
-
       {/* Animation Toggle */}
       <ToggleSwitch
         label="Enable Animation"
@@ -62,7 +43,6 @@ const AnimationTab = ({ effects, updateEffects }) => {
                 <button
                   key={type.id}
                   onClick={() => {
-                    console.log('🎯 Setting animation type:', type.id);
                     updateEffects('animation', { type: type.id });
                   }}
                   className={`p-3 rounded-lg text-sm font-medium transition-all ${
@@ -87,7 +67,6 @@ const AnimationTab = ({ effects, updateEffects }) => {
             max={60}
             step={5}
             onChange={(val) => {
-              console.log('⏱️ Setting duration:', val);
               updateEffects('animation', { duration: val });
             }}
           />
@@ -101,7 +80,6 @@ const AnimationTab = ({ effects, updateEffects }) => {
             max={2}
             step={0.1}
             onChange={(val) => {
-              console.log('💪 Setting intensity:', val);
               updateEffects('animation', { intensity: val });
             }}
           />
