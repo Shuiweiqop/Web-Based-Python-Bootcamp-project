@@ -65,9 +65,6 @@ export default function Show({ test, questions, stats }) {
         formData.append('file', importFile);
 
         try {
-            console.log('Sending preview request to:', route('admin.placement-tests.questions.import.preview', test.test_id));
-            console.log('File:', importFile.name, 'Size:', importFile.size);
-            
             // 方法1: 从 Inertia props 获取
             const csrfToken = props.csrf_token || 
                              // 方法2: 从 meta 标签获取
@@ -78,9 +75,7 @@ export default function Show({ test, questions, stats }) {
             if (!csrfToken) {
                 throw new Error('CSRF token not found. Please refresh the page.');
             }
-            
-            console.log('CSRF Token found');
-            
+
             const response = await fetch(
                 route('admin.placement-tests.questions.import.preview', test.test_id),
                 {
@@ -95,18 +90,10 @@ export default function Show({ test, questions, stats }) {
                 }
             );
 
-            console.log('Response status:', response.status);
-            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
             // Check if response is actually JSON
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Received non-JSON response:');
-                console.error('Status:', response.status);
-                console.error('Content-Type:', contentType);
-                console.error('Body:', text.substring(0, 500));
-                throw new Error(`Server returned ${response.status} error. Check console for details.`);
+                throw new Error(`Preview failed with server status ${response.status}. Please try again or verify the file format.`);
             }
 
             const data = await response.json();
@@ -119,7 +106,7 @@ export default function Show({ test, questions, stats }) {
             }
         } catch (error) {
             console.error('Import preview error:', error);
-            setImportError(error.message || 'Failed to preview file. Please check the console for details.');
+            setImportError(error.message || 'Failed to preview file. Please try again.');
         } finally {
             setIsPreviewing(false);
         }

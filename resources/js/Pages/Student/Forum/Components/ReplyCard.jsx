@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import UserAvatar from './UserAvatar';
 import ReplyForm from './ReplyForm';
+import SafeContentRenderer from '@/Components/SafeContentRenderer';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function ReplyCard({ reply, postId, postAuthorId, currentUserId, isPostLocked, depth = 0 }) {
@@ -151,9 +152,10 @@ export default function ReplyCard({ reply, postId, postAuthorId, currentUserId, 
                 </div>
 
                 {/* Reply Content */}
-                <div
-                    className="prose max-w-none mb-4 text-gray-800"
-                    dangerouslySetInnerHTML={{ __html: reply.content }}
+                <SafeContentRenderer
+                    content={reply.content}
+                    type="forum-html"
+                    className="mb-4 text-gray-800"
                 />
 
                 {/* Reply Actions */}
