@@ -9,7 +9,7 @@ import DOMPurify from 'dompurify';
  * 
  * @param {Object} props
  * @param {string} props.content - Raw content to render
- * @param {string} props.type - Content type: 'text' | 'markdown' | 'html'
+ * @param {string} props.type - Content type: 'text' | 'markdown' | 'html' | 'forum-html'
  * @param {string} props.className - Additional CSS classes
  */
 export default function SafeContentRenderer({ 
@@ -42,6 +42,11 @@ export default function SafeContentRenderer({
   // ===== HTML RENDERING (SANITIZED) =====
   if (type === 'html') {
     return <HTMLRenderer content={content} className={className} />;
+  }
+
+  // ===== FORUM HTML RENDERING (STRICT UGC SANITIZATION) =====
+  if (type === 'forum-html') {
+    return <ForumHTMLRenderer content={content} className={className} />;
   }
 
   // Fallback
@@ -228,5 +233,33 @@ export function InlineCode({ children, className = '' }) {
     <code className={`bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono ${className}`}>
       {children}
     </code>
+  );
+}
+
+/**
+ * ForumHTMLRenderer - Render user-generated forum content with a narrow HTML policy
+ */
+function ForumHTMLRenderer({ content, className }) {
+  const sanitizedHTML = DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: [
+      'p', 'br',
+      'strong', 'em', 'u', 'b', 'i',
+      'code', 'pre',
+      'ul', 'ol', 'li',
+      'blockquote',
+      'a',
+    ],
+    ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    ADD_ATTR: ['target', 'rel'],
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'img', 'svg', 'math'],
+    FORBID_ATTR: ['style', 'class', 'id', 'onerror', 'onload', 'onclick', 'onmouseover'],
+  });
+
+  return (
+    <div
+      className={`prose prose-sm max-w-none ${className}`}
+      dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
+    />
   );
 }

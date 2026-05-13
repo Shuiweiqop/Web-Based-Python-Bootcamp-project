@@ -6,6 +6,7 @@ import UserAvatar from '@/Pages/Student/Forum/Components/UserAvatar';
 import ReplyCard from '@/Pages/Student/Forum/Components/ReplyCard';
 import ReplyForm from '@/Pages/Student/Forum/Components/ReplyForm';
 import PostActions from '@/Pages/Student/Forum/Components/PostActions';
+import SafeContentRenderer from '@/Components/SafeContentRenderer';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Eye, MessageCircle, Lock } from 'lucide-react';
 
@@ -69,17 +70,6 @@ const getAuthorInfo = (post) => {
         setLocalIsFavorited(isFavorited);
         setLocalLikesCount(post.likes || 0);
     }, [isLiked, isFavorited, post.likes]);
-
-    // Show flash messages
-    useEffect(() => {
-        if (flash?.success) {
-            console.log('Success:', flash.success);
-        }
-        if (flash?.error) {
-            console.error('Error:', flash.error);
-            alert(flash.error);
-        }
-    }, [flash]);
 
     // ✅ 使用辅助函数获取作者信息
     const author = getAuthorInfo(post);
@@ -205,6 +195,12 @@ const getAuthorInfo = (post) => {
             <Head title={post.title} />
 
             <div className="space-y-6">
+                {flash?.error && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-800 shadow-sm">
+                        {flash.error}
+                    </div>
+                )}
+
                 {/* Main Post Card */}
                 <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-gray-200">
                     {/* Post Header */}
@@ -257,9 +253,10 @@ const getAuthorInfo = (post) => {
                         </div>
 
                         {/* Post Body */}
-                        <div 
-                            className="prose prose-lg max-w-none mb-8"
-                            dangerouslySetInnerHTML={{ __html: post.content }}
+                        <SafeContentRenderer
+                            content={post.content}
+                            type="forum-html"
+                            className="prose-lg mb-8"
                         />
 
                         {/* Post Stats */}

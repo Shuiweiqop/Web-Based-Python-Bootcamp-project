@@ -6,6 +6,7 @@ import UserAvatar from './Components/UserAvatar';
 import ReplyCard from './Components/ReplyCard';
 import ReplyForm from './Components/ReplyForm';
 import PostActions from './Components/PostActions';
+import SafeContentRenderer from '@/Components/SafeContentRenderer';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Eye, MessageCircle, Lock } from 'lucide-react';
 
@@ -23,17 +24,6 @@ export default function Show({ auth, post, isLiked, isFavorited, canEdit, canDel
         setLocalIsFavorited(isFavorited);
         setLocalLikesCount(post.likes || 0);
     }, [isLiked, isFavorited, post.likes]);
-
-    // Show flash messages
-    useEffect(() => {
-        if (flash?.success) {
-            console.log('Success:', flash.success);
-        }
-        if (flash?.error) {
-            console.error('Error:', flash.error);
-            alert(flash.error);
-        }
-    }, [flash]);
 
     const author = post.author || post.user || {
         name: 'Unknown User',
@@ -161,6 +151,12 @@ export default function Show({ auth, post, isLiked, isFavorited, canEdit, canDel
             <Head title={post.title} />
 
             <div className="space-y-6">
+                {flash?.error && (
+                    <div className="rounded-2xl border border-red-400/40 bg-red-500/20 px-5 py-4 text-sm font-medium text-red-100 shadow-lg">
+                        {flash.error}
+                    </div>
+                )}
+
                 {/* Main Post Card */}
                 <div className="bg-black/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-2xl overflow-hidden">
                     {/* Post Header */}
@@ -213,9 +209,10 @@ export default function Show({ auth, post, isLiked, isFavorited, canEdit, canDel
                         </div>
 
                         {/* Post Body */}
-                        <div 
-                            className="prose prose-lg prose-invert max-w-none mb-8"
-                            dangerouslySetInnerHTML={{ __html: post.content }}
+                        <SafeContentRenderer
+                            content={post.content}
+                            type="forum-html"
+                            className="prose-lg prose-invert mb-8"
                         />
 
                         {/* Post Stats */}

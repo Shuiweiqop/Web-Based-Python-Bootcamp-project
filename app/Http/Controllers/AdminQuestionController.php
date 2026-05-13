@@ -128,9 +128,6 @@ class AdminQuestionController extends Controller
             abort(404);
         }
 
-        // DEBUG: log incoming payload
-        Log::debug('storeForTest payload', $request->all());
-
         // 为 MCQ 类型设置默认的 correct_answer
         if ($request->input('type') === Question::TYPE_MCQ) {
             $request->merge(['correct_answer' => 'See options below']);
@@ -151,8 +148,6 @@ class AdminQuestionController extends Controller
             })->values()->all();
 
             $request->merge(['options' => $normalized]);
-            Log::debug('Normalized options', $normalized);
-
             // 检查是否有正确答案被选中
             $hasCorrectOption = collect($normalized)->contains('is_correct', true);
             if (!$hasCorrectOption) {
@@ -192,24 +187,19 @@ class AdminQuestionController extends Controller
         DB::beginTransaction();
         try {
             $question = Question::create($data);
-            Log::debug('Question created id: ' . $question->question_id, ['data' => $data]);
-
             if ($request->input('type') === Question::TYPE_MCQ) {
                 foreach ($request->input('options', []) as $index => $optionData) {
-                    $opt = QuestionOption::create([
+                    QuestionOption::create([
                         'question_id' => $question->question_id,
                         'option_label' => $optionData['label'],
                         'option_text' => $optionData['text'],
                         'is_correct' => $optionData['is_correct'],
                         'order' => $index + 1,
                     ]);
-                    Log::debug('QuestionOption created id: ' . $opt->option_id, ['option' => $optionData]);
                 }
             }
 
             DB::commit();
-            Log::debug('DB commit success for question id: ' . $question->question_id);
-
             return redirect()->route('admin.lessons.tests.questions.index', [
                 'lesson' => $lesson->lesson_id,
                 'test' => $test->test_id
@@ -218,7 +208,8 @@ class AdminQuestionController extends Controller
             DB::rollback();
             Log::error('Failed to create question: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'payload' => $request->all()
+                'test_id' => $test->test_id,
+                'question_type' => $request->input('type'),
             ]);
             return back()->withErrors(['error' => 'Failed to create question: ' . $e->getMessage()]);
         }
@@ -659,8 +650,6 @@ class AdminQuestionController extends Controller
     {
         $test = Test::where('test_type', 'placement')->findOrFail($testId);
 
-        Log::debug('storeForPlacementTest payload', $request->all());
-
         // 为 MCQ 类型设置默认的 correct_answer
         if ($request->input('type') === Question::TYPE_MCQ) {
             $request->merge(['correct_answer' => 'See options below']);
@@ -681,8 +670,6 @@ class AdminQuestionController extends Controller
             })->values()->all();
 
             $request->merge(['options' => $normalized]);
-            Log::debug('Normalized options', $normalized);
-
             $hasCorrectOption = collect($normalized)->contains('is_correct', true);
             if (!$hasCorrectOption) {
                 return back()->withErrors(['options' => 'At least one option must be marked as correct.']);
@@ -721,31 +708,27 @@ class AdminQuestionController extends Controller
         DB::beginTransaction();
         try {
             $question = Question::create($data);
-            Log::debug('Question created id: ' . $question->question_id, ['data' => $data]);
-
             if ($request->input('type') === Question::TYPE_MCQ) {
                 foreach ($request->input('options', []) as $index => $optionData) {
-                    $opt = QuestionOption::create([
+                    QuestionOption::create([
                         'question_id' => $question->question_id,
                         'option_label' => $optionData['label'],
                         'option_text' => $optionData['text'],
                         'is_correct' => $optionData['is_correct'],
                         'order' => $index + 1,
                     ]);
-                    Log::debug('QuestionOption created id: ' . $opt->option_id, ['option' => $optionData]);
                 }
             }
 
             DB::commit();
-            Log::debug('DB commit success for question id: ' . $question->question_id);
-
             return redirect()->route('admin.placement-tests.questions.index', $test->test_id)
                 ->with('success', 'Question created successfully.');
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Failed to create question: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'payload' => $request->all()
+                'test_id' => $test->test_id,
+                'question_type' => $request->input('type'),
             ]);
             return back()->withErrors(['error' => 'Failed to create question: ' . $e->getMessage()]);
         }
