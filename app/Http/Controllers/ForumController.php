@@ -396,6 +396,19 @@ class ForumController extends Controller
             'parent_reply_id' => 'nullable|exists:forum_replies,reply_id',
         ]);
 
+        $parentReply = null;
+        if (!empty($validated['parent_reply_id'])) {
+            $parentReply = ForumReply::where('reply_id', $validated['parent_reply_id'])
+                ->where('post_id', $post->post_id)
+                ->first();
+
+            if (!$parentReply) {
+                return back()->withErrors([
+                    'parent_reply_id' => 'The parent reply does not belong to this post.',
+                ]);
+            }
+        }
+
         try {
             $currentUser = auth()->user();
             $userId = $currentUser->user_Id; // ✅ 使用正确的主键
@@ -423,8 +436,6 @@ class ForumController extends Controller
 
             // ✅ 发送通知
             if ($validated['parent_reply_id']) {
-                $parentReply = ForumReply::find($validated['parent_reply_id']);
-
                 if ($parentReply && $parentReply->user_id !== $userId) {
                     Notification::create([
                         'user_Id' => $parentReply->user_id,
