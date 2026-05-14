@@ -23,9 +23,7 @@ export default function Edit({
   // Equip reward
   const handleEquip = (inventoryId) => {
     setIsSaving(true);
-    router.post('/student/profile/equip', {
-      inventory_id: inventoryId,
-    }, {
+    router.post(route('student.inventory.equip', inventoryId), {}, {
       preserveScroll: true,
       onFinish: () => setIsSaving(false),
     });
@@ -34,9 +32,7 @@ export default function Edit({
   // Unequip reward
   const handleUnequip = (inventoryId) => {
     setIsSaving(true);
-    router.post('/student/profile/unequip', {
-      inventory_id: inventoryId,
-    }, {
+    router.post(route('student.inventory.unequip', inventoryId), {}, {
       preserveScroll: true,
       onFinish: () => setIsSaving(false),
     });
@@ -177,7 +173,7 @@ export default function Edit({
                   <li>• Equipped rewards are shown on leaderboards and comments</li>
                   <li>
                     • Want more rewards? Visit the{' '}
-                    <Link href="/shop" className="font-semibold underline">
+                    <Link href={route('student.rewards.index')} className="font-semibold underline">
                       Reward Shop
                     </Link>
                   </li>
@@ -197,7 +193,7 @@ export default function Edit({
 
             <div className="flex gap-3">
               <Link
-                href="/shop"
+                href={route('student.rewards.index')}
                 className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
               >
                 Go to Shop
