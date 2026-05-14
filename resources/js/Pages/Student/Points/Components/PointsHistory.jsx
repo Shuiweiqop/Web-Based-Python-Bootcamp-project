@@ -18,7 +18,7 @@ export default function PointsHistory({
 }) {
   const handleFilterChange = () => {
     router.get(
-      route('student.points.index'),
+      route('student.profile.points'),
       {
         time: timeFilter,
         type: typeFilter,
@@ -73,7 +73,7 @@ export default function PointsHistory({
             onClick={() => {
               setTimeFilter('all');
               setTypeFilter('all');
-              router.get(route('student.points.index'));
+              router.get(route('student.profile.points'));
             }}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
           >

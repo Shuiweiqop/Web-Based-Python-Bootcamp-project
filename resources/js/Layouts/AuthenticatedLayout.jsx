@@ -155,16 +155,9 @@ function AuthenticatedLayoutContent({ header, children }) {
         { 
           icon: BookOpen, 
           label: 'Lessons', 
-          href: route('student.lessons.index'), 
+          href: route('lessons.index'), 
           badge: null, 
-          pathMatch: '/student/lessons' 
-        },
-        { 
-          icon: ClipboardList, 
-          label: 'Tests', 
-          href: route('student.tests.index') || '/student/tests', 
-          badge: null, 
-          pathMatch: '/student/tests' 
+          pathMatch: '/lessons' 
         },
         { 
           icon: Map, 

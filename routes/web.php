@@ -405,7 +405,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('lessons.quick-draft');
         Route::resource('lessons', AdminLessonController::class);
         Route::resource('exercises', AdminExerciseController::class);
-        Route::resource('rewards', AdminRewardController::class)->except(['destroy']);
+        Route::resource('rewards', AdminRewardController::class);
         Route::get('daily-challenges', [AdminDailyChallengeController::class, 'index'])
             ->name('daily-challenges.index');
         Route::put('daily-challenges/{dailyChallengeDefinition}', [AdminDailyChallengeController::class, 'update'])

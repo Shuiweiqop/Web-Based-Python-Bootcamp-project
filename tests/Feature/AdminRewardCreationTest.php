@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Reward;
+use App\Models\RewardRecord;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -67,6 +68,65 @@ class AdminRewardCreationTest extends TestCase
         } else {
             $this->assertNull($reward->image_url);
         }
+    }
+
+    public function test_admin_can_delete_unused_reward(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $reward = Reward::create([
+            'name' => 'Unused Reward',
+            'description' => 'Safe to delete.',
+            'reward_type' => 'badge',
+            'rarity' => 'common',
+            'stock_quantity' => 1,
+            'point_cost' => 10,
+            'max_owned' => 1,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('admin.rewards.destroy', $reward));
+
+        $response->assertRedirect(route('admin.rewards.index'));
+        $this->assertDatabaseMissing('reward_catalog', [
+            'reward_id' => $reward->reward_id,
+        ]);
+    }
+
+    public function test_admin_cannot_delete_reward_with_student_history(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $student = User::factory()->create(['role' => 'student'])->studentProfile;
+        $reward = Reward::create([
+            'name' => 'Issued Reward',
+            'description' => 'Already issued.',
+            'reward_type' => 'badge',
+            'rarity' => 'common',
+            'stock_quantity' => 1,
+            'point_cost' => 10,
+            'max_owned' => 1,
+            'is_active' => true,
+        ]);
+
+        RewardRecord::create([
+            'student_id' => $student->student_id,
+            'reward_id' => $reward->reward_id,
+            'quantity' => 1,
+            'points_spent' => 10,
+            'points_before' => 100,
+            'points_after' => 90,
+            'points_changed' => -10,
+            'issued_by' => 'student_purchase',
+            'issued_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->from(route('admin.rewards.show', $reward))
+            ->delete(route('admin.rewards.destroy', $reward));
+
+        $response->assertRedirect(route('admin.rewards.show', $reward));
+        $response->assertSessionHasErrors('error');
+        $this->assertDatabaseHas('reward_catalog', [
+            'reward_id' => $reward->reward_id,
+        ]);
     }
 
     public static function rewardTypeProvider(): array

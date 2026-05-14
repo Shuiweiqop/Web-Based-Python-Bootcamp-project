@@ -525,6 +525,43 @@ class AdminRewardController extends Controller
     }
 
     /**
+     * Delete rewards that have not yet been issued or owned by students.
+     */
+    public function destroy(Reward $reward)
+    {
+        $this->checkAdmin();
+
+        if ($reward->rewardRecords()->exists() || $reward->inventoryItems()->exists()) {
+            return back()->withErrors([
+                'error' => 'This reward is already linked to student history or inventory. Deactivate it instead of deleting it.',
+            ]);
+        }
+
+        try {
+            if ($reward->image_url && str_starts_with($reward->image_url, '/storage/')) {
+                $path = ltrim(str_replace('/storage/', '', $reward->image_url), '/');
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            $rewardName = $reward->name;
+            $reward->delete();
+
+            return redirect()
+                ->route('admin.rewards.index')
+                ->with('success', "Reward '{$rewardName}' deleted successfully.");
+        } catch (\Exception $e) {
+            Log::error('Failed to delete reward', [
+                'reward_id' => $reward->reward_id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to delete reward. Please try again.']);
+        }
+    }
+
+    /**
      * Toggle reward active status
      * ✅ 修复：添加通知功能
      */
