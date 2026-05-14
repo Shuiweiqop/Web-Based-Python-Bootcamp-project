@@ -547,6 +547,7 @@ class StudentTestController extends Controller
      */
     private function gradeSubmission(TestSubmission $submission)
     {
+        $wasCompleted = (bool) $submission->is_completed;
         $test = $submission->test;
         $answers = SubmissionAnswer::where('submission_id', $submission->submission_id)->get();
         $questions = Question::where('test_id', $test->test_id)->with('options')->get()->keyBy('question_id');
@@ -624,7 +625,14 @@ class StudentTestController extends Controller
             'score' => $scorePercentage,
             'correct_answers' => $correctCount,
             'time_spent' => $timeSpent,
+            'is_completed' => true,
         ]);
+
+        $submission->refresh();
+
+        if (!$wasCompleted) {
+            $submission->studentProfile?->processTestCompletion($submission);
+        }
     }
 
     private function normalizeTrueFalseAnswer($value): ?string
