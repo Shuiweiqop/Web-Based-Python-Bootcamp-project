@@ -198,10 +198,14 @@ class LessonController extends Controller
                 foreach ($tests as $test) {
                     $submissions = $testSubmissions->get($test['test_id'], collect());
                     $latestSubmission = $submissions->sortByDesc('attempt_number')->first();
+                    $completedSubmissions = $submissions->whereIn('status', ['submitted', 'timeout']);
+                    $bestSubmission = $completedSubmissions->sortByDesc('score')->first();
                     $inProgress = $submissions->where('status', 'in_progress')->first();
 
                     $userProgress['tests'][$test['test_id']] = [
                         'attempts_used' => $submissions->count(),
+                        'best_score' => $bestSubmission ? $bestSubmission->score : null,
+                        'best_status' => $bestSubmission ? $bestSubmission->status : null,
                         'latest_score' => $latestSubmission ? $latestSubmission->score : null,
                         'latest_status' => $latestSubmission ? $latestSubmission->status : null,
                         'has_in_progress' => (bool) $inProgress,
@@ -300,6 +304,14 @@ class LessonController extends Controller
                 ->first();
 
             if ($existingRegistration) {
+                if ($existingRegistration->registration_status === 'cancelled') {
+                    $existingRegistration->update([
+                        'registration_status' => 'active',
+                    ]);
+
+                    return redirect()->back()->with('success', 'Successfully registered for lesson!');
+                }
+
                 return redirect()->back()->with('error', 'Already registered for this lesson');
             }
 

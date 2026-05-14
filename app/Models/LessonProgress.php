@@ -245,6 +245,8 @@ class LessonProgress extends Model
             $exerciseIds = $lesson->interactiveExercises()->where('is_active', true)->pluck('exercise_id');
             $completedCount = ExerciseSubmission::where('student_id', $this->student_id)
                 ->whereIn('exercise_id', $exerciseIds)
+                ->where('completed', true)
+                ->whereRaw('score >= (SELECT max_score * 0.7 FROM interactive_exercises WHERE exercise_id = exercise_submissions.exercise_id)')
                 ->distinct('exercise_id')
                 ->count();
 

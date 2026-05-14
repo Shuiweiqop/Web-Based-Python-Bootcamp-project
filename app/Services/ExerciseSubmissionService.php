@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ExerciseSubmission;
 use App\Models\InteractiveExercise;
 use App\Models\Lesson;
+use App\Models\LessonProgress;
 use App\Models\LessonRegistration;
 use App\Models\StudentProfile;
 use Illuminate\Support\Facades\DB;
@@ -134,7 +135,7 @@ class ExerciseSubmissionService
             ->where('test_submissions.student_id', $student->student_id)
             ->where('tests.lesson_id', $lesson->lesson_id)
             ->where('test_submissions.status', 'submitted')
-            ->whereRaw('(test_submissions.score / test_submissions.total_questions * 100) >= tests.passing_score')
+            ->whereRaw('test_submissions.score >= tests.passing_score')
             ->distinct('tests.test_id')
             ->count('tests.test_id');
 
@@ -156,15 +157,37 @@ class ExerciseSubmissionService
         if (
             $exercisesCompleted >= $exercisesRequired &&
             $testsPassed >= $testsRequired &&
-            !$registration->completion_points_awarded
+            $registration->registration_status !== 'completed' &&
+            (int) $registration->completion_points_awarded <= 0
         ) {
             $student->increment('current_points', $lesson->completion_reward_points);
 
             $registration->update([
                 'registration_status'       => 'completed',
-                'completion_points_awarded' => true,
+                'completion_points_awarded' => $lesson->completion_reward_points,
                 'completed_at'              => now(),
             ]);
+
+            $progress = LessonProgress::firstOrCreate(
+                [
+                    'student_id' => $student->student_id,
+                    'lesson_id' => $lesson->lesson_id,
+                ],
+                [
+                    'status' => 'in_progress',
+                    'progress_percent' => 0,
+                    'started_at' => now(),
+                    'last_updated_at' => now(),
+                ]
+            );
+
+            $progress->markAsCompleted(true);
+            $student->increment('total_lessons_completed');
+
+            app(LearningPathProgressService::class)->updatePathsForLesson(
+                (int) $student->student_id,
+                (int) $lesson->lesson_id
+            );
 
             Log::info('Lesson completed and points awarded', [
                 'student_id' => $student->student_id,

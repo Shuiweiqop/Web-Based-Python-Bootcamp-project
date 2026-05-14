@@ -21,7 +21,7 @@ const getTestStatus = (test, userProgress, exercisesCompleted, totalExercises, c
     return { status: 'locked', icon: Lock, color: 'gray', locked: true, reason: 'Finish the practice steps first' };
   }
 
-  if (progress?.latest_score >= test.passing_score) {
+  if (progress?.best_score >= test.passing_score) {
     return { status: 'passed', icon: Trophy, color: 'amber', locked: false };
   }
 
@@ -149,9 +149,9 @@ export default function TestsSection({
                 </div>
               </div>
 
-              {progress?.latest_score !== null && progress?.latest_score !== undefined && (
+              {progress?.best_score !== null && progress?.best_score !== undefined && (
                 <div className={`mb-4 rounded-xl border-2 p-4 ${
-                  progress.latest_score >= test.passing_score
+                  progress.best_score >= test.passing_score
                     ? 'border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50'
                     : 'border-rose-300 bg-gradient-to-r from-rose-50 to-red-50'
                 }`}>
@@ -159,11 +159,11 @@ export default function TestsSection({
                     <span className="text-sm font-bold text-gray-700">Best Score:</span>
                     <div className="flex items-center gap-2">
                       <span className={`text-2xl font-black ${
-                        progress.latest_score >= test.passing_score ? 'text-emerald-700' : 'text-rose-700'
+                        progress.best_score >= test.passing_score ? 'text-emerald-700' : 'text-rose-700'
                       }`}>
-                        {progress.latest_score}%
+                        {progress.best_score}%
                       </span>
-                      {progress.latest_score >= test.passing_score && (
+                      {progress.best_score >= test.passing_score && (
                         <Trophy className="h-5 w-5 text-amber-500" />
                       )}
                     </div>
