@@ -21,6 +21,11 @@ use Inertia\Inertia;
  */
 class InventoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['auth', 'role:student']);
+    }
+
     /**
      * 获取当前学生资料
      */
