@@ -364,6 +364,12 @@ class OnboardingController extends Controller
             return back()->with('error', 'Invalid submission');
         }
 
+        if ((int) $submission->recommended_path_id !== (int) $pathId) {
+            return back()->withErrors([
+                'path_id' => 'This path is not the recommendation for your placement test.',
+            ]);
+        }
+
         // Check if already accepted
         if ($submission->hasAcceptedRecommendation()) {
             $acceptedAssignment = $submission->getAcceptedPathAssignment();
