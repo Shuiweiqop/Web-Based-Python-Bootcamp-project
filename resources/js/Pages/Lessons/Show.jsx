@@ -26,7 +26,7 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
   ).length;
   const totalExercises = exercises.length;
   const passedTests = tests.filter(
-    (test) => userProgress.tests?.[test.test_id]?.latest_score >= test.passing_score
+    (test) => userProgress.tests?.[test.test_id]?.best_score >= test.passing_score
   ).length;
   const totalTests = tests.length;
 
@@ -87,7 +87,7 @@ const LessonShow = ({ auth, lesson, sections = [], exercises = [], tests = [], u
     setIsLoading(true);
 
     try {
-      await router.delete(`/lessons/${lesson.lesson_id}/unregister`, {
+      await router.delete(route('lessons.cancel-registration', lesson.lesson_id), {
         preserveScroll: true,
         onError: () => {
           alert('Failed to unregister. Please try again.');
