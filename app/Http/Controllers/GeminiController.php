@@ -26,8 +26,8 @@ class GeminiController extends Controller
                 ], 500);
             }
 
-            // Get conversation history from session
-            $conversationHistory = session('ai_conversation', []);
+            // Get conversation history for this lesson/context from session
+            $conversationHistory = $this->getConversationHistory($request->input('lesson_id'));
 
             // Build contents array
             $contents = [];
@@ -135,7 +135,10 @@ class GeminiController extends Controller
             // Save conversation history (keep last 20 messages = 10 turns)
             $conversationHistory[] = ['role' => 'user', 'text' => $request->message];
             $conversationHistory[] = ['role' => 'model', 'text' => $replyText];
-            session(['ai_conversation' => array_slice($conversationHistory, -20)]);
+            $this->storeConversationHistory(
+                $request->input('lesson_id'),
+                array_slice($conversationHistory, -20)
+            );
 
             // 🔥 计算当前提示级别
             $currentHintLevel = $this->calculateHintLevel(count($conversationHistory) / 2);
@@ -175,7 +178,7 @@ class GeminiController extends Controller
     private function getSystemPrompt($lessonId = null, $userMessage = '')
     {
         // 🔥 计算对话轮数（用于渐进式提示）
-        $conversationHistory = session('ai_conversation', []);
+        $conversationHistory = $this->getConversationHistory($lessonId);
         $messageCount = count($conversationHistory) / 2; // 每轮包含 user + model
 
         // 🔥 根据对话轮数调整提示级别
@@ -336,8 +339,27 @@ class GeminiController extends Controller
      */
     public function clearConversation(Request $request)
     {
-        session()->forget('ai_conversation');
-        session()->forget('ai_session_id');
+        $request->validate([
+            'lesson_id' => 'nullable|integer',
+        ]);
+
+        if ($request->filled('lesson_id')) {
+            $contextKey = $this->getAIContextKey($request->input('lesson_id'));
+            $conversations = session('ai_conversations', []);
+            $sessionIds = session('ai_session_ids', []);
+
+            unset($conversations[$contextKey], $sessionIds[$contextKey]);
+
+            session([
+                'ai_conversations' => $conversations,
+                'ai_session_ids' => $sessionIds,
+            ]);
+        } else {
+            session()->forget('ai_conversation');
+            session()->forget('ai_session_id');
+            session()->forget('ai_conversations');
+            session()->forget('ai_session_ids');
+        }
 
         return response()->json([
             'success' => true,
@@ -359,11 +381,14 @@ class GeminiController extends Controller
                 return;
             }
 
-            // Generate or get session ID (stored in session)
-            $sessionId = session('ai_session_id');
+            // Generate or get session ID for this lesson/context (stored in session)
+            $contextKey = $this->getAIContextKey($request->input('lesson_id'));
+            $sessionIds = session('ai_session_ids', []);
+            $sessionId = $sessionIds[$contextKey] ?? null;
             if (!$sessionId) {
                 $sessionId = Str::uuid()->toString();
-                session(['ai_session_id' => $sessionId]);
+                $sessionIds[$contextKey] = $sessionId;
+                session(['ai_session_ids' => $sessionIds]);
             }
 
             // Create log record
@@ -382,5 +407,27 @@ class GeminiController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
         }
+    }
+
+    private function getAIContextKey($lessonId = null): string
+    {
+        return $lessonId ? 'lesson_' . (int) $lessonId : 'global';
+    }
+
+    private function getConversationHistory($lessonId = null): array
+    {
+        $contextKey = $this->getAIContextKey($lessonId);
+        $conversations = session('ai_conversations', []);
+
+        return $conversations[$contextKey] ?? [];
+    }
+
+    private function storeConversationHistory($lessonId, array $conversationHistory): void
+    {
+        $contextKey = $this->getAIContextKey($lessonId);
+        $conversations = session('ai_conversations', []);
+        $conversations[$contextKey] = $conversationHistory;
+
+        session(['ai_conversations' => $conversations]);
     }
 }
