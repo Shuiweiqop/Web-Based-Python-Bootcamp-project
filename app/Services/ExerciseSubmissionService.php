@@ -134,7 +134,7 @@ class ExerciseSubmissionService
             ->join('tests', 'test_submissions.test_id', '=', 'tests.test_id')
             ->where('test_submissions.student_id', $student->student_id)
             ->where('tests.lesson_id', $lesson->lesson_id)
-            ->where('test_submissions.status', 'submitted')
+            ->whereIn('test_submissions.status', ['submitted', 'timeout'])
             ->whereRaw('test_submissions.score >= tests.passing_score')
             ->distinct('tests.test_id')
             ->count('tests.test_id');
