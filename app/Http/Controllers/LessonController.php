@@ -805,9 +805,11 @@ class LessonController extends Controller
                 }
             }
 
-            if ($completedExercises < $exercises->count()) {
+            $requiredExercises = max(0, (int) ($lesson->required_exercises ?? 0));
+
+            if ($completedExercises < $requiredExercises) {
                 Log::warning('There are still unfinished exercises');
-                return back()->withErrors(['error' => "Please complete all exercises first. ($completedExercises/{$exercises->count()})."]);
+                return back()->withErrors(['error' => "Please complete the required exercises first. ($completedExercises/{$requiredExercises})."]);
             }
 
             // Verify tests
@@ -821,9 +823,11 @@ class LessonController extends Controller
                 }
             }
 
-            if ($passedTests < $tests->count()) {
+            $requiredTests = max(0, (int) ($lesson->required_tests ?? 0));
+
+            if ($passedTests < $requiredTests) {
                 Log::warning('There are still tests not passed');
-                return back()->withErrors(['error' => "Please pass all tests first. ($passedTests/{$tests->count()})."]);
+                return back()->withErrors(['error' => "Please pass the required tests first. ($passedTests/{$requiredTests})."]);
             }
 
             // Update database
