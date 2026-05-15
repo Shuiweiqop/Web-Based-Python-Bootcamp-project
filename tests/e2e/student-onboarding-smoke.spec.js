@@ -138,6 +138,14 @@ test.afterEach(async ({ page }) => {
   expectNoBrowserFailures(page);
 });
 
+test('student without a learning path can open the paths empty state', async ({ page }) => {
+  await page.goto('/student/paths');
+
+  await expect(page.getByRole('heading', { name: /no learning paths yet/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /take placement test/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /browse paths/i })).toBeVisible();
+});
+
 test('student can view and accept placement recommendation', async ({ page }) => {
   const seed = execFileSync(
     'php',
