@@ -264,7 +264,7 @@ export default function Index({
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link
-                                href={route('student.onboarding')}
+                                href={route('student.onboarding.index')}
                                 className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-lg font-bold rounded-xl hover:from-blue-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-xl hover:shadow-2xl"
                             >
                                 <Sparkles className="h-6 w-6" />
