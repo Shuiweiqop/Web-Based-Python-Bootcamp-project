@@ -37,6 +37,9 @@ return [
     'judge0' => [
         'url' => env('JUDGE0_API_URL', 'https://judge0-ce.p.rapidapi.com'),
         'key' => env('JUDGE0_API_KEY'),
+        'host' => env('JUDGE0_API_HOST', 'judge0-ce.p.rapidapi.com'),
+        // Judge0 language id for Python 3 (see https://judge0.com languages endpoint).
+        'language_id' => (int) env('JUDGE0_LANGUAGE_ID', 71),
     ],
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
