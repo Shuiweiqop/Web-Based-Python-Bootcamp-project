@@ -6,7 +6,7 @@ allowed-tools: Read, Grep, Glob, Edit, Write
 
 Build an endpoint for: $ARGUMENTS
 
-Follow [docs/BACKEND.md](../../docs/BACKEND.md) strictly. Produce, in this order:
+Follow [.agents/backend.md](../../.agents/backend.md) strictly. Produce, in this order:
 
 1. **Form Request** in `app/Http/Requests/` — all validation lives here, never inline.
 2. **Thin Controller method** — validate (via the Form Request), call the Service,
