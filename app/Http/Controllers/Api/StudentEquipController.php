@@ -78,9 +78,7 @@ class StudentEquipController extends Controller
                     'obtained_at' => $inventory->obtained_at?->toISOString(),
 
                     // ✅ Metadata（支持动画背景等）
-                    'metadata' => is_string($inventory->reward->metadata)
-                        ? json_decode($inventory->reward->metadata, true)
-                        : ($inventory->reward->metadata ?? []),
+                    'metadata' => $inventory->reward->metadata ?? [],
 
                     // ✅ 嵌套的 reward 对象（兼容前端多种取值方式）
                     'reward' => [
@@ -92,9 +90,7 @@ class StudentEquipController extends Controller
                         'rarity' => $inventory->reward->rarity,
                         'description' => $inventory->reward->description,
                         'points_cost' => $inventory->reward->points_cost,
-                        'metadata' => is_string($inventory->reward->metadata)
-                            ? json_decode($inventory->reward->metadata, true)
-                            : ($inventory->reward->metadata ?? []),
+                        'metadata' => $inventory->reward->metadata ?? [],
                     ]
                 ];
             });
@@ -147,9 +143,7 @@ class StudentEquipController extends Controller
                     'description' => $inventory->reward->description,
                     'quantity' => $inventory->quantity,
                     'is_equipped' => $inventory->is_equipped,
-                    'metadata' => is_string($inventory->reward->metadata)
-                        ? json_decode($inventory->reward->metadata, true)
-                        : ($inventory->reward->metadata ?? []),
+                    'metadata' => $inventory->reward->metadata ?? [],
                 ]
             ]);
         } catch (\Exception $e) {
@@ -193,9 +187,7 @@ class StudentEquipController extends Controller
                     'reward_type' => $type,
                     'type' => $type,
                     'rarity' => $inventory->reward->rarity,
-                    'metadata' => is_string($inventory->reward->metadata)
-                        ? json_decode($inventory->reward->metadata, true)
-                        : ($inventory->reward->metadata ?? [])
+                    'metadata' => $inventory->reward->metadata ?? []
                 ];
 
                 if ($type === 'badge') {

@@ -90,9 +90,7 @@ class InventoryController extends Controller
                 'quantity' => $item->quantity,
                 'is_equipped' => (bool) $item->is_equipped,
                 'obtained_at' => $item->obtained_at?->diffForHumans(),
-                'metadata' => is_string($item->reward->metadata)
-                    ? json_decode($item->reward->metadata, true)
-                    : ($item->reward->metadata ?? []),
+                'metadata' => $item->reward->metadata ?? [],
                 // ✅ 完整的 reward 对象
                 'reward' => [
                     'reward_id' => $item->reward->reward_id,
@@ -101,9 +99,7 @@ class InventoryController extends Controller
                     'reward_type' => $item->reward->reward_type,
                     'rarity' => $item->reward->rarity,
                     'image_url' => $item->reward->image_url,
-                    'metadata' => is_string($item->reward->metadata)
-                        ? json_decode($item->reward->metadata, true)
-                        : ($item->reward->metadata ?? []),
+                    'metadata' => $item->reward->metadata ?? [],
                 ],
             ];
         })->filter()->values();
