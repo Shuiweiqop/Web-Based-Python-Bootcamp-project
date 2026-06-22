@@ -6,7 +6,7 @@ allowed-tools: Read, Grep, Glob, Edit, Bash
 
 Target: $ARGUMENTS
 
-Apply the defense rules from [docs/BACKEND.md](../../docs/BACKEND.md):
+Apply the defense rules from [.agents/backend.md](../../.agents/backend.md):
 
 1. Locate the risky operation (external call, DB write, file IO, parsing).
 2. Wrap it in the house pattern: `try { ... } catch (\Throwable $e)` with
