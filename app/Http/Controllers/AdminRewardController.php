@@ -241,9 +241,7 @@ class AdminRewardController extends Controller
         $parsedMetadata = null;
         if ($reward->metadata) {
             try {
-                $parsedMetadata = is_string($reward->metadata)
-                    ? json_decode($reward->metadata, true)
-                    : $reward->metadata;
+                $parsedMetadata = $reward->metadata;
 
                 Log::info('📦 [Show] Parsed metadata', [
                     'reward_id' => $reward->reward_id,
@@ -299,9 +297,7 @@ class AdminRewardController extends Controller
         $parsedMetadata = null;
         if ($reward->metadata) {
             try {
-                $parsedMetadata = is_string($reward->metadata)
-                    ? json_decode($reward->metadata, true)
-                    : $reward->metadata;
+                $parsedMetadata = $reward->metadata;
 
                 Log::info('📦 [Edit] Parsed metadata', [
                     'reward_id' => $reward->reward_id,

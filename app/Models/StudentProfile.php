@@ -895,9 +895,7 @@ class StudentProfile extends Model
                 'image_url' => $avatarFrame->reward->image_url,
                 'reward_type' => $avatarFrame->reward->reward_type,
                 'rarity' => $avatarFrame->reward->rarity,
-                'metadata' => is_string($avatarFrame->reward->metadata)
-                    ? json_decode($avatarFrame->reward->metadata, true)
-                    : ($avatarFrame->reward->metadata ?? []),
+                'metadata' => $avatarFrame->reward->metadata ?? [],
             ] : null,
 
             'background' => $background ? [
@@ -906,9 +904,7 @@ class StudentProfile extends Model
                 'image_url' => $background->reward->image_url,
                 'reward_type' => $background->reward->reward_type,
                 'rarity' => $background->reward->rarity,
-                'metadata' => is_string($background->reward->metadata)
-                    ? json_decode($background->reward->metadata, true)
-                    : ($background->reward->metadata ?? []),
+                'metadata' => $background->reward->metadata ?? [],
             ] : null,
 
             'title' => $title ? [
@@ -917,9 +913,7 @@ class StudentProfile extends Model
                 'image_url' => $title->reward->image_url,
                 'reward_type' => $title->reward->reward_type,
                 'rarity' => $title->reward->rarity,
-                'metadata' => is_string($title->reward->metadata)
-                    ? json_decode($title->reward->metadata, true)
-                    : ($title->reward->metadata ?? []),
+                'metadata' => $title->reward->metadata ?? [],
             ] : null,
 
             'badges' => $badges->map(function ($badge) {
@@ -929,9 +923,7 @@ class StudentProfile extends Model
                     'image_url' => $badge->reward->image_url,
                     'reward_type' => $badge->reward->reward_type,
                     'rarity' => $badge->reward->rarity,
-                    'metadata' => is_string($badge->reward->metadata)
-                        ? json_decode($badge->reward->metadata, true)
-                        : ($badge->reward->metadata ?? []),
+                    'metadata' => $badge->reward->metadata ?? [],
                 ];
             })->toArray(),
 
