@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\StudentProfile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class StudentProfileService
 {
@@ -58,7 +57,7 @@ class StudentProfileService
                 'image_url' => $reward->image_url,
                 'icon' => $reward->icon ?? null,
                 'rarity' => $reward->rarity,
-                'metadata' => $this->decodeMetadata($reward->metadata, $reward->reward_id),
+                'metadata' => $reward->metadata ?? [],
             ];
 
             switch ($reward->reward_type) {
@@ -80,32 +79,6 @@ class StudentProfileService
         }
 
         return $equipped;
-    }
-
-    /**
-     * Safely decode reward metadata. Malformed JSON returns [] (never null) so
-     * downstream array access can't break. See docs/BACKEND.md.
-     */
-    private function decodeMetadata($metadata, $rewardId = null): array
-    {
-        if (! is_string($metadata)) {
-            return is_array($metadata) ? $metadata : [];
-        }
-
-        try {
-            $decoded = json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
-
-            return is_array($decoded) ? $decoded : [];
-        } catch (\Throwable $e) {
-            Log::warning('Reward metadata decode failed', [
-                'action' => 'getEquippedItems',
-                'reward_id' => $rewardId,
-                'input' => mb_substr($metadata, 0, 200),
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
     }
 
     public function getInventoryByType(StudentProfile $profile): array
@@ -142,7 +115,7 @@ class StudentProfileService
                 'quantity' => $item->quantity,
                 'is_equipped' => $item->is_equipped,
                 'obtained_at' => $item->obtained_at?->diffForHumans(),
-                'metadata' => $this->decodeMetadata($item->reward->metadata, $item->reward_id),
+                'metadata' => $item->reward->metadata ?? [],
             ]));
     }
 

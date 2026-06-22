@@ -156,7 +156,7 @@ class InventoryService
     public function formatInventoryEntry(StudentRewardInventory $inv): array
     {
         $r = $inv->reward;
-        $meta = is_string($r->metadata) ? json_decode($r->metadata, true) : ($r->metadata ?? []);
+        $meta = $r->metadata ?? [];
         return [
             'id' => $inv->inventory_id,
             'reward_id' => $inv->reward_id,
