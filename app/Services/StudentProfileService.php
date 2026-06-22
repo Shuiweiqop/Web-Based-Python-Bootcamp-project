@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\StudentProfile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StudentProfileService
 {
@@ -26,19 +27,19 @@ class StudentProfileService
                     ->count();
 
                 return [
-                    'id'               => $studentPath->student_path_id,
-                    'path_id'          => $path->path_id,
-                    'name'             => $path->title,
-                    'description'      => $path->description,
-                    'progress'         => round($studentPath->progress_percent, 0),
-                    'total_lessons'    => $path->total_lessons ?? 0,
-                    'completed_lessons'=> $completedLessons,
-                    'status'           => $studentPath->status,
-                    'icon'             => $path->icon,
-                    'color'            => $path->color,
+                    'id' => $studentPath->student_path_id,
+                    'path_id' => $path->path_id,
+                    'name' => $path->title,
+                    'description' => $path->description,
+                    'progress' => round($studentPath->progress_percent, 0),
+                    'total_lessons' => $path->total_lessons ?? 0,
+                    'completed_lessons' => $completedLessons,
+                    'status' => $studentPath->status,
+                    'icon' => $path->icon,
+                    'color' => $path->color,
                     'difficulty_level' => $path->difficulty_level,
-                    'is_primary'       => (bool) $studentPath->is_primary,
-                    'started_at'       => $studentPath->started_at?->format('M d, Y'),
+                    'is_primary' => (bool) $studentPath->is_primary,
+                    'started_at' => $studentPath->started_at?->format('M d, Y'),
                     'last_activity_at' => $studentPath->last_activity_at?->diffForHumans(),
                 ];
             });
@@ -51,15 +52,13 @@ class StudentProfileService
         foreach ($profile->rewardInventory()->where('is_equipped', true)->with('reward')->get() as $item) {
             $reward = $item->reward;
             $data = [
-                'id'          => $reward->reward_id,
-                'name'        => $reward->name,
+                'id' => $reward->reward_id,
+                'name' => $reward->name,
                 'description' => $reward->description,
-                'image_url'   => $reward->image_url,
-                'icon'        => $reward->icon ?? null,
-                'rarity'      => $reward->rarity,
-                'metadata'    => is_string($reward->metadata)
-                    ? json_decode($reward->metadata, true)
-                    : ($reward->metadata ?? []),
+                'image_url' => $reward->image_url,
+                'icon' => $reward->icon ?? null,
+                'rarity' => $reward->rarity,
+                'metadata' => $this->decodeMetadata($reward->metadata, $reward->reward_id),
             ];
 
             switch ($reward->reward_type) {
@@ -83,43 +82,67 @@ class StudentProfileService
         return $equipped;
     }
 
+    /**
+     * Safely decode reward metadata. Malformed JSON returns [] (never null) so
+     * downstream array access can't break. See docs/BACKEND.md.
+     */
+    private function decodeMetadata($metadata, $rewardId = null): array
+    {
+        if (! is_string($metadata)) {
+            return is_array($metadata) ? $metadata : [];
+        }
+
+        try {
+            $decoded = json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
+
+            return is_array($decoded) ? $decoded : [];
+        } catch (\Throwable $e) {
+            Log::warning('Reward metadata decode failed', [
+                'action' => 'getEquippedItems',
+                'reward_id' => $rewardId,
+                'input' => mb_substr($metadata, 0, 200),
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
     public function getInventoryByType(StudentProfile $profile): array
     {
         $collection = $profile->rewardInventory()->with('reward')->get()
-            ->groupBy(fn($item) => $item->reward->reward_type);
+            ->groupBy(fn ($item) => $item->reward->reward_type);
 
         return [
             'backgrounds' => $collection->get('profile_background', collect())
                 ->merge($collection->get('background', collect()))
-                ->map(fn($i) => $this->formatItem($i, true))->values(),
+                ->map(fn ($i) => $this->formatItem($i, true))->values(),
             'avatarFrames' => $collection->get('avatar_frame', collect())
-                ->map(fn($i) => $this->formatItem($i, true))->values(),
+                ->map(fn ($i) => $this->formatItem($i, true))->values(),
             'titles' => $collection->get('title', collect())
                 ->merge($collection->get('profile_title', collect()))
-                ->map(fn($i) => $this->formatItem($i, false))->values(),
+                ->map(fn ($i) => $this->formatItem($i, false))->values(),
             'badges' => $collection->get('badge', collect())
-                ->map(fn($i) => $this->formatItem($i, true))->values(),
+                ->map(fn ($i) => $this->formatItem($i, true))->values(),
         ];
     }
 
     public function getInventoryGrouped(StudentProfile $profile): \Illuminate\Support\Collection
     {
         return $profile->rewardInventory()->with('reward')->get()
-            ->groupBy(fn($item) => $item->reward->reward_type)
-            ->map(fn($items) => $items->map(fn($item) => [
+            ->groupBy(fn ($item) => $item->reward->reward_type)
+            ->map(fn ($items) => $items->map(fn ($item) => [
                 'inventory_id' => $item->inventory_id,
-                'reward_id'    => $item->reward_id,
-                'name'         => $item->reward->name,
-                'description'  => $item->reward->description,
-                'type'         => $item->reward->reward_type,
-                'rarity'       => $item->reward->rarity,
-                'image_url'    => $item->reward->image_url,
-                'quantity'     => $item->quantity,
-                'is_equipped'  => $item->is_equipped,
-                'obtained_at'  => $item->obtained_at?->diffForHumans(),
-                'metadata'     => is_string($item->reward->metadata)
-                    ? json_decode($item->reward->metadata, true)
-                    : ($item->reward->metadata ?? []),
+                'reward_id' => $item->reward_id,
+                'name' => $item->reward->name,
+                'description' => $item->reward->description,
+                'type' => $item->reward->reward_type,
+                'rarity' => $item->reward->rarity,
+                'image_url' => $item->reward->image_url,
+                'quantity' => $item->quantity,
+                'is_equipped' => $item->is_equipped,
+                'obtained_at' => $item->obtained_at?->diffForHumans(),
+                'metadata' => $this->decodeMetadata($item->reward->metadata, $item->reward_id),
             ]));
     }
 
@@ -150,42 +173,42 @@ class StudentProfileService
             $query->where('points_change', '<', 0);
         }
 
-        return $query->limit(50)->get()->map(fn($record) => [
-            'id'          => $record->record_id,
-            'type'        => $record->points_change > 0 ? 'earned' : 'spent',
-            'points'      => abs($record->points_change),
-            'balance'     => $record->points_after ?? $profile->current_points,
-            'source'      => $record->reason ?? 'unknown',
+        return $query->limit(50)->get()->map(fn ($record) => [
+            'id' => $record->record_id,
+            'type' => $record->points_change > 0 ? 'earned' : 'spent',
+            'points' => abs($record->points_change),
+            'balance' => $record->points_after ?? $profile->current_points,
+            'source' => $record->reason ?? 'unknown',
             'description' => $this->pointsDescription($record),
-            'created_at'  => $record->created_at->diffForHumans(),
-            'reference'   => $record->reward_id ?? null,
+            'created_at' => $record->created_at->diffForHumans(),
+            'reference' => $record->reward_id ?? null,
         ]);
     }
 
     public function getPointsStats(StudentProfile $profile): array
     {
-        $base = fn() => $profile->rewardRecords();
+        $base = fn () => $profile->rewardRecords();
 
         $totalEarned = (int) $base()->where('points_change', '>', 0)->sum('points_change');
-        $totalSpent  = (int) abs($base()->where('points_change', '<', 0)->sum('points_change'));
-        $thisWeek    = (int) $base()->where('points_change', '>', 0)->where('created_at', '>=', now()->startOfWeek())->sum('points_change');
-        $thisMonth   = (int) $base()->where('points_change', '>', 0)->where('created_at', '>=', now()->startOfMonth())->sum('points_change');
+        $totalSpent = (int) abs($base()->where('points_change', '<', 0)->sum('points_change'));
+        $thisWeek = (int) $base()->where('points_change', '>', 0)->where('created_at', '>=', now()->startOfWeek())->sum('points_change');
+        $thisMonth = (int) $base()->where('points_change', '>', 0)->where('created_at', '>=', now()->startOfMonth())->sum('points_change');
 
         $sourceBreakdown = [];
         foreach ($base()->where('points_change', '>', 0)->selectRaw('reason, SUM(points_change) as total')->groupBy('reason')->orderByDesc('total')->get() as $row) {
             $sourceBreakdown[$row->reason] = [
-                'points'     => $row->total,
+                'points' => $row->total,
                 'percentage' => round(($row->total / max($totalEarned, 1)) * 100, 1),
             ];
         }
 
         return [
-            'totalEarned'     => $totalEarned,
-            'totalSpent'      => $totalSpent,
-            'thisWeek'        => $thisWeek,
-            'thisMonth'       => $thisMonth,
+            'totalEarned' => $totalEarned,
+            'totalSpent' => $totalSpent,
+            'thisWeek' => $thisWeek,
+            'thisMonth' => $thisMonth,
             'sourceBreakdown' => $sourceBreakdown,
-            'topSource'       => !empty($sourceBreakdown) ? array_key_first($sourceBreakdown) : null,
+            'topSource' => ! empty($sourceBreakdown) ? array_key_first($sourceBreakdown) : null,
         ];
     }
 
@@ -212,13 +235,20 @@ class StudentProfileService
 
     public function formatTimeSpent(?int $seconds): string
     {
-        if (!$seconds) return '0s';
-        $hours   = floor($seconds / 3600);
+        if (! $seconds) {
+            return '0s';
+        }
+        $hours = floor($seconds / 3600);
         $minutes = floor(($seconds % 3600) / 60);
-        $secs    = $seconds % 60;
+        $secs = $seconds % 60;
 
-        if ($hours > 0)   return sprintf('%dh %dm', $hours, $minutes);
-        if ($minutes > 0) return sprintf('%dm %ds', $minutes, $secs);
+        if ($hours > 0) {
+            return sprintf('%dh %dm', $hours, $minutes);
+        }
+        if ($minutes > 0) {
+            return sprintf('%dm %ds', $minutes, $secs);
+        }
+
         return sprintf('%ds', $secs);
     }
 
@@ -226,25 +256,25 @@ class StudentProfileService
     {
         $data = [
             'inventory_id' => $item->inventory_id,
-            'reward_id'    => $item->reward_id,
-            'name'         => $item->reward->name,
-            'description'  => $item->reward->description,
-            'icon'         => $item->reward->icon,
-            'rarity'       => $item->reward->rarity,
-            'quantity'     => $item->quantity,
-            'is_equipped'  => $item->is_equipped,
-            'obtained_at'  => $item->obtained_at?->diffForHumans(),
+            'reward_id' => $item->reward_id,
+            'name' => $item->reward->name,
+            'description' => $item->reward->description,
+            'icon' => $item->reward->icon,
+            'rarity' => $item->reward->rarity,
+            'quantity' => $item->quantity,
+            'is_equipped' => $item->is_equipped,
+            'obtained_at' => $item->obtained_at?->diffForHumans(),
             'reward' => [
-                'name'        => $item->reward->name,
+                'name' => $item->reward->name,
                 'description' => $item->reward->description,
                 'reward_type' => $item->reward->reward_type,
-                'rarity'      => $item->reward->rarity,
-                'icon'        => $item->reward->icon,
+                'rarity' => $item->reward->rarity,
+                'icon' => $item->reward->icon,
             ],
         ];
 
         if ($includeImageUrl) {
-            $data['image_url']          = $item->reward->image_url;
+            $data['image_url'] = $item->reward->image_url;
             $data['reward']['image_url'] = $item->reward->image_url;
         }
 
@@ -255,9 +285,9 @@ class StudentProfileService
     {
         return match ($filter) {
             'today' => now()->startOfDay(),
-            'week'  => now()->startOfWeek(),
+            'week' => now()->startOfWeek(),
             'month' => now()->startOfMonth(),
-            'year'  => now()->startOfYear(),
+            'year' => now()->startOfYear(),
             default => now()->subYears(10),
         };
     }
@@ -266,14 +296,15 @@ class StudentProfileService
     {
         if ($record->points_change > 0) {
             return match ($record->reason) {
-                'test_completion'     => 'Test completed',
+                'test_completion' => 'Test completed',
                 'exercise_completion' => 'Exercise completed',
-                'lesson_completion'   => 'Lesson completed',
-                'daily_streak'        => 'Daily learning streak',
-                'achievement'         => 'Achievement unlocked',
-                default               => 'Points earned',
+                'lesson_completion' => 'Lesson completed',
+                'daily_streak' => 'Daily learning streak',
+                'achievement' => 'Achievement unlocked',
+                default => 'Points earned',
             };
         }
-        return 'Reward purchased: ' . ($record->reward->name ?? 'Unknown reward');
+
+        return 'Reward purchased: '.($record->reward->name ?? 'Unknown reward');
     }
 }
