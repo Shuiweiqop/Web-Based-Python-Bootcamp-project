@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# pre-push hook: run the test suite before allowing a push.
+# Enforces the rule in Agent.md: never push untested/red code.
+#
+# Emergency bypass (use sparingly): git push --no-verify
+
+set -e
+
+echo "[pre-push] Running PHP test suite (composer test)..."
+composer test
+echo "[pre-push] Running frontend unit tests (npm run test:unit)..."
+npm run test:unit
+
+echo "[pre-push] All tests passed — push allowed."
