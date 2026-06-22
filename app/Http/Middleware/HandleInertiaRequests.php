@@ -137,12 +137,7 @@ class HandleInertiaRequests extends Middleware
             $reward = $inventoryItem->reward;
 
             // 处理 metadata
-            $metadata = $reward->metadata;
-            if (is_string($metadata)) {
-                $metadata = json_decode($metadata, true) ?? [];
-            } elseif (!is_array($metadata)) {
-                $metadata = [];
-            }
+            $metadata = is_array($reward->metadata) ? $reward->metadata : [];
 
             return [
                 'id' => $reward->reward_id,
