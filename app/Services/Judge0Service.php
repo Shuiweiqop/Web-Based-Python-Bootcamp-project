@@ -8,21 +8,27 @@ use Illuminate\Support\Facades\Log;
 class Judge0Service
 {
     private $apiUrl;
+
     private $apiKey;
+
+    private $apiHost;
+
+    private $languageId;
 
     public function __construct()
     {
         $this->apiUrl = config('services.judge0.url');
         $this->apiKey = config('services.judge0.key');
+        $this->apiHost = config('services.judge0.host');
+        $this->languageId = config('services.judge0.language_id');
     }
 
     public function executeCode($code, $stdin = '', $testCases = [])
     {
         try {
-            // Python 3 语言 ID = 71
-            $submission = $this->createSubmission($code, 71, $stdin);
+            $submission = $this->createSubmission($code, $this->languageId, $stdin);
 
-            if (!$submission) {
+            if (! $submission) {
                 return [
                     'success' => false,
                     'output' => 'Failed to submit code',
@@ -33,7 +39,7 @@ class Judge0Service
 
             // 运行测试用例
             $testResults = [];
-            if (!empty($testCases)) {
+            if (! empty($testCases)) {
                 $testResults = $this->runTestCases($code, $testCases);
             }
 
@@ -44,11 +50,11 @@ class Judge0Service
                 'status' => $result['status']['description'] ?? 'Unknown',
             ];
         } catch (\Exception $e) {
-            Log::error('Judge0 error: ' . $e->getMessage());
+            Log::error('Judge0 error: '.$e->getMessage());
 
             return [
                 'success' => false,
-                'output' => 'Error: ' . $e->getMessage(),
+                'output' => 'Error: '.$e->getMessage(),
             ];
         }
     }
@@ -57,9 +63,9 @@ class Judge0Service
     {
         $response = Http::withHeaders([
             'X-RapidAPI-Key' => $this->apiKey,
-            'X-RapidAPI-Host' => 'judge0-ce.p.rapidapi.com',
+            'X-RapidAPI-Host' => $this->apiHost,
             'Content-Type' => 'application/json',
-        ])->post($this->apiUrl . '/submissions?wait=true', [
+        ])->post($this->apiUrl.'/submissions?wait=true', [
             'source_code' => base64_encode($code),
             'language_id' => $languageId,
             'stdin' => base64_encode($stdin),
@@ -80,15 +86,16 @@ class Judge0Service
             $input = $testCase['input'] ?? '';
             $expected = trim($testCase['expected'] ?? '');
 
-            $submission = $this->createSubmission($code, 71, $input);
+            $submission = $this->createSubmission($code, $this->languageId, $input);
 
-            if (!$submission) {
+            if (! $submission) {
                 $results[] = [
                     'passed' => false,
                     'expected' => $expected,
                     'actual' => 'Submission failed',
                     'input' => $input,
                 ];
+
                 continue;
             }
 
@@ -107,15 +114,15 @@ class Judge0Service
 
     private function formatOutput($result)
     {
-        if (!empty($result['compile_output'])) {
+        if (! empty($result['compile_output'])) {
             return base64_decode($result['compile_output']);
         }
 
-        if (!empty($result['stderr'])) {
+        if (! empty($result['stderr'])) {
             return base64_decode($result['stderr']);
         }
 
-        if (!empty($result['stdout'])) {
+        if (! empty($result['stdout'])) {
             return base64_decode($result['stdout']);
         }
 
@@ -124,11 +131,11 @@ class Judge0Service
 
     private function getOutput($result)
     {
-        if (!empty($result['stdout'])) {
+        if (! empty($result['stdout'])) {
             return base64_decode($result['stdout']);
         }
 
-        if (!empty($result['stderr'])) {
+        if (! empty($result['stderr'])) {
             return base64_decode($result['stderr']);
         }
 

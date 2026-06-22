@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\Log;
 
 class RewardPurchaseService
 {
+    /**
+     * Times to retry the purchase transaction on a deadlock/serialization
+     * conflict before giving up (rows are locked with lockForUpdate()).
+     */
+    private const TRANSACTION_ATTEMPTS = 5;
+
     public function purchase(StudentProfile $student, int|string $rewardId, int $quantity = 1): array
     {
         return DB::transaction(function () use ($student, $rewardId, $quantity) {
@@ -46,7 +52,7 @@ class RewardPurchaseService
                 'message' => "Successfully purchased {$reward->name} x{$quantity}. Spent {$totalCost} points.",
                 'remaining_points' => $student->current_points,
             ];
-        }, 5);
+        }, self::TRANSACTION_ATTEMPTS);
     }
 
     private function assertPurchasable(Reward $reward): void
