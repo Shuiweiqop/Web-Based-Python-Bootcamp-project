@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { 
+import { avatarUrl } from '@/utils/avatar';
+import {
   getStatusBadge, 
   getDifficultyBadge, 
   getScoreBadge,
@@ -18,7 +19,7 @@ export default function StudentIndex({ students, stats, filters }) {
   // ✅ 辅助函数：获取头像 URL
   const getAvatarUrl = (user) => {
     if (!user) {
-      return 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown&backgroundColor=3B82F6';
+      return avatarUrl(null);
     }
     
     if (user.avatar) {
@@ -29,7 +30,7 @@ export default function StudentIndex({ students, stats, filters }) {
       return user.profile_picture;
     }
     
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || user.email || 'default')}&backgroundColor=3B82F6`;
+    return avatarUrl(user.name || user.email);
   };
 
   // Handle search
@@ -269,7 +270,7 @@ export default function StudentIndex({ students, stats, filters }) {
                             alt={student.user?.name || 'Student'}
                             className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
                             onError={(e) => {
-                              e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback&backgroundColor=3B82F6';
+                              e.target.src = avatarUrl(null);
                             }}
                           />
                           {student.equipped_snapshot?.avatar_frame && (
@@ -419,7 +420,7 @@ export default function StudentIndex({ students, stats, filters }) {
                                   src={avatarUrl}
                                   alt={student.user?.name || 'Student'}
                                   onError={(e) => {
-                                    e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback&backgroundColor=3B82F6';
+                                    e.target.src = avatarUrl(null);
                                   }}
                                 />
                                 {student.equipped_snapshot?.avatar_frame && (
