@@ -126,11 +126,17 @@ function StudentLayoutContent({ header, children }) {
       icon: MessageCircle,
       current: 'forum.*'
     },
-    { 
+    {
       href: 'student.missions.index',
       label: 'Missions',
       icon: Calendar,
       current: 'student.missions.*'
+    },
+    {
+      href: 'student.leaderboard',
+      label: 'Leaderboard',
+      icon: Trophy,
+      current: 'student.leaderboard'
     },
     { 
       href: 'student.rewards.index', 
