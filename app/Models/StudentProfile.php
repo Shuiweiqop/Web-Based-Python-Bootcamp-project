@@ -25,6 +25,7 @@ class StudentProfile extends Model
     protected $fillable = [
         'user_Id',
         'current_points',
+        'lifetime_points',
         'total_lessons_completed',
         'total_tests_taken',
         'average_score',
@@ -35,6 +36,7 @@ class StudentProfile extends Model
 
     protected $casts = [
         'current_points' => 'integer',
+        'lifetime_points' => 'integer',
         'total_lessons_completed' => 'integer',
         'total_tests_taken' => 'integer',
         'average_score' => 'decimal:2',
@@ -437,7 +439,9 @@ class StudentProfile extends Model
 
     public function addPoints(int $points): self
     {
+        // Spendable balance and lifetime XP both rise when points are earned.
         $this->increment('current_points', $points);
+        $this->increment('lifetime_points', $points);
         $this->updateLastActivity();
         $this->refresh();
         return $this;
@@ -702,15 +706,53 @@ class StudentProfile extends Model
         return $stats;
     }
 
+    /**
+     * Level tiers, keyed off lifetime (earned) XP so a level can never drop
+     * when a student spends points in the reward shop.
+     */
+    public const LEVELS = [
+        ['level' => 1, 'label' => 'Newbie', 'min' => 0],
+        ['level' => 2, 'label' => 'Beginner', 'min' => 500],
+        ['level' => 3, 'label' => 'Intermediate', 'min' => 2000],
+        ['level' => 4, 'label' => 'Advanced', 'min' => 5000],
+        ['level' => 5, 'label' => 'Expert', 'min' => 10000],
+    ];
+
     public function getPointsLevelAttribute(): string
     {
-        return match (true) {
-            $this->current_points >= 10000 => 'Expert',
-            $this->current_points >= 5000 => 'Advanced',
-            $this->current_points >= 2000 => 'Intermediate',
-            $this->current_points >= 500 => 'Beginner',
-            default => 'Newbie',
-        };
+        return $this->levelInfo()['label'];
+    }
+
+    /**
+     * Structured level/XP progress for UI: current tier, next tier, and how
+     * far the student is toward levelling up.
+     */
+    public function levelInfo(): array
+    {
+        $xp = (int) ($this->lifetime_points ?? 0);
+
+        $current = self::LEVELS[0];
+        $next = null;
+        foreach (self::LEVELS as $tier) {
+            if ($xp >= $tier['min']) {
+                $current = $tier;
+            } elseif ($next === null) {
+                $next = $tier;
+            }
+        }
+
+        $intoLevel = $xp - $current['min'];
+        $span = $next ? $next['min'] - $current['min'] : 0;
+
+        return [
+            'level' => $current['level'],
+            'label' => $current['label'],
+            'xp' => $xp,
+            'next_label' => $next['label'] ?? null,
+            'xp_into_level' => $intoLevel,
+            'xp_needed' => $next ? $next['min'] - $xp : 0,
+            'progress_percent' => $next ? (int) round(($intoLevel / $span) * 100) : 100,
+        ];
     }
 
     public function getCompletionPercentageAttribute(): int

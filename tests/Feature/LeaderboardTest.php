@@ -25,10 +25,12 @@ class LeaderboardTest extends TestCase
             ->component('Student/Leaderboard/Index')
             ->where('leaderboard.0.name', 'High')
             ->where('leaderboard.0.rank', 1)
+            ->where('leaderboard.0.xp', 900)
             ->where('leaderboard.0.is_me', true)
             ->where('leaderboard.1.name', 'Mid')
             ->where('leaderboard.2.name', 'Low')
             ->where('me.rank', 1)
+            ->where('me.xp', 900)
             ->where('me.total_players', 3)
         );
     }
@@ -43,7 +45,7 @@ class LeaderboardTest extends TestCase
 
         $response->assertInertia(fn (Assert $page) => $page
             ->where('me.rank', 3)
-            ->where('me.points', 10)
+            ->where('me.xp', 10)
         );
     }
 
@@ -61,13 +63,14 @@ class LeaderboardTest extends TestCase
         $this->get(route('student.leaderboard'))->assertRedirect(route('login'));
     }
 
-    private function makeStudent(string $name, int $points): StudentProfile
+    private function makeStudent(string $name, int $xp): StudentProfile
     {
         $user = $this->makeUser('student', $name);
 
         // User::created auto-provisions a StudentProfile for students.
+        // Leaderboard ranks on lifetime_points (earned XP).
         $profile = $user->studentProfile;
-        $profile->update(['current_points' => $points]);
+        $profile->update(['current_points' => $xp, 'lifetime_points' => $xp]);
 
         return $profile->fresh('user');
     }
