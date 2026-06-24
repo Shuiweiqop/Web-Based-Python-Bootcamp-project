@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Student\OnboardingController;
 use App\Http\Controllers\Student\LearningPathController;
 use App\Http\Controllers\Student\MissionController;
+use App\Http\Controllers\Student\LeaderboardController;
 use App\Http\Controllers\GeminiController;
 use App\Http\Controllers\AdminAILogController;
 use App\Http\Controllers\AdminLearningPathController;
@@ -165,6 +166,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // ==================== Student Test Routes ====================
         Route::middleware(['role:student'])->group(function () {
+            // Points leaderboard
+            Route::get('leaderboard', [LeaderboardController::class, 'index'])
+                ->name('leaderboard');
+
             // Lesson test listing and details
             Route::get('lessons/{lesson}/tests', [StudentTestController::class, 'index'])
                 ->name('lessons.tests.index');
