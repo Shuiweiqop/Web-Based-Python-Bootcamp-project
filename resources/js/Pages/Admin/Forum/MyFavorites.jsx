@@ -5,6 +5,7 @@ import Pagination from '@/Components/Pagination';
 import CategoryBadge from '@/Pages/Student/Forum/Components/CategoryBadge';
 import { formatDistanceToNow } from 'date-fns';
 import { Shield, ArrowLeft, Bookmark, Eye, MessageSquare, Heart } from 'lucide-react';
+import { avatarUrl } from '@/utils/avatar';
 
 export default function MyFavorites({ auth, favorites }) {
     const [removingId, setRemovingId] = useState(null);
@@ -35,7 +36,7 @@ export default function MyFavorites({ auth, favorites }) {
         
         // Fallback 到 API 生成的头像
         if (!avatar) {
-            avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(post.user.name)}&backgroundColor=3B82F6`;
+            avatar = avatarUrl(post.user.name);
         }
         
         return {
@@ -49,7 +50,7 @@ export default function MyFavorites({ auth, favorites }) {
     // 最后的 fallback
     return {
         name: 'Unknown User',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown&backgroundColor=3B82F6',
+        avatar: avatarUrl(null),
         is_admin: false,
         is_student: false,
     };

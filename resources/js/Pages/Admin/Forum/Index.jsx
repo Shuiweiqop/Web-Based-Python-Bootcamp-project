@@ -6,6 +6,7 @@ import ForumFilters from '@/Pages/Student/Forum/Components/ForumFilters';
 import CategoryBadge from '@/Pages/Student/Forum/Components/CategoryBadge';
 import UserAvatar from '@/Pages/Student/Forum/Components/UserAvatar';
 import Pagination from '@/Components/Pagination';
+import { avatarUrl } from '@/utils/avatar';
 import { 
     Shield, 
     Pin, 
@@ -95,7 +96,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
             }
             
             if (!avatar) {
-                avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(post.user.name)}&backgroundColor=3B82F6`;
+                avatar = avatarUrl(post.user.name);
             }
             
             return {
@@ -110,7 +111,7 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
         
         return {
             name: 'Unknown User',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown&backgroundColor=3B82F6',
+            avatar: avatarUrl(null),
             is_admin: false,
             is_student: false,
             points: 0,

@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Heart, MessageSquare, Eye, Pin, Lock, CheckCircle } from 'lucide-react';
 import { useSFX } from '@/Contexts/SFXContext';
+import { avatarUrl } from '@/utils/avatar';
 
 function CategoryBadge({ category }) {
     const categoryStyles = {
@@ -87,7 +88,7 @@ export default function PostCard({ post, currentUserId, isDark }) {
             }
             
             if (!avatar) {
-                avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(post.user.name)}&backgroundColor=3B82F6`;
+                avatar = avatarUrl(post.user.name);
             }
             
             return {
@@ -100,7 +101,7 @@ export default function PostCard({ post, currentUserId, isDark }) {
         
         return {
             name: 'Unknown User',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown&backgroundColor=3B82F6',
+            avatar: avatarUrl(null),
             is_admin: false,
             is_student: false,
         };
