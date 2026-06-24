@@ -50,11 +50,15 @@ class Judge0Service
                 'status' => $result['status']['description'] ?? 'Unknown',
             ];
         } catch (\Exception $e) {
-            Log::error('Judge0 error: '.$e->getMessage());
+            Log::error('judge0.execute.failed', [
+                'action' => 'executeCode',
+                'error' => $e->getMessage(),
+            ]);
 
+            // Do not leak internal error details to the caller.
             return [
                 'success' => false,
-                'output' => 'Error: '.$e->getMessage(),
+                'output' => 'Code execution failed. Please try again later.',
             ];
         }
     }

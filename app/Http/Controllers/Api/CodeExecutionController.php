@@ -37,12 +37,14 @@ class CodeExecutionController extends Controller
      */
     public function execute(Request $request)
     {
+        // Caps bound abuse: each test case fans out to a separate Judge0 call,
+        // so an unbounded array/payload is a cost/DoS amplification vector.
         $validated = $request->validate([
-            'code' => 'required|string',
+            'code' => 'required|string|max:50000',
             'language' => 'required|string|in:python,python3,javascript,java,cpp,c',
-            'test_cases' => 'sometimes|array',
-            'test_cases.*.input' => 'nullable|string',
-            'test_cases.*.expected' => 'nullable|string',
+            'test_cases' => 'sometimes|array|max:20',
+            'test_cases.*.input' => 'nullable|string|max:10000',
+            'test_cases.*.expected' => 'nullable|string|max:10000',
         ]);
 
         $code = $validated['code'];
@@ -68,11 +70,16 @@ class CodeExecutionController extends Controller
                 return $this->executeCode($code, $languageId);
             }
         } catch (\Exception $e) {
-            Log::error('Code execution error: ' . $e->getMessage());
+            Log::error('code.execute.failed', [
+                'action' => 'execute',
+                'language' => $language,
+                'error' => $e->getMessage(),
+            ]);
 
+            // Do not leak internal error details to the client.
             return response()->json([
                 'success' => false,
-                'message' => 'Code execution failed: ' . $e->getMessage(),
+                'message' => 'Code execution failed. Please try again later.',
                 'output' => '',
                 'test_results' => [],
             ], 500);
@@ -159,11 +166,16 @@ class CodeExecutionController extends Controller
                     'passed' => $passed,
                 ];
             } catch (\Exception $e) {
+                Log::warning('code.execute.test_case_failed', [
+                    'action' => 'executeWithTestCases',
+                    'error' => $e->getMessage(),
+                ]);
+
                 $allPassed = false;
                 $testResults[] = [
                     'input' => $input,
                     'expected' => $expected,
-                    'actual' => 'Error: ' . $e->getMessage(),
+                    'actual' => 'Execution error',
                     'passed' => false,
                 ];
             }
