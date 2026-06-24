@@ -81,7 +81,8 @@ class RewardModelTest extends TestCase
     #[\PHPUnit\Framework\Attributes\DataProvider('pointsLevelProvider')]
     public function test_points_level_returns_correct_tier(int $points, string $expected): void
     {
-        $profile = new StudentProfile(['current_points' => $points]);
+        // Level is derived from lifetime (earned) XP, not the spendable balance.
+        $profile = new StudentProfile(['lifetime_points' => $points]);
         $this->assertSame($expected, $profile->points_level);
     }
 

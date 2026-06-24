@@ -160,7 +160,7 @@ class ExerciseSubmissionService
             $registration->registration_status !== 'completed' &&
             (int) $registration->completion_points_awarded <= 0
         ) {
-            $student->increment('current_points', $lesson->completion_reward_points);
+            $student->addPoints($lesson->completion_reward_points);
 
             $registration->update([
                 'registration_status'       => 'completed',
