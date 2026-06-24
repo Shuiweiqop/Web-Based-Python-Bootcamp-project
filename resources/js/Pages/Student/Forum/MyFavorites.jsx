@@ -19,6 +19,7 @@ import {
     Pin
 } from 'lucide-react';
 import { useSFX } from '@/Contexts/SFXContext';
+import { avatarUrl } from '@/utils/avatar';
 
 // ✅ 自定义时间格式化函数
 function timeAgo(date) {
@@ -61,7 +62,7 @@ function MyFavoritesContent({ auth, favorites }) {
             }
             
             if (!avatar) {
-                avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(post.user.name)}&backgroundColor=3B82F6`;
+                avatar = avatarUrl(post.user.name);
             }
             
             return {
@@ -74,7 +75,7 @@ function MyFavoritesContent({ auth, favorites }) {
         
         return {
             name: 'Unknown User',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown&backgroundColor=3B82F6',
+            avatar: avatarUrl(null),
             is_admin: false,
             is_student: false,
         };

@@ -9,6 +9,7 @@ import PostActions from '@/Pages/Student/Forum/Components/PostActions';
 import SafeContentRenderer from '@/Components/SafeContentRenderer';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Eye, MessageCircle, Lock } from 'lucide-react';
+import { avatarUrl } from '@/utils/avatar';
 
 export default function Show({ auth, post, isLiked, isFavorited, canEdit, canDelete, canPin, canLock }) {
     const { flash } = usePage().props;
@@ -44,7 +45,7 @@ const getAuthorInfo = (post) => {
         
         // Fallback 到 API 生成的头像
         if (!avatar) {
-            avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(post.user.name)}&backgroundColor=3B82F6`;
+            avatar = avatarUrl(post.user.name);
         }
         
         return {
@@ -58,7 +59,7 @@ const getAuthorInfo = (post) => {
     // 最后的 fallback
     return {
         name: 'Unknown User',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown&backgroundColor=3B82F6',
+        avatar: avatarUrl(null),
         is_admin: false,
         is_student: false,
     };

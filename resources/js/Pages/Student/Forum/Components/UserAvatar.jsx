@@ -1,3 +1,5 @@
+import { avatarUrl } from '@/utils/avatar';
+
 export default function UserAvatar({ author, size = 'md', showBadges = false }) {
     const sizeClasses = {
         sm: 'w-8 h-8',
@@ -24,11 +26,8 @@ export default function UserAvatar({ author, size = 'md', showBadges = false }) 
             .substring(0, 2);
     };
 
-    // ✅ 生成 fallback 头像 URL
-    const getFallbackAvatar = (name) => {
-        const seed = encodeURIComponent(name || 'default');
-        return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=3B82F6`;
-    };
+    // Local, offline initials avatar (no external request / privacy leak).
+    const getFallbackAvatar = (name) => avatarUrl(name);
 
     const avatarFrame = author.equipped_avatar_frame;
     const hasFrame = avatarFrame && avatarFrame.image_url;
