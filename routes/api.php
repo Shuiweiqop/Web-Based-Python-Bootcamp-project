@@ -14,7 +14,6 @@ use App\Http\Controllers\StudentProfileController;
 use App\Http\Controllers\AdminRewardController;
 use App\Http\Controllers\Student\RewardController as StudentRewardController;
 use App\Http\Controllers\Student\InventoryController as StudentInventoryController;
-use App\Http\Controllers\Api\CodeExecutionController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\OtpController;
 use Illuminate\Foundation\Application;
@@ -62,8 +61,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
-    // ==================== 代码执行 API 路由（学生） ====================
-    Route::post('/api/code/execute', [CodeExecutionController::class, 'execute'])->name('code.execute');
+    // 代码执行 API：已在 web.php 中以带限流的形式注册（throttle:20,1）。
+    // 此处不再重复注册，否则会覆盖掉该限流中间件。
 
     // ==================== 论坛路由 ====================
     Route::prefix('forum')->name('forum.')->group(function () {
