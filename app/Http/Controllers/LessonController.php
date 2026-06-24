@@ -873,8 +873,8 @@ class LessonController extends Controller
                 );
                 Log::info('✓ Learning path progress updated');
 
-                // Add points
-                $studentProfile->increment('current_points', $lesson->completion_reward_points);
+                // Add points (also accrues lifetime XP via addPoints)
+                $studentProfile->addPoints($lesson->completion_reward_points);
                 Log::info('✓ Points added', ['points_added' => $lesson->completion_reward_points]);
 
                 // Update lesson count

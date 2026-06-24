@@ -23,23 +23,41 @@ export default function Leaderboard({ leaderboard = [], me }) {
                 <Trophy className="h-10 w-10 text-yellow-300" />
                 <div>
                     <h1 className="text-2xl font-bold">Leaderboard</h1>
-                    <p className="text-sm text-white/70">Top learners by points earned</p>
+                    <p className="text-sm text-white/70">Ranked by lifetime XP earned</p>
                 </div>
             </div>
 
             {me && (
-                <div className="mt-6 flex flex-wrap items-center gap-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-                    <span>
-                        Your rank:{' '}
-                        <strong className="text-yellow-300">#{me.rank}</strong>
-                        <span className="text-white/50"> / {me.total_players}</span>
-                    </span>
-                    <span>
-                        Points: <strong>{me.points}</strong>
-                    </span>
-                    <span>
-                        Level: <strong>{me.level}</strong>
-                    </span>
+                <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex flex-wrap items-center gap-6 text-sm">
+                        <span>
+                            Your rank:{' '}
+                            <strong className="text-yellow-300">#{me.rank}</strong>
+                            <span className="text-white/50"> / {me.total_players}</span>
+                        </span>
+                        <span>
+                            Level <strong>{me.level}</strong> · {me.label}
+                        </span>
+                        <span>
+                            <strong>{me.xp}</strong> XP
+                        </span>
+                    </div>
+
+                    {me.next_label ? (
+                        <div className="mt-3">
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                                <div
+                                    className="h-full rounded-full bg-yellow-300"
+                                    style={{ width: `${me.progress_percent}%` }}
+                                />
+                            </div>
+                            <p className="mt-1 text-xs text-white/50">
+                                {me.xp_needed} XP to {me.next_label}
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="mt-3 text-xs text-yellow-200">Max level reached 🎉</p>
+                    )}
                 </div>
             )}
         </div>
@@ -52,7 +70,7 @@ export default function Leaderboard({ leaderboard = [], me }) {
             <div className="rounded-3xl border border-white/20 bg-black/70 p-4 text-white shadow-2xl backdrop-blur-xl sm:p-6">
                 {leaderboard.length === 0 ? (
                     <p className="py-12 text-center text-white/60">
-                        No ranked learners yet — start earning points!
+                        No ranked learners yet — start earning XP!
                     </p>
                 ) : (
                     <ul className="divide-y divide-white/10">
@@ -76,11 +94,13 @@ export default function Leaderboard({ leaderboard = [], me }) {
                                             </span>
                                         )}
                                     </p>
-                                    <p className="text-xs text-white/50">{entry.level}</p>
+                                    <p className="text-xs text-white/50">
+                                        Lv {entry.level} · {entry.level_label}
+                                    </p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-bold">{entry.points}</p>
-                                    <p className="text-xs text-white/50">pts</p>
+                                    <p className="font-bold">{entry.xp}</p>
+                                    <p className="text-xs text-white/50">XP</p>
                                 </div>
                             </li>
                         ))}

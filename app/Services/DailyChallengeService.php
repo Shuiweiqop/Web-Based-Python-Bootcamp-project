@@ -226,7 +226,7 @@ class DailyChallengeService
                             'challenge_definition_id' => $definition->challenge_definition_id,
                         ]);
                     } else {
-                        $student->increment('current_points', $definition->reward_points);
+                        $student->addPoints($definition->reward_points);
                         $awardedPoints = (int) $definition->reward_points;
 
                         Notification::createPoints(
@@ -374,7 +374,7 @@ class DailyChallengeService
             return [];
         }
 
-        $student->increment('current_points', self::DAILY_FULL_CLEAR_BONUS_POINTS);
+        $student->addPoints(self::DAILY_FULL_CLEAR_BONUS_POINTS);
 
         DailyChallengeCycleReward::create([
             'student_id' => $studentId,
@@ -443,7 +443,7 @@ class DailyChallengeService
                 continue;
             }
 
-            $student->increment('current_points', $points);
+            $student->addPoints($points);
 
             DailyChallengeCycleReward::create([
                 'student_id' => $studentId,
