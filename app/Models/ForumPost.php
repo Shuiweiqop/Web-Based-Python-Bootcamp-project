@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Log;
 
 class ForumPost extends Model
@@ -14,6 +14,7 @@ class ForumPost extends Model
     use HasFactory;
 
     protected $table = 'forum_posts';
+
     protected $primaryKey = 'post_id';
 
     protected $fillable = [
@@ -177,9 +178,10 @@ class ForumPost extends Model
      */
     public function getIsFavoritedAttribute()
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return false;
         }
+
         return ForumFavorite::isFavorited(auth()->id(), $this->post_id);
     }
 
@@ -188,9 +190,10 @@ class ForumPost extends Model
      */
     public function getIsLikedAttribute()
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return false;
         }
+
         return ForumPostLike::isLiked(auth()->id(), $this->post_id);
     }
 
@@ -201,7 +204,7 @@ class ForumPost extends Model
     {
         $user = $this->user;
 
-        if (!$user) {
+        if (! $user) {
             return [
                 'name' => 'Unknown User',
                 'role' => 'Unknown',
@@ -274,8 +277,9 @@ class ForumPost extends Model
             if ($userId && $userId == $this->user_id) {
                 Log::info('View not counted - author viewing own post', [
                     'post_id' => $this->post_id,
-                    'user_id' => $userId
+                    'user_id' => $userId,
                 ]);
+
                 return false;
             }
 
@@ -289,8 +293,9 @@ class ForumPost extends Model
                     'post_id' => $this->post_id,
                     'user_id' => $userId,
                     'last_viewed' => $lastViewedAt,
-                    'minutes_ago' => $now->diffInMinutes($lastViewedAt)
+                    'minutes_ago' => $now->diffInMinutes($lastViewedAt),
                 ]);
+
                 return false;
             }
 
@@ -304,15 +309,16 @@ class ForumPost extends Model
                 'post_id' => $this->post_id,
                 'user_id' => $userId,
                 'new_views' => $this->fresh()->views,
-                'session_expires_in' => '5 minutes'
+                'session_expires_in' => '5 minutes',
             ]);
 
             return true;
         } catch (\Exception $e) {
             Log::error('Failed to increment views', [
                 'post_id' => $this->post_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -369,6 +375,7 @@ class ForumPost extends Model
     public function canPin($userId)
     {
         $user = User::find($userId);
+
         return $user?->role === 'administrator';
     }
 
@@ -379,6 +386,7 @@ class ForumPost extends Model
     public function canLock($userId)
     {
         $user = User::find($userId);
+
         return $user?->role === 'administrator';
     }
 

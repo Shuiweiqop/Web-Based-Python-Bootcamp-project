@@ -11,6 +11,7 @@ class SubmissionAnswer extends Model
     use HasFactory;
 
     protected $table = 'submission_answers';
+
     protected $primaryKey = 'answer_id';
 
     protected $fillable = [
@@ -24,7 +25,7 @@ class SubmissionAnswer extends Model
         'points_earned',
         'feedback',
         'answered_at',
-        'metadata'
+        'metadata',
     ];
 
     protected $casts = [
@@ -32,7 +33,7 @@ class SubmissionAnswer extends Model
         'is_correct' => 'boolean',
         'points_earned' => 'decimal:2',
         'answered_at' => 'datetime',
-        'metadata' => 'array'
+        'metadata' => 'array',
     ];
 
     // Relationships

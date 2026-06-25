@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers\Student;
 
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use App\Http\Controllers\Controller;
-use App\Models\Test;
-use App\Models\TestSubmission;
 use App\Models\LearningPath;
 use App\Models\StudentLearningPath;
+use App\Models\Test;
+use App\Models\TestSubmission;
 use App\Services\LearningPathRecommendationService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class OnboardingController extends Controller
 {
@@ -39,7 +38,7 @@ class OnboardingController extends Controller
 
         $student = $user->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('dashboard')
                 ->with('error', 'Student profile not found.');
         }
@@ -55,7 +54,7 @@ class OnboardingController extends Controller
             $latestSubmission = $student->getLatestPlacementTest();
 
             // If they have a recommendation but haven't accepted
-            if ($latestSubmission->recommended_path_id && !$latestSubmission->hasAcceptedRecommendation()) {
+            if ($latestSubmission->recommended_path_id && ! $latestSubmission->hasAcceptedRecommendation()) {
                 return redirect()->route('student.onboarding.result', $latestSubmission->submission_id);
             }
         }
@@ -81,7 +80,7 @@ class OnboardingController extends Controller
 
         $student = $user->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return back()->with('error', 'Student profile not found.');
         }
 
@@ -91,12 +90,13 @@ class OnboardingController extends Controller
             ->first();
 
         // Fallback to first placement test if active one not found
-        if (!$placementTest) {
+        if (! $placementTest) {
             $placementTest = Test::where('test_type', 'placement')->first();
         }
 
-        if (!$placementTest) {
+        if (! $placementTest) {
             Log::error('Placement test not found in database');
+
             return back()->with('error', 'Placement test not found. Please contact support.');
         }
 
@@ -114,12 +114,13 @@ class OnboardingController extends Controller
             Log::info('Resuming existing submission', [
                 'submission_id' => $existingSubmission->submission_id,
             ]);
+
             return redirect()->route('student.submissions.taking', $existingSubmission->submission_id)
                 ->with('info', 'Resuming your placement test...');
         }
 
         // Check if student can take the test
-        if (!$placementTest->canStudentTakeTest($student->student_id)) {
+        if (! $placementTest->canStudentTakeTest($student->student_id)) {
             return back()->with('error', 'You have already completed the placement test.');
         }
 
@@ -139,6 +140,7 @@ class OnboardingController extends Controller
                 Log::error('Placement test has no questions', [
                     'test_id' => $placementTest->test_id,
                 ]);
+
                 return back()->with('error', 'Placement test has no questions. Please contact administrator to add questions first.');
             }
 
@@ -191,8 +193,9 @@ class OnboardingController extends Controller
             ]);
 
             if (config('app.debug')) {
-                return back()->with('error', 'Database error: ' . $e->getMessage());
+                return back()->with('error', 'Database error: '.$e->getMessage());
             }
+
             return back()->with('error', 'Failed to start test due to database error. Please try again.');
         } catch (\Exception $e) {
             DB::rollback();
@@ -206,7 +209,7 @@ class OnboardingController extends Controller
             ]);
 
             if (config('app.debug')) {
-                return back()->with('error', 'Failed to start test: ' . $e->getMessage());
+                return back()->with('error', 'Failed to start test: '.$e->getMessage());
             }
 
             return back()->with('error', 'Failed to start test. Please try again.');
@@ -234,39 +237,42 @@ class OnboardingController extends Controller
         }
 
         // 修改验证逻辑：检查 status 而不是 is_completed
-        if (!$submission->is_placement_test) {
+        if (! $submission->is_placement_test) {
             Log::warning('Not a placement test', [
                 'submission_id' => $submissionId,
                 'is_placement_test' => $submission->is_placement_test,
             ]);
+
             return redirect()->route('student.onboarding.index')
                 ->with('error', 'Invalid submission: not a placement test');
         }
 
         // 检查是否已完成（status 应该是 'submitted' 或 'timeout'）
-        if (!in_array($submission->status, ['submitted', 'timeout'])) {
+        if (! in_array($submission->status, ['submitted', 'timeout'])) {
             Log::warning('Submission not completed', [
                 'submission_id' => $submissionId,
                 'status' => $submission->status,
                 'is_completed' => $submission->is_completed,
             ]);
+
             return redirect()->route('student.submissions.taking', $submissionId)
                 ->with('info', 'Please complete the test first.');
         }
 
         // If no recommendation yet, generate one
-        if (!$submission->recommended_path_id) {
+        if (! $submission->recommended_path_id) {
             Log::info('Generating recommendation', [
                 'submission_id' => $submissionId,
             ]);
 
             $recommendation = $this->recommendationService->recommendFromPlacementTest($submission);
 
-            if (!$recommendation['success']) {
+            if (! $recommendation['success']) {
                 Log::error('Failed to generate recommendation', [
                     'submission_id' => $submissionId,
                     'message' => $recommendation['message'],
                 ]);
+
                 return back()->with('error', $recommendation['message']);
             }
 
@@ -276,11 +282,12 @@ class OnboardingController extends Controller
         // Get recommendation details
         $recommendedPath = $submission->recommendedPath;
 
-        if (!$recommendedPath) {
+        if (! $recommendedPath) {
             Log::error('No recommended path found', [
                 'submission_id' => $submissionId,
                 'recommended_path_id' => $submission->recommended_path_id,
             ]);
+
             return redirect()->route('student.onboarding.index')
                 ->with('error', 'No suitable learning path found. Please contact support.');
         }
@@ -360,7 +367,7 @@ class OnboardingController extends Controller
         }
 
         // Verify it's a placement test
-        if (!$submission->is_placement_test) {
+        if (! $submission->is_placement_test) {
             return back()->with('error', 'Invalid submission');
         }
 
@@ -479,7 +486,7 @@ class OnboardingController extends Controller
         }
 
         // Only allow if feature is enabled
-        if (!config('recommendation.features.manual_path_selection', true)) {
+        if (! config('recommendation.features.manual_path_selection', true)) {
             return back()->with('error', 'Manual path selection is not available.');
         }
 

@@ -12,6 +12,7 @@ class ForumReport extends Model
     use HasFactory;
 
     protected $table = 'forum_reports';
+
     protected $primaryKey = 'report_id';
 
     protected $fillable = [
@@ -133,6 +134,7 @@ class ForumReport extends Model
         } elseif ($this->reportable_type === 'reply') {
             return $this->reply;
         }
+
         return null;
     }
 

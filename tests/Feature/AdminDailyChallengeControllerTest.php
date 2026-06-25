@@ -63,8 +63,8 @@ class AdminDailyChallengeControllerTest extends TestCase
     private function createUser(string $role): User
     {
         $user = User::create([
-            'name' => ucfirst($role) . ' User',
-            'email' => $role . uniqid() . '@example.com',
+            'name' => ucfirst($role).' User',
+            'email' => $role.uniqid().'@example.com',
             'password' => 'password',
             'role' => $role,
         ]);

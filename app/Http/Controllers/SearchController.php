@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ForumPost;
 use App\Models\Lesson;
 use App\Models\Reward;
-use App\Models\ForumPost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 
 class SearchController extends Controller
 {
@@ -26,7 +25,7 @@ class SearchController extends Controller
             return response()->json([
                 'success' => true,
                 'results' => [],
-                'message' => 'Please enter at least 2 characters'
+                'message' => 'Please enter at least 2 characters',
             ]);
         }
 
@@ -62,6 +61,7 @@ class SearchController extends Controller
             usort($results, function ($a, $b) use ($query) {
                 $aScore = $this->calculateRelevance($a, $query);
                 $bScore = $this->calculateRelevance($b, $query);
+
                 return $bScore - $aScore;
             });
 
@@ -88,7 +88,7 @@ class SearchController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Search failed: ' . $e->getMessage(),
+                'message' => 'Search failed: '.$e->getMessage(),
                 'results' => [],
             ], 500);
         }
@@ -111,7 +111,7 @@ class SearchController extends Controller
                     'content',
                     'difficulty',
                     'completion_reward_points',
-                    'estimated_duration'
+                    'estimated_duration',
                 ])
                 ->limit($limit)
                 ->get();
@@ -136,6 +136,7 @@ class SearchController extends Controller
             })->toArray();
         } catch (\Exception $e) {
             Log::error('Lesson search error', ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -158,7 +159,7 @@ class SearchController extends Controller
                     'rarity',
                     'point_cost',
                     'reward_type',
-                    'stock_quantity'
+                    'stock_quantity',
                 ])
                 ->limit($limit)
                 ->get();
@@ -181,6 +182,7 @@ class SearchController extends Controller
             })->toArray();
         } catch (\Exception $e) {
             Log::error('Reward search error', ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -191,8 +193,9 @@ class SearchController extends Controller
     private function searchForum($query, $limit)
     {
         // 检查是否有 ForumPost 模型
-        if (!class_exists('App\Models\ForumPost')) {
+        if (! class_exists('App\Models\ForumPost')) {
             Log::info('ForumPost model not found, skipping forum search');
+
             return [];
         }
 
@@ -208,7 +211,7 @@ class SearchController extends Controller
                     'title',
                     'content',
                     'author_id',
-                    'replies_count'
+                    'replies_count',
                 ])
                 ->limit($limit)
                 ->get();
@@ -229,6 +232,7 @@ class SearchController extends Controller
             })->toArray();
         } catch (\Exception $e) {
             Log::warning('Forum search error', ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -323,7 +327,7 @@ class SearchController extends Controller
             $truncated = mb_substr($truncated, 0, $lastSpace);
         }
 
-        return $truncated . '...';
+        return $truncated.'...';
     }
 
     /**
@@ -336,7 +340,7 @@ class SearchController extends Controller
         if (strlen($query) < 2) {
             return response()->json([
                 'success' => true,
-                'suggestions' => []
+                'suggestions' => [],
             ]);
         }
 

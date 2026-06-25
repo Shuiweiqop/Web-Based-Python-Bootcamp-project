@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Log;
 class AILessonGeneratorService
 {
     private ?string $apiKey;
+
     private string $model = 'gemini-2.5-flash';
+
     private int $maxRetries = 3;
 
     public function __construct()
@@ -54,7 +56,7 @@ class AILessonGeneratorService
             }
 
             // Response must contain at least one candidate.
-            if (!isset($data['candidates']) || empty($data['candidates'])) {
+            if (! isset($data['candidates']) || empty($data['candidates'])) {
                 Log::error('No candidates in response', ['data' => $data]);
                 throw new \RuntimeException('AI did not generate a valid response', 502);
             }
@@ -65,7 +67,7 @@ class AILessonGeneratorService
                 Log::warning('Response truncated due to MAX_TOKENS');
             }
 
-            if (!isset($candidate['content']['parts'][0]['text'])) {
+            if (! isset($candidate['content']['parts'][0]['text'])) {
                 Log::error('No text in response', [
                     'candidate' => $candidate,
                     'finishReason' => $candidate['finishReason'] ?? 'unknown',
@@ -86,7 +88,7 @@ class AILessonGeneratorService
                     'content' => $content,
                     'error' => json_last_error_msg(),
                 ]);
-                throw new \RuntimeException('Failed to parse AI response: ' . json_last_error_msg(), 502);
+                throw new \RuntimeException('Failed to parse AI response: '.json_last_error_msg(), 502);
             }
 
             return $this->validateAndFormatResponse($lessonData);
@@ -109,7 +111,7 @@ class AILessonGeneratorService
                 [
                     'parts' => [
                         [
-                            'text' => "You are an expert programming instructor. Generate structured lesson content in JSON format only. Do not include any markdown formatting or code blocks.\n\n" . $prompt,
+                            'text' => "You are an expert programming instructor. Generate structured lesson content in JSON format only. Do not include any markdown formatting or code blocks.\n\n".$prompt,
                         ],
                     ],
                 ],
@@ -135,7 +137,7 @@ class AILessonGeneratorService
             $status = $response->status();
             $shouldRetry = in_array($status, [429, 503], true) && $attempt < $this->maxRetries;
 
-            if (!$shouldRetry) {
+            if (! $shouldRetry) {
                 return $response;
             }
 
@@ -173,14 +175,14 @@ class AILessonGeneratorService
 
         $prompt .= "Return ONLY a JSON object (no markdown formatting) with this structure:\n";
         $prompt .= "{\n";
-        $prompt .= '  "title": "Lesson title",' . "\n";
-        $prompt .= '  "content": "Brief overview paragraph",' . "\n";
-        $prompt .= '  "estimated_duration": 30,' . "\n";
-        $prompt .= '  "sections": [' . "\n";
-        $prompt .= '    {"title": "Section 1", "content": "Detailed content with examples"},' . "\n";
-        $prompt .= '    {"title": "Section 2", "content": "More content"}' . "\n";
-        $prompt .= '  ]' . "\n";
-        $prompt .= "}";
+        $prompt .= '  "title": "Lesson title",'."\n";
+        $prompt .= '  "content": "Brief overview paragraph",'."\n";
+        $prompt .= '  "estimated_duration": 30,'."\n";
+        $prompt .= '  "sections": ['."\n";
+        $prompt .= '    {"title": "Section 1", "content": "Detailed content with examples"},'."\n";
+        $prompt .= '    {"title": "Section 2", "content": "More content"}'."\n";
+        $prompt .= '  ]'."\n";
+        $prompt .= '}';
 
         return $prompt;
     }
@@ -190,7 +192,7 @@ class AILessonGeneratorService
      */
     private function validateAndFormatResponse(array $data): array
     {
-        if (!isset($data['title']) || !isset($data['sections'])) {
+        if (! isset($data['title']) || ! isset($data['sections'])) {
             throw new \RuntimeException('AI response missing required fields', 502);
         }
 
@@ -231,6 +233,7 @@ class AILessonGeneratorService
             return $response->successful() && isset($response->json()['candidates']);
         } catch (\Exception $e) {
             Log::error('Gemini Connection Test Failed', ['error' => $e->getMessage()]);
+
             return false;
         }
     }

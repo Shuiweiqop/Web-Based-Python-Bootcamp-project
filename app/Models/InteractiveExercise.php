@@ -10,8 +10,11 @@ class InteractiveExercise extends Model
     use HasFactory;
 
     protected $table = 'interactive_exercises';
+
     protected $primaryKey = 'exercise_id';
+
     public $incrementing = true;
+
     protected $keyType = 'int';
 
     protected $fillable = [
@@ -112,6 +115,7 @@ class InteractiveExercise extends Model
         if (is_string($value)) {
             $decoded = json_decode($value, true);
             $this->attributes['content'] = $decoded === null ? json_encode(['raw' => $value]) : json_encode($decoded);
+
             return;
         }
 
@@ -125,11 +129,12 @@ class InteractiveExercise extends Model
             return 'No time limit';
         }
         if ($duration < 60) {
-            return $duration . ' min';
+            return $duration.' min';
         }
         $hours = floor($duration / 60);
         $minutes = $duration % 60;
-        return $hours . 'h' . ($minutes ? ' ' . $minutes . 'm' : '');
+
+        return $hours.'h'.($minutes ? ' '.$minutes.'m' : '');
     }
 
     /**
@@ -137,7 +142,7 @@ class InteractiveExercise extends Model
      */
     public function getFormattedTimeLimitAttribute(): string
     {
-        if (!$this->time_limit_sec) {
+        if (! $this->time_limit_sec) {
             return 'No time limit';
         }
 
@@ -197,7 +202,7 @@ class InteractiveExercise extends Model
     {
         $bestSubmission = $this->getBestSubmissionForStudent($studentId);
 
-        if (!$bestSubmission) {
+        if (! $bestSubmission) {
             return false;
         }
 
@@ -206,6 +211,7 @@ class InteractiveExercise extends Model
         }
 
         $percentage = ($bestSubmission->score / $this->max_score) * 100;
+
         return $percentage >= $minPercentage;
     }
 
@@ -225,6 +231,7 @@ class InteractiveExercise extends Model
     public function getBestScoreForStudent($studentId)
     {
         $bestSubmission = $this->getBestSubmissionForStudent($studentId);
+
         return $bestSubmission ? $bestSubmission->score : 0;
     }
 
@@ -442,7 +449,7 @@ class InteractiveExercise extends Model
             ->get();
 
         foreach ($exercises as $exercise) {
-            if (!$exercise->isCompletedByStudent($studentId)) {
+            if (! $exercise->isCompletedByStudent($studentId)) {
                 return $exercise;
             }
         }

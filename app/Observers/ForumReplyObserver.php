@@ -4,7 +4,6 @@ namespace App\Observers;
 
 use App\Models\ForumReply;
 use App\Models\Notification;
-use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 class ForumReplyObserver
@@ -19,7 +18,7 @@ class ForumReplyObserver
             $post = $reply->post;
             $replyAuthor = $reply->user;
 
-            if (!$post || !$replyAuthor) {
+            if (! $post || ! $replyAuthor) {
                 return;
             }
 
@@ -54,13 +53,14 @@ class ForumReplyObserver
     protected function notifyPostAuthor($reply, $post, $replyAuthor)
     {
         $postAuthor = $post->user;
-        if (!$postAuthor) {
+        if (! $postAuthor) {
             return;
         }
 
         // Ensure the post author has a user_Id
-        if (!$postAuthor->user_Id) {
+        if (! $postAuthor->user_Id) {
             Log::warning('Post author has no user_Id', ['post_id' => $post->post_id]);
+
             return;
         }
 
@@ -89,13 +89,14 @@ class ForumReplyObserver
     protected function notifyParentReplyAuthor($reply, $parentReply, $replyAuthor)
     {
         $parentAuthor = $parentReply->user;
-        if (!$parentAuthor) {
+        if (! $parentAuthor) {
             return;
         }
 
         // Ensure the parent reply author has a user_Id
-        if (!$parentAuthor->user_Id) {
+        if (! $parentAuthor->user_Id) {
             Log::warning('Parent reply author has no user_Id', ['reply_id' => $parentReply->reply_id]);
+
             return;
         }
 

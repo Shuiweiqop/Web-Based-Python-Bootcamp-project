@@ -1,26 +1,25 @@
 <?php
 
-use App\Http\Controllers\AdminLessonController;
-use App\Http\Controllers\LessonController;
-use App\Http\Controllers\ExerciseController;
-use App\Http\Controllers\TestController;
 use App\Http\Controllers\AdminExerciseController;
-use App\Http\Controllers\AdminTestController;
-use App\Http\Controllers\StudentTestController;
+use App\Http\Controllers\AdminLessonController;
 use App\Http\Controllers\AdminQuestionController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\StudentProfileController;
 use App\Http\Controllers\AdminRewardController;
-use App\Http\Controllers\Student\RewardController as StudentRewardController;
-use App\Http\Controllers\Student\InventoryController as StudentInventoryController;
+use App\Http\Controllers\AdminTestController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\ForumController;
+use App\Http\Controllers\LessonController;
 use App\Http\Controllers\OtpController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Student\InventoryController as StudentInventoryController;
+use App\Http\Controllers\Student\RewardController as StudentRewardController;
+use App\Http\Controllers\StudentProfileController;
+use App\Http\Controllers\StudentTestController;
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use App\Http\Controllers\SearchController;
+
 // ==================== Landing Page (公开访问) ====================
 Route::get('/', [DashboardController::class, 'home'])->name('home');
 
@@ -247,4 +246,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/search/suggestions', [SearchController::class, 'suggestions']);
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

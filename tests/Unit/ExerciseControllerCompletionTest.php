@@ -20,7 +20,7 @@ class ExerciseControllerCompletionTest extends TestCase
 
     public function test_coding_exercise_with_no_test_results_is_not_completed(): void
     {
-        $exercise = new InteractiveExercise();
+        $exercise = new InteractiveExercise;
         $exercise->exercise_type = 'coding';
 
         $result = $this->invokeDetermineCompletionStatus($exercise, [
@@ -34,7 +34,7 @@ class ExerciseControllerCompletionTest extends TestCase
 
     public function test_coding_exercise_with_all_tests_passed_is_completed(): void
     {
-        $exercise = new InteractiveExercise();
+        $exercise = new InteractiveExercise;
         $exercise->exercise_type = 'coding';
 
         $result = $this->invokeDetermineCompletionStatus($exercise, [
@@ -51,7 +51,7 @@ class ExerciseControllerCompletionTest extends TestCase
 
     public function test_non_coding_exercise_requires_passing_score(): void
     {
-        $exercise = new InteractiveExercise();
+        $exercise = new InteractiveExercise;
         $exercise->exercise_type = 'drag_drop';
         $exercise->max_score = 100;
 
@@ -65,7 +65,7 @@ class ExerciseControllerCompletionTest extends TestCase
 
     public function test_non_coding_exercise_completed_when_client_completed_and_score_is_passing(): void
     {
-        $exercise = new InteractiveExercise();
+        $exercise = new InteractiveExercise;
         $exercise->exercise_type = 'drag_drop';
         $exercise->max_score = 100;
 

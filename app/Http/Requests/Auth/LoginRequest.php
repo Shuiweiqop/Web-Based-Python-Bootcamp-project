@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
-use App\Models\User;
 
 class LoginRequest extends FormRequest
 {
@@ -57,7 +57,7 @@ class LoginRequest extends FormRequest
         // 检查用户是否存在
         $user = User::where('email', $this->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -66,14 +66,14 @@ class LoginRequest extends FormRequest
         }
 
         // 检查邮箱是否验证
-        if (!$user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedEmail()) {
             throw ValidationException::withMessages([
                 'email' => 'Please verify your email address before logging in. Check your inbox for the verification link.',
             ]);
         }
 
         // 尝试登录
-        if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -91,7 +91,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -108,6 +108,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return strtolower($this->input('email')) . '|' . $this->ip();
+        return strtolower($this->input('email')).'|'.$this->ip();
     }
 }

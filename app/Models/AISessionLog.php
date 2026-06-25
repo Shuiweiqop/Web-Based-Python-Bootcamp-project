@@ -10,6 +10,7 @@ class AISessionLog extends Model
     use HasFactory;
 
     protected $table = 'ai_session_logs';
+
     protected $primaryKey = 'ai_session_log_id';
 
     protected $fillable = [

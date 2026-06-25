@@ -2,15 +2,12 @@
 
 namespace App\Models;
 
+use App\Jobs\UpdateStudentPathProgress;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Jobs\UpdateStudentPathProgress;
-use App\Models\LessonProgress;
-use App\Models\SubmissionAnswer;
-use App\Models\TestSubmission;
 use Illuminate\Support\Facades\Log;
 
 class StudentProfile extends Model
@@ -18,8 +15,11 @@ class StudentProfile extends Model
     use HasFactory;
 
     protected $table = 'student_profiles';
+
     protected $primaryKey = 'student_id';
+
     public $incrementing = true;
+
     protected $keyType = 'int';
 
     protected $fillable = [
@@ -101,6 +101,7 @@ class StudentProfile extends Model
     {
         return $this->hasMany(StudentLearningPath::class, 'student_id', 'student_id');
     }
+
     /**
      * Active learning paths
      */
@@ -127,7 +128,6 @@ class StudentProfile extends Model
         return $this->hasMany(StudentLearningPath::class, 'student_id', 'student_id')
             ->where('student_learning_paths.status', 'completed');
     }
-
 
     /**
      * Placement test submissions
@@ -201,11 +201,10 @@ class StudentProfile extends Model
 
     /**
      * Assign a learning path to this student
-     * 
-     * @param int $pathId The learning path ID
-     * @param string $assignedBy Who assigned it ('system', 'admin', 'self')
-     * @param array $additionalData Additional data (submission_id, notes, etc.)
-     * @return StudentLearningPath
+     *
+     * @param  int  $pathId  The learning path ID
+     * @param  string  $assignedBy  Who assigned it ('system', 'admin', 'self')
+     * @param  array  $additionalData  Additional data (submission_id, notes, etc.)
      */
     public function assignLearningPath(
         int $pathId,
@@ -234,7 +233,7 @@ class StudentProfile extends Model
             'assigned_by' => $assignedBy,
             'assigned_at' => now(),
             'status' => 'active',
-            'is_primary' => $additionalData['is_primary'] ?? !$hasActivePaths,
+            'is_primary' => $additionalData['is_primary'] ?? ! $hasActivePaths,
             'placement_test_submission_id' => $additionalData['placement_test_submission_id'] ?? null,
             'assigned_by_user_id' => $additionalData['assigned_by_user_id'] ?? null,
             'recommendation_score' => $additionalData['recommendation_score'] ?? null,
@@ -250,7 +249,7 @@ class StudentProfile extends Model
     {
         $placementTest = $this->getLatestPlacementTest();
 
-        if (!$placementTest || !$placementTest->recommended_path_id) {
+        if (! $placementTest || ! $placementTest->recommended_path_id) {
             return null;
         }
 
@@ -270,6 +269,7 @@ class StudentProfile extends Model
             ]
         );
     }
+
     /**
      * Get learning path progress summary
      */
@@ -444,6 +444,7 @@ class StudentProfile extends Model
         $this->increment('lifetime_points', $points);
         $this->updateLastActivity();
         $this->refresh();
+
         return $this;
     }
 
@@ -452,6 +453,7 @@ class StudentProfile extends Model
         $this->current_points = max(0, $this->current_points - $points);
         $this->save();
         $this->refresh();
+
         return $this;
     }
 
@@ -461,6 +463,7 @@ class StudentProfile extends Model
         $this->updateLastActivity();
         UpdateStudentPathProgress::dispatch($this->student_id);
         $this->refresh();
+
         return $this;
     }
 
@@ -480,6 +483,7 @@ class StudentProfile extends Model
 
         $this->updateLastActivity();
         $this->refresh();
+
         return $this;
     }
 
@@ -495,7 +499,7 @@ class StudentProfile extends Model
 
         $this->update([
             'total_tests_taken' => $submissions->count(),
-            'average_score' => $submissions->avg('score') ?? 0.00
+            'average_score' => $submissions->avg('score') ?? 0.00,
         ]);
 
         return $this;
@@ -514,12 +518,13 @@ class StudentProfile extends Model
         $this->updateLastActivity();
         $this->save();
         $this->refresh();
+
         return $this;
     }
 
     public function processTestCompletion($testSubmission): self
     {
-        if (!$testSubmission || !$testSubmission->is_completed) {
+        if (! $testSubmission || ! $testSubmission->is_completed) {
             return $this;
         }
 
@@ -541,7 +546,9 @@ class StudentProfile extends Model
     public function canTakeTest($testId): bool
     {
         $test = \App\Models\Test::find($testId);
-        if (!$test) return false;
+        if (! $test) {
+            return false;
+        }
 
         return $test->canStudentTakeTest($this->student_id);
     }
@@ -664,7 +671,9 @@ class StudentProfile extends Model
             ->limit(6)
             ->pluck('score');
 
-        if ($recentSubmissions->count() < 4) return 0;
+        if ($recentSubmissions->count() < 4) {
+            return 0;
+        }
 
         $recent = $recentSubmissions->take(3)->avg();
         $earlier = $recentSubmissions->skip(3)->avg();
@@ -697,8 +706,8 @@ class StudentProfile extends Model
             $total = $row ? (int) $row->total : 0;
             $correct = $row ? (int) $row->correct : 0;
             $stats[$type] = [
-                'total'    => $total,
-                'correct'  => $correct,
+                'total' => $total,
+                'correct' => $correct,
                 'accuracy' => $total > 0 ? round(($correct / $total) * 100, 2) : 0,
             ];
         }
@@ -760,7 +769,10 @@ class StudentProfile extends Model
         $totalLessons = \Illuminate\Support\Facades\Cache::remember(
             'active_lesson_count', 300, fn () => Lesson::where('status', 'active')->count()
         );
-        if ($totalLessons === 0) return 0;
+        if ($totalLessons === 0) {
+            return 0;
+        }
+
         return min(100, (int) round(($this->total_lessons_completed / $totalLessons) * 100));
     }
 
@@ -778,6 +790,7 @@ class StudentProfile extends Model
     public function getTestPerformanceLevelAttribute(): string
     {
         $avgScore = (float) $this->average_score;
+
         return match (true) {
             $avgScore >= 90 => 'Excellent',
             $avgScore >= 80 => 'Very Good',
@@ -904,7 +917,7 @@ class StudentProfile extends Model
     {
         $snapshot = $this->equipped_snapshot;
 
-        if (empty($snapshot) || !is_array($snapshot)) {
+        if (empty($snapshot) || ! is_array($snapshot)) {
             return [
                 'avatar_frame' => null,
                 'background' => null,
@@ -1056,11 +1069,12 @@ class StudentProfile extends Model
     {
         $progress = $this->getProgressForLesson($lessonId);
 
-        if (!$progress) {
+        if (! $progress) {
             Log::warning('No progress record found for lesson', [
                 'student_id' => $this->student_id,
                 'lesson_id' => $lessonId,
             ]);
+
             return;
         }
 
@@ -1080,7 +1094,7 @@ class StudentProfile extends Model
     {
         $progress = $this->getProgressForLesson($lessonId);
 
-        if (!$progress) {
+        if (! $progress) {
             return [
                 'can_complete' => false,
                 'reason' => 'Progress record not found.',
@@ -1125,9 +1139,9 @@ class StudentProfile extends Model
         $canComplete = $allExercisesCompleted && $allTestsPassed;
 
         $reason = '';
-        if (!$allExercisesCompleted) {
+        if (! $allExercisesCompleted) {
             $reason = "Complete all exercises ({$completedExercises}/{$totalExercises} done).";
-        } elseif (!$allTestsPassed) {
+        } elseif (! $allTestsPassed) {
             $reason = "Pass all tests ({$passedTests}/{$totalTests} passed).";
         }
 

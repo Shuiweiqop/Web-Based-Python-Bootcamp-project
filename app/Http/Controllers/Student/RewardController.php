@@ -25,6 +25,7 @@ class RewardController extends Controller
     protected function getStudentProfile()
     {
         $user = Auth::user();
+
         return StudentProfile::where('user_Id', $user->user_Id)->firstOrFail();
     }
 
@@ -96,7 +97,7 @@ class RewardController extends Controller
                 'points_level' => $studentProfile->points_level,
             ],
             'rewardTypes' => Reward::TYPES,
-            'rarities'    => Reward::RARITIES,
+            'rarities' => Reward::RARITIES,
             'filters' => [
                 'type' => $request->get('type', 'all'),
                 'rarity' => $request->get('rarity', 'all'),
@@ -107,7 +108,6 @@ class RewardController extends Controller
             ],
         ]);
     }
-
 
     /**
      * 显示单个奖励详情
@@ -156,19 +156,18 @@ class RewardController extends Controller
             $message = $result['message'];
         } catch (\RuntimeException $e) {
             $msg = $e->getMessage();
-            return $request->header('X-Inertia') || !$request->wantsJson()
+
+            return $request->header('X-Inertia') || ! $request->wantsJson()
                 ? back()->withErrors(['purchase' => $msg])
                 : response()->json(['success' => false, 'message' => $msg], 422);
         }
 
-        if ($request->wantsJson() && !$request->header('X-Inertia')) {
+        if ($request->wantsJson() && ! $request->header('X-Inertia')) {
             return response()->json(array_merge(['success' => true], $result));
         }
 
         return redirect()->route('student.inventory.index')->with('success', $message);
     }
-
-
 
     /**
      * 获取购买历史

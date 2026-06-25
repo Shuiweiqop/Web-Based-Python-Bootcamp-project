@@ -2,14 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
-use App\Models\ForumPost;
-use App\Models\ForumReply;
-use App\Models\ForumPostLike;
-use App\Models\ForumReplyLike;
 use App\Models\ForumFavorite;
-use Illuminate\Support\Facades\DB;
+use App\Models\ForumPost;
+use App\Models\ForumPostLike;
+use App\Models\ForumReply;
+use App\Models\ForumReplyLike;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class ForumSeeder extends Seeder
 {
@@ -22,9 +21,10 @@ class ForumSeeder extends Seeder
         $admin = User::where('role', 'admin')->first();
         $students = User::where('role', 'student')->take(10)->get();
 
-        if (!$admin || $students->isEmpty()) {
+        if (! $admin || $students->isEmpty()) {
             $this->command->warn('Please create users first before running ForumSeeder');
             $this->command->warn('Need: 1 admin and at least 10 students');
+
             return;
         }
 
@@ -364,11 +364,11 @@ df = pd.read_csv("file.csv", chunksize=1000)
 
         $this->command->info('Forum seeder completed successfully!');
         $this->command->info('Created:');
-        $this->command->info('- ' . ForumPost::count() . ' posts');
-        $this->command->info('- ' . ForumReply::count() . ' replies');
-        $this->command->info('- ' . ForumPostLike::count() . ' post likes');
-        $this->command->info('- ' . ForumReplyLike::count() . ' reply likes');
-        $this->command->info('- ' . ForumFavorite::count() . ' favorites');
+        $this->command->info('- '.ForumPost::count().' posts');
+        $this->command->info('- '.ForumReply::count().' replies');
+        $this->command->info('- '.ForumPostLike::count().' post likes');
+        $this->command->info('- '.ForumReplyLike::count().' reply likes');
+        $this->command->info('- '.ForumFavorite::count().' favorites');
     }
 
     /**

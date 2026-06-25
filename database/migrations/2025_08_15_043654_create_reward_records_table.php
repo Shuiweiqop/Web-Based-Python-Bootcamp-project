@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('issued_by', [
                 'system',          // Automatically awarded by system
                 'admin',           // Manually awarded by administrator
-                'student_purchase' // Student redeemed with points
+                'student_purchase', // Student redeemed with points
             ])->default('student_purchase');
 
             $table->timestamp('issued_at')->useCurrent();

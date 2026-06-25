@@ -2,21 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\StudentProfile;
 use App\Models\LearningPath;
 use App\Models\StudentLearningPath;
-use App\Models\TestSubmission;
+use App\Models\StudentProfile;
 use App\Services\LearningPathRecommendationService;
 use App\Services\PathProgressService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class AdminPathAssignmentController extends Controller
 {
     protected $recommendationService;
+
     protected $pathProgressService;
 
     public function __construct(
@@ -130,7 +129,7 @@ class AdminPathAssignmentController extends Controller
                 'path_id',
                 'status',
                 'assigned_by',
-                'is_primary'
+                'is_primary',
             ]),
             'students' => $students,
             'paths' => $paths,
@@ -237,8 +236,9 @@ class AdminPathAssignmentController extends Controller
             foreach ($validated['student_ids'] as $studentId) {
                 $student = StudentProfile::find($studentId);
 
-                if (!$student) {
+                if (! $student) {
                     $errors[] = "Student ID {$studentId} not found.";
+
                     continue;
                 }
 
@@ -250,6 +250,7 @@ class AdminPathAssignmentController extends Controller
 
                 if ($existing) {
                     $errors[] = "{$student->user->name} is already enrolled in this path.";
+
                     continue;
                 }
 
@@ -273,17 +274,18 @@ class AdminPathAssignmentController extends Controller
 
             $message = $successCount > 0
                 ? "Successfully assigned path to {$successCount} student(s)!"
-                : "No students were assigned.";
+                : 'No students were assigned.';
 
-            if (!empty($errors)) {
-                $message .= " Issues: " . implode(', ', $errors);
+            if (! empty($errors)) {
+                $message .= ' Issues: '.implode(', ', $errors);
             }
 
             return redirect()->route('admin.path-assignments.index')
                 ->with($successCount > 0 ? 'success' : 'warning', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to assign paths: ' . $e->getMessage()])
+
+            return back()->withErrors(['error' => 'Failed to assign paths: '.$e->getMessage()])
                 ->withInput();
         }
     }
@@ -297,7 +299,7 @@ class AdminPathAssignmentController extends Controller
             'student.user',
             'learningPath.lessons',
             'placementTestSubmission',
-            'assignedByUser'
+            'assignedByUser',
         ])->findOrFail($assignmentId);
 
         // Get detailed progress
@@ -383,7 +385,7 @@ class AdminPathAssignmentController extends Controller
 
             return back()->with('success', 'Assignment updated successfully!');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to update assignment: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to update assignment: '.$e->getMessage()]);
         }
     }
 
@@ -397,7 +399,7 @@ class AdminPathAssignmentController extends Controller
         // Check if student has made significant progress
         if ($assignment->progress_percent > 50) {
             return back()->withErrors([
-                'error' => 'Cannot delete assignment with significant progress (>50%). Consider marking as abandoned instead.'
+                'error' => 'Cannot delete assignment with significant progress (>50%). Consider marking as abandoned instead.',
             ]);
         }
 
@@ -407,7 +409,7 @@ class AdminPathAssignmentController extends Controller
             return redirect()->route('admin.path-assignments.index')
                 ->with('success', 'Path assignment removed successfully.');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to remove assignment: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to remove assignment: '.$e->getMessage()]);
         }
     }
 
@@ -445,7 +447,7 @@ class AdminPathAssignmentController extends Controller
             foreach ($validated['assignment_ids'] as $assignmentId) {
                 $assignment = StudentLearningPath::find($assignmentId);
 
-                if (!$assignment) {
+                if (! $assignment) {
                     continue;
                 }
 
@@ -485,7 +487,8 @@ class AdminPathAssignmentController extends Controller
             return back()->with('success', "Successfully updated {$successCount} assignment(s)!");
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to update assignments: ' . $e->getMessage()]);
+
+            return back()->withErrors(['error' => 'Failed to update assignments: '.$e->getMessage()]);
         }
     }
 
@@ -504,7 +507,7 @@ class AdminPathAssignmentController extends Controller
                 "Progress recalculated! Updated from {$result['previous_progress']}% to {$result['current_progress']}%"
             );
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to recalculate progress: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to recalculate progress: '.$e->getMessage()]);
         }
     }
 
@@ -586,7 +589,7 @@ class AdminPathAssignmentController extends Controller
         $assignments = $query->get();
 
         // Generate CSV
-        $filename = 'path_assignments_' . now()->format('Y-m-d_His') . '.csv';
+        $filename = 'path_assignments_'.now()->format('Y-m-d_His').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",

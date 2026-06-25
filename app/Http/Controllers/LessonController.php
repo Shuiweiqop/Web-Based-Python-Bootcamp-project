@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Lesson;
-use App\Models\LessonRegistration;
 use App\Models\InteractiveExercise;
+use App\Models\Lesson;
+use App\Models\LessonProgress;
+use App\Models\LessonRegistration;
 use App\Models\Notification;
+use App\Models\StudentProfile;
 use App\Models\User;
+use App\Services\LearningPathProgressService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use App\Models\StudentProfile;
-use App\Models\LessonProgress;
-use App\Services\LearningPathProgressService;
 
 class LessonController extends Controller
 {
@@ -60,6 +60,7 @@ class LessonController extends Controller
                     $lessons->getCollection()->transform(function ($lesson) use ($registrations) {
                         $lesson->registration_status = $registrations->get($lesson->lesson_id)?->registration_status;
                         $lesson->is_registered = isset($registrations[$lesson->lesson_id]);
+
                         return $lesson;
                     });
                 }
@@ -68,7 +69,7 @@ class LessonController extends Controller
 
         return Inertia::render('Lessons/Index', [
             'lessons' => $lessons,
-            'filters' => $request->only(['q', 'difficulty'])
+            'filters' => $request->only(['q', 'difficulty']),
         ]);
     }
 
@@ -82,7 +83,6 @@ class LessonController extends Controller
         $lesson->load(['sections' => function ($query) {
             $query->orderBy('order_index');
         }]);
-
 
         $exercises = $lesson->interactiveExercises()
             ->where('is_active', true)
@@ -98,7 +98,6 @@ class LessonController extends Controller
                     'time_limit_sec' => $exercise->time_limit_sec,
                 ];
             });
-
 
         $tests = $lesson->tests()
             ->where('status', 'active')
@@ -117,10 +116,9 @@ class LessonController extends Controller
                 ];
             });
 
-
         $userProgress = [
             'exercises' => [],
-            'tests' => []
+            'tests' => [],
         ];
 
         if ($user && $user->role === 'student') {
@@ -146,11 +144,9 @@ class LessonController extends Controller
                     ]
                 );
 
-
                 if ($isRegistered && $progress->status === 'not_started') {
                     $progress->markAsStarted();
                 }
-
 
                 if ($isRegistered) {
                     $progress->updateCompletionFlags();
@@ -172,7 +168,6 @@ class LessonController extends Controller
                     'last_updated_at' => $progress->last_updated_at?->toIso8601String(),
                 ];
 
-
                 $exerciseSubmissions = \App\Models\ExerciseSubmission::where('student_id', $studentId)
                     ->whereIn('exercise_id', $exercises->pluck('exercise_id'))
                     ->get()
@@ -188,7 +183,6 @@ class LessonController extends Controller
                         'attempts' => $submissions->count(),
                     ];
                 }
-
 
                 $testSubmissions = \App\Models\TestSubmission::where('student_id', $studentId)
                     ->whereIn('test_id', $tests->pluck('test_id'))
@@ -235,13 +229,13 @@ class LessonController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user || $user->role !== 'student') {
+        if (! $user || $user->role !== 'student') {
             return back()->withErrors(['error' => 'Only students can update lesson progress.']);
         }
 
         $studentProfile = StudentProfile::where('user_Id', $user->user_Id)->first();
 
-        if (!$studentProfile) {
+        if (! $studentProfile) {
             return back()->withErrors(['error' => 'Student profile not found.']);
         }
 
@@ -250,7 +244,7 @@ class LessonController extends Controller
             ->where('registration_status', 'active')
             ->first();
 
-        if (!$registration) {
+        if (! $registration) {
             return back()->withErrors(['error' => 'You must register for this lesson first.']);
         }
 
@@ -266,7 +260,7 @@ class LessonController extends Controller
             ]
         );
 
-        if (!$progress->content_completed) {
+        if (! $progress->content_completed) {
             $progress->markContentCompleted();
         }
 
@@ -278,7 +272,7 @@ class LessonController extends Controller
      */
     public function register(Request $request, Lesson $lesson)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->back()->with('error', 'Authentication required');
         }
 
@@ -290,7 +284,7 @@ class LessonController extends Controller
 
         $studentProfile = $user->studentProfile ?? null;
 
-        if (!$studentProfile) {
+        if (! $studentProfile) {
             return redirect()->back()->with('error', 'Student profile not found');
         }
 
@@ -323,10 +317,11 @@ class LessonController extends Controller
             return redirect()->back()->with('success', 'Successfully registered for lesson!');
         } catch (\Exception $e) {
             Log::error('Lesson registration failed', [
-                'lesson_id'  => $lesson->lesson_id,
+                'lesson_id' => $lesson->lesson_id,
                 'student_id' => $studentProfile->student_id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
+
             return redirect()->back()->with('error', 'Registration failed. Please try again.');
         }
     }
@@ -336,7 +331,7 @@ class LessonController extends Controller
      */
     public function cancelRegistration(Request $request, Lesson $lesson)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->back()->with('error', 'Authentication required');
         }
 
@@ -347,7 +342,7 @@ class LessonController extends Controller
         }
 
         $studentProfile = $user->studentProfile ?? null;
-        if (!$studentProfile) {
+        if (! $studentProfile) {
             return redirect()->back()->with('error', 'Student profile not found');
         }
 
@@ -357,7 +352,7 @@ class LessonController extends Controller
                 ->where('registration_status', 'active')
                 ->first();
 
-            if (!$registration) {
+            if (! $registration) {
                 return redirect()->back()->with('error', 'No active registration found');
             }
 
@@ -366,7 +361,8 @@ class LessonController extends Controller
 
             return redirect()->back()->with('success', 'Registration cancelled successfully');
         } catch (\Exception $e) {
-            Log::error('Cancellation failed: ' . $e->getMessage());
+            Log::error('Cancellation failed: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Cancellation failed. Please try again.');
         }
     }
@@ -376,7 +372,7 @@ class LessonController extends Controller
      */
     public function myRegistrations()
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
@@ -387,10 +383,10 @@ class LessonController extends Controller
         }
 
         $studentProfile = $user->studentProfile;
-        if (!$studentProfile) {
+        if (! $studentProfile) {
             return Inertia::render('Lessons/MyRegistrations', [
                 'registrations' => [],
-                'error' => 'Student profile not found'
+                'error' => 'Student profile not found',
             ]);
         }
 
@@ -400,7 +396,7 @@ class LessonController extends Controller
             ->paginate(10);
 
         return Inertia::render('Lessons/MyRegistrations', [
-            'registrations' => $registrations
+            'registrations' => $registrations,
         ]);
     }
 
@@ -413,7 +409,7 @@ class LessonController extends Controller
             ->where('lesson_id', $lessonId)
             ->first();
 
-        if (!$progress || !$progress->content_completed) {
+        if (! $progress || ! $progress->content_completed) {
             abort(403, 'Please review the lesson content before accessing exercises or tests.');
         }
     }
@@ -442,7 +438,7 @@ class LessonController extends Controller
             }
         }
 
-        if (!$isRegistered) {
+        if (! $isRegistered) {
             return redirect()->route('lessons.show', $lesson)
                 ->with('error', 'You must register for this lesson first.');
         }
@@ -461,10 +457,9 @@ class LessonController extends Controller
             'stats' => [
                 'total_exercises' => $exercises->count(),
                 'total_points' => $exercises->sum('max_score'),
-            ]
+            ],
         ]);
     }
-
 
     public function exerciseShow(Lesson $lesson, InteractiveExercise $exercise)
     {
@@ -474,7 +469,7 @@ class LessonController extends Controller
         }
 
         // Ensure exercise is active
-        if (!$exercise->is_active) {
+        if (! $exercise->is_active) {
             abort(404, 'Exercise is not available');
         }
 
@@ -495,13 +490,12 @@ class LessonController extends Controller
             }
         }
 
-        if (!$isRegistered) {
+        if (! $isRegistered) {
             return redirect()->route('lessons.show', $lesson)
                 ->with('error', 'You must register for this lesson first.');
         }
 
         $this->ensureLessonContentReviewed($studentId, $lesson->lesson_id);
-
 
         $exerciseData = [
             'exercise_id' => $exercise->exercise_id,
@@ -517,7 +511,6 @@ class LessonController extends Controller
             'formatted_duration' => $exercise->formatted_duration,
         ];
 
-
         if ($exercise->exercise_type === 'coding') {
             $exerciseData = array_merge($exerciseData, [
                 'starter_code' => $exercise->starter_code ?? '',
@@ -528,7 +521,7 @@ class LessonController extends Controller
 
             Log::info('Coding Exercise loaded', [
                 'exercise_id' => $exercise->exercise_id,
-                'has_starter_code' => !empty($exercise->starter_code),
+                'has_starter_code' => ! empty($exercise->starter_code),
                 'test_cases_count' => is_array($exercise->test_cases) ? count($exercise->test_cases) : 0,
                 'enable_live_editor' => $exercise->enable_live_editor ?? false,
             ]);
@@ -540,7 +533,6 @@ class LessonController extends Controller
         ]);
     }
 
-
     public function getExercise(Lesson $lesson, InteractiveExercise $exercise)
     {
         // Ensure exercise belongs to the specified lesson
@@ -549,7 +541,7 @@ class LessonController extends Controller
         }
 
         // Ensure exercise is active
-        if (!$exercise->is_active) {
+        if (! $exercise->is_active) {
             abort(404, 'Exercise is not available');
         }
 
@@ -603,7 +595,7 @@ class LessonController extends Controller
         }
 
         // Ensure exercise is active
-        if (!$exercise->is_active) {
+        if (! $exercise->is_active) {
             abort(400, 'Exercise is not available');
         }
 
@@ -617,10 +609,10 @@ class LessonController extends Controller
                     ->where('registration_status', 'active')
                     ->first();
 
-                if (!$registration) {
+                if (! $registration) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'You must be registered for this lesson to submit exercises'
+                        'message' => 'You must be registered for this lesson to submit exercises',
                     ], 403);
                 }
             }
@@ -667,7 +659,7 @@ class LessonController extends Controller
      */
     private function scoreDragDrop($content, $answer, $maxScore): int
     {
-        if (!isset($content['items']) || !is_array($answer)) {
+        if (! isset($content['items']) || ! is_array($answer)) {
             return 0;
         }
 
@@ -689,7 +681,7 @@ class LessonController extends Controller
      */
     private function scoreAdventure($content, $answer, $maxScore): int
     {
-        if (!isset($content['scenarios']) || !is_array($answer)) {
+        if (! isset($content['scenarios']) || ! is_array($answer)) {
             return 0;
         }
 
@@ -717,25 +709,25 @@ class LessonController extends Controller
             return [
                 'level' => 'excellent',
                 'message' => 'Excellent work! You have mastered this concept completely!',
-                'suggestion' => 'Keep it up and move on to the next challenge!'
+                'suggestion' => 'Keep it up and move on to the next challenge!',
             ];
         } elseif ($percentage >= 70) {
             return [
                 'level' => 'good',
                 'message' => 'Well done! You understand most of the content.',
-                'suggestion' => 'A bit more practice on the details will make it perfect.'
+                'suggestion' => 'A bit more practice on the details will make it perfect.',
             ];
         } elseif ($percentage >= 50) {
             return [
                 'level' => 'okay',
                 'message' => 'Good try! You have grasped the basic concepts.',
-                'suggestion' => 'Review the lesson content and try again.'
+                'suggestion' => 'Review the lesson content and try again.',
             ];
         } else {
             return [
                 'level' => 'needs_improvement',
                 'message' => 'Keep going! Learning programming takes time and practice.',
-                'suggestion' => 'Review the lesson content first. Feel free to ask for help if needed.'
+                'suggestion' => 'Review the lesson content first. Feel free to ask for help if needed.',
             ];
         }
     }
@@ -747,20 +739,23 @@ class LessonController extends Controller
 
             $user = Auth::user();
 
-            if (!$user) {
+            if (! $user) {
                 Log::warning('User not authenticated');
+
                 return back()->withErrors(['error' => 'User not authenticated.']);
             }
 
             if ($user->role !== 'student') {
                 Log::warning('User is not a student', ['user_Id' => $user->user_Id, 'role' => $user->role]);
+
                 return back()->withErrors(['error' => 'Only students can complete lessons.']);
             }
 
             $studentProfile = StudentProfile::where('user_Id', $user->user_Id)->first();
 
-            if (!$studentProfile) {
+            if (! $studentProfile) {
                 Log::error('Student profile does not exist', ['user_Id' => $user->user_Id]);
+
                 return back()->withErrors(['error' => 'Student profile not found.']);
             }
 
@@ -770,13 +765,15 @@ class LessonController extends Controller
                 ->where('lesson_id', $lesson->lesson_id)
                 ->first();
 
-            if (!$registration) {
+            if (! $registration) {
                 Log::warning('Student is not registered for this lesson');
+
                 return back()->withErrors(['error' => 'You are not registered for this lesson.']);
             }
 
             if ($registration->registration_status === 'completed') {
                 Log::info('This lesson has already been completed');
+
                 return back()->withErrors(['error' => 'You have already completed this lesson.']);
             }
 
@@ -787,11 +784,13 @@ class LessonController extends Controller
 
             if ($progress && $progress->reward_granted) {
                 Log::warning('Reward has already been granted');
+
                 return back()->withErrors(['error' => 'You have already received the completion reward.']);
             }
 
-            if (!$progress || !$progress->content_completed) {
+            if (! $progress || ! $progress->content_completed) {
                 Log::warning('Lesson content not reviewed before completion claim');
+
                 return back()->withErrors(['error' => 'Please review the lesson content before claiming completion points.']);
             }
 
@@ -809,6 +808,7 @@ class LessonController extends Controller
 
             if ($completedExercises < $requiredExercises) {
                 Log::warning('There are still unfinished exercises');
+
                 return back()->withErrors(['error' => "Please complete the required exercises first. ($completedExercises/{$requiredExercises})."]);
             }
 
@@ -827,6 +827,7 @@ class LessonController extends Controller
 
             if ($passedTests < $requiredTests) {
                 Log::warning('There are still tests not passed');
+
                 return back()->withErrors(['error' => "Please pass the required tests first. ($passedTests/{$requiredTests})."]);
             }
 
@@ -922,7 +923,7 @@ class LessonController extends Controller
                 Log::info('✓ Lesson completed successfully!');
 
                 return back()->with('lesson_completed', true)
-                    ->with('success', 'Congratulations! You have completed the lesson and earned ' . $lesson->completion_reward_points . ' points!');
+                    ->with('success', 'Congratulations! You have completed the lesson and earned '.$lesson->completion_reward_points.' points!');
             } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error('Transaction failed', ['error' => $e->getMessage()]);
@@ -931,9 +932,10 @@ class LessonController extends Controller
         } catch (\Exception $e) {
             Log::error('❌ completeLesson exception', [
                 'error' => $e->getMessage(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
             ]);
-            return back()->withErrors(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
+
+            return back()->withErrors(['error' => 'An unexpected error occurred: '.$e->getMessage()]);
         }
     }
 
@@ -978,6 +980,7 @@ class LessonController extends Controller
                 'lesson_id' => $lesson->lesson_id,
                 'error' => $e->getMessage(),
             ]);
+
             return 0;
         }
     }

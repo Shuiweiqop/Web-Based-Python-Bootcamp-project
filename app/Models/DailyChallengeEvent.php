@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DailyChallengeEvent extends Model
 {
     protected $table = 'daily_challenge_events';
+
     protected $primaryKey = 'challenge_event_id';
 
     protected $fillable = [
@@ -38,4 +39,3 @@ class DailyChallengeEvent extends Model
         return $this->belongsTo(StudentProfile::class, 'student_id', 'student_id');
     }
 }
-

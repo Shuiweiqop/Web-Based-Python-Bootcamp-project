@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\LearningPath;
 use App\Models\StudentLearningPath;
 use App\Models\StudentProfile;
-use App\Models\User;
 use App\Services\PathProgressService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class AdminStudentPathController extends Controller
 {
@@ -32,7 +29,7 @@ class AdminStudentPathController extends Controller
         $query = StudentLearningPath::with([
             'student.user',
             'learningPath',
-            'assignedByUser'
+            'assignedByUser',
         ])->withTrashed();
 
         // Search by student name or email
@@ -148,7 +145,7 @@ class AdminStudentPathController extends Controller
                 'progress_max',
                 'overdue_only',
                 'sort_by',
-                'sort_order'
+                'sort_order',
             ]),
             'statusOptions' => [
                 'active' => 'Active',
@@ -173,7 +170,7 @@ class AdminStudentPathController extends Controller
             'student.user',
             'learningPath.lessons',
             'assignedByUser',
-            'placementTestSubmission'
+            'placementTestSubmission',
         ])->findOrFail($studentPathId);
 
         // Get progress details
@@ -198,7 +195,7 @@ class AdminStudentPathController extends Controller
                 'time_spent_minutes' => $progress?->time_spent_minutes ?? 0,
                 'last_accessed_at' => $progress?->last_accessed_at?->format('M d, Y h:i A'),
                 'can_access' => $canAccess,
-                'is_locked' => !$canAccess,
+                'is_locked' => ! $canAccess,
             ];
         });
 
@@ -319,7 +316,7 @@ class AdminStudentPathController extends Controller
 
         if ($existing) {
             return back()->withErrors([
-                'path_id' => 'This student already has an active assignment for this learning path.'
+                'path_id' => 'This student already has an active assignment for this learning path.',
             ])->setStatusCode(303);
         }
 
@@ -352,8 +349,9 @@ class AdminStudentPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
-                ->withErrors(['error' => 'Failed to assign path: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to assign path: '.$e->getMessage()])
                 ->withInput()
                 ->setStatusCode(303);
         }
@@ -415,12 +413,12 @@ class AdminStudentPathController extends Controller
             ]);
 
             // Set as primary if requested
-            if ($request->boolean('is_primary') && !$assignment->is_primary) {
+            if ($request->boolean('is_primary') && ! $assignment->is_primary) {
                 $assignment->setAsPrimary();
             }
 
             // Update completion date if status changed to completed
-            if ($validated['status'] === 'completed' && !$assignment->completed_at) {
+            if ($validated['status'] === 'completed' && ! $assignment->completed_at) {
                 $assignment->update(['completed_at' => now()]);
             }
 
@@ -430,7 +428,7 @@ class AdminStudentPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Failed to update assignment: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to update assignment: '.$e->getMessage()])
                 ->withInput()
                 ->setStatusCode(303);
         }
@@ -455,7 +453,7 @@ class AdminStudentPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Failed to pause path: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to pause path: '.$e->getMessage()])
                 ->setStatusCode(303);
         }
     }
@@ -481,7 +479,7 @@ class AdminStudentPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Failed to resume path: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to resume path: '.$e->getMessage()])
                 ->setStatusCode(303);
         }
     }
@@ -501,7 +499,7 @@ class AdminStudentPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Failed to update progress: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to update progress: '.$e->getMessage()])
                 ->setStatusCode(303);
         }
     }
@@ -516,7 +514,7 @@ class AdminStudentPathController extends Controller
         // Warn if student has made progress
         if ($assignment->progress_percent > 0) {
             return back()->withErrors([
-                'error' => 'This student has already made progress. Consider pausing or abandoning instead.'
+                'error' => 'This student has already made progress. Consider pausing or abandoning instead.',
             ])->setStatusCode(303);
         }
 
@@ -529,7 +527,7 @@ class AdminStudentPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Failed to delete assignment: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to delete assignment: '.$e->getMessage()])
                 ->setStatusCode(303);
         }
     }
@@ -560,6 +558,7 @@ class AdminStudentPathController extends Controller
 
                 if ($existing) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -590,8 +589,9 @@ class AdminStudentPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
-                ->withErrors(['error' => 'Bulk assignment failed: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Bulk assignment failed: '.$e->getMessage()])
                 ->setStatusCode(303);
         }
     }
@@ -626,7 +626,7 @@ class AdminStudentPathController extends Controller
         $avgCompletionByPath = LearningPath::withCount([
             'completedStudents' => function ($query) {
                 $query->whereNotNull('completed_at');
-            }
+            },
         ])
             ->with(['completedStudents' => function ($query) {
                 $query->whereNotNull('started_at')
@@ -690,7 +690,7 @@ class AdminStudentPathController extends Controller
         $events[] = [
             'type' => 'assigned',
             'date' => $assignment->assigned_at,
-            'description' => 'Path assigned' . ($assignment->assigned_by === 'manual' ? ' by admin' : ' automatically'),
+            'description' => 'Path assigned'.($assignment->assigned_by === 'manual' ? ' by admin' : ' automatically'),
         ];
 
         // Started
@@ -714,7 +714,7 @@ class AdminStudentPathController extends Controller
             $events[] = [
                 'type' => 'lesson_completed',
                 'date' => $completion->completed_at,
-                'description' => 'Completed lesson: ' . $completion->lesson->title,
+                'description' => 'Completed lesson: '.$completion->lesson->title,
             ];
         }
 
@@ -736,6 +736,7 @@ class AdminStudentPathController extends Controller
         return array_map(function ($event) {
             $event['date'] = $event['date']->format('M d, Y h:i A');
             $event['relative_time'] = $event['date'];
+
             return $event;
         }, array_slice($events, 0, 20)); // Limit to 20 most recent
     }

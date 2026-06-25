@@ -22,7 +22,7 @@ return new class extends Migration
                 'showcase',       // Show off projects/code
                 'resources',      // Share learning resources
                 'announcements',  // Important announcements
-                'feedback'        // Platform feedback and suggestions
+                'feedback',        // Platform feedback and suggestions
             ])->default('general');
             $table->integer('likes')->unsigned()->default(0);
             $table->integer('views')->unsigned()->default(0);

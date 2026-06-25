@@ -40,7 +40,7 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
     }
@@ -50,9 +50,9 @@ class UserFactory extends Factory
      */
     public function administrator(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'role' => 'administrator',
-            'name' => fake()->name() . ' (Admin)',
+            'name' => fake()->name().' (Admin)',
         ]);
     }
 
@@ -61,7 +61,7 @@ class UserFactory extends Factory
      */
     public function student(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'role' => 'student',
         ]);
     }
@@ -75,7 +75,7 @@ class UserFactory extends Factory
         $prefix = fake()->randomElement($prefixes);
         $number = fake()->numerify('#######');
 
-        return $prefix . '-' . substr($number, 0, 3) . '-' . substr($number, 3);
+        return $prefix.'-'.substr($number, 0, 3).'-'.substr($number, 3);
     }
 
     /**
@@ -83,8 +83,8 @@ class UserFactory extends Factory
      */
     public function withProfilePicture(): static
     {
-        return $this->state(fn(array $attributes) => [
-            'profile_picture' => 'profile-pictures/' . fake()->uuid() . '.jpg',
+        return $this->state(fn (array $attributes) => [
+            'profile_picture' => 'profile-pictures/'.fake()->uuid().'.jpg',
         ]);
     }
 }

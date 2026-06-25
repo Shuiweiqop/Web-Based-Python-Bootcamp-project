@@ -12,12 +12,13 @@ class ForumReplyLike extends Model
     use HasFactory;
 
     protected $table = 'forum_reply_likes';
+
     protected $primaryKey = 'like_id';
 
     protected $fillable = [
         'user_id',
         'reply_id',
-        'liked_at'
+        'liked_at',
     ];
 
     protected $casts = [
@@ -68,7 +69,7 @@ class ForumReplyLike extends Model
         parent::boot();
 
         static::creating(function ($like) {
-            if (!$like->liked_at) {
+            if (! $like->liked_at) {
                 $like->liked_at = now();
             }
         });
@@ -85,7 +86,7 @@ class ForumReplyLike extends Model
             Log::info('=== Toggle Reply Like ===', [
                 'user_id' => $userId,
                 'reply_id' => $replyId,
-                'step' => 'start'
+                'step' => 'start',
             ]);
 
             $like = static::where('user_id', $userId)
@@ -109,11 +110,11 @@ class ForumReplyLike extends Model
                 $newLike = static::create([
                     'user_id' => $userId,
                     'reply_id' => $replyId,
-                    'liked_at' => now()
+                    'liked_at' => now(),
                 ]);
 
                 Log::info('New reply like created', [
-                    'like_id' => $newLike->like_id
+                    'like_id' => $newLike->like_id,
                 ]);
 
                 // Increment reply likes count
@@ -130,7 +131,7 @@ class ForumReplyLike extends Model
                 'user_id' => $userId,
                 'reply_id' => $replyId,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw $e;
@@ -148,8 +149,9 @@ class ForumReplyLike extends Model
             Log::error('isLiked check failed', [
                 'user_id' => $userId,
                 'reply_id' => $replyId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

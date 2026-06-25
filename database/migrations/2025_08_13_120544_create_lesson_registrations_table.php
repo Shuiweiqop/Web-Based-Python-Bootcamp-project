@@ -16,7 +16,7 @@ return new class extends Migration
             $table->enum('registration_status', [
                 'active',
                 'completed',
-                'cancelled'
+                'cancelled',
             ])->default('active');
 
             // 完成进度追踪
