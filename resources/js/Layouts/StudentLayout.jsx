@@ -159,7 +159,7 @@ function StudentLayoutContent({ header, children }) {
   ];
 
   const desktopPrimaryNavItems = mainNavItems.filter((item) =>
-    ['dashboard', 'lessons.index', 'forum.index', 'student.missions.index', 'student.paths.index'].includes(item.href)
+    ['dashboard', 'lessons.index', 'forum.index', 'student.missions.index', 'student.leaderboard', 'student.paths.index'].includes(item.href)
   );
 
   const desktopOverflowNavItems = mainNavItems.filter((item) =>
