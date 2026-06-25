@@ -23,24 +23,24 @@ class ExerciseSubmissionService
         int $timeSpent
     ): array {
         return DB::transaction(function () use ($student, $lesson, $exercise, $answer, $timeSpent) {
-            $score     = (int) round(min(max($answer['score'], 0), $exercise->max_score));
+            $score = (int) round(min(max($answer['score'], 0), $exercise->max_score));
             $completed = $this->determineCompletionStatus($exercise, $answer, $score);
 
             $submission = ExerciseSubmission::create([
-                'exercise_id'  => $exercise->exercise_id,
-                'student_id'   => $student->student_id,
-                'score'        => $score,
-                'time_taken'   => $timeSpent,
-                'completed'    => $completed,
-                'answer_data'  => array_merge($answer, ['score' => $score, 'completed' => $completed]),
+                'exercise_id' => $exercise->exercise_id,
+                'student_id' => $student->student_id,
+                'score' => $score,
+                'time_taken' => $timeSpent,
+                'completed' => $completed,
+                'answer_data' => array_merge($answer, ['score' => $score, 'completed' => $completed]),
                 'submitted_at' => now(),
             ]);
 
             Log::info('Exercise submission saved', [
                 'submission_id' => $submission->submission_id,
-                'exercise_id'   => $exercise->exercise_id,
-                'student_id'    => $student->student_id,
-                'score'         => $submission->score,
+                'exercise_id' => $exercise->exercise_id,
+                'student_id' => $student->student_id,
+                'score' => $submission->score,
             ]);
 
             $missionProgress = null;
@@ -52,9 +52,9 @@ class ExerciseSubmissionService
                     );
                 } catch (\Throwable $e) {
                     Log::warning('Failed to record exercise daily challenge event', [
-                        'student_id'    => $student->student_id,
+                        'student_id' => $student->student_id,
                         'submission_id' => $submission->submission_id,
-                        'error'         => $e->getMessage(),
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -71,20 +71,20 @@ class ExerciseSubmissionService
             return [
                 'submission' => [
                     'submission_id' => $submission->submission_id,
-                    'score'         => $submission->score,
-                    'percentage'    => $submission->percentage,
-                    'is_passing'    => $submission->is_passing,
-                    'grade'         => $submission->grade,
+                    'score' => $submission->score,
+                    'percentage' => $submission->percentage,
+                    'is_passing' => $submission->is_passing,
+                    'grade' => $submission->grade,
                 ],
                 'mission_progress' => $missionProgress,
-                'lesson_progress'  => $registration ? [
-                    'exercises_completed'  => $registration->exercises_completed,
-                    'exercises_required'   => $lesson->required_exercises ?? 0,
-                    'tests_passed'         => $registration->tests_passed,
-                    'tests_required'       => $lesson->required_tests ?? 0,
-                    'lesson_completed'     => $registration->registration_status === 'completed',
-                    'completion_percentage'=> $this->calculateCompletionPercentage($registration, $lesson),
-                    'points_amount'        => $registration->registration_status === 'completed'
+                'lesson_progress' => $registration ? [
+                    'exercises_completed' => $registration->exercises_completed,
+                    'exercises_required' => $lesson->required_exercises ?? 0,
+                    'tests_passed' => $registration->tests_passed,
+                    'tests_required' => $lesson->required_tests ?? 0,
+                    'lesson_completed' => $registration->registration_status === 'completed',
+                    'completion_percentage' => $this->calculateCompletionPercentage($registration, $lesson),
+                    'points_amount' => $registration->registration_status === 'completed'
                         ? $lesson->completion_reward_points
                         : 0,
                 ] : null,
@@ -111,20 +111,21 @@ class ExerciseSubmissionService
         }
 
         $testResults = $answer['test_results'] ?? null;
-        if (!is_array($testResults) || count($testResults) === 0) {
+        if (! is_array($testResults) || count($testResults) === 0) {
             return false;
         }
 
-        $passed = collect($testResults)->filter(fn($r) => is_array($r) && ($r['passed'] ?? false) === true)->count();
+        $passed = collect($testResults)->filter(fn ($r) => is_array($r) && ($r['passed'] ?? false) === true)->count();
+
         return $passed === count($testResults);
     }
 
     private function updateLessonProgress(LessonRegistration $registration, Lesson $lesson, StudentProfile $student): void
     {
         $exercisesCompleted = ExerciseSubmission::where('student_id', $student->student_id)
-            ->whereHas('exercise', fn($q) => $q->where('lesson_id', $lesson->lesson_id))
+            ->whereHas('exercise', fn ($q) => $q->where('lesson_id', $lesson->lesson_id))
             ->where('completed', true)
-            ->where(fn($q) => $q->whereRaw(
+            ->where(fn ($q) => $q->whereRaw(
                 'score >= (SELECT max_score * 0.7 FROM interactive_exercises WHERE exercise_id = exercise_submissions.exercise_id)'
             ))
             ->distinct('exercise_id')
@@ -141,18 +142,18 @@ class ExerciseSubmissionService
 
         $registration->update([
             'exercises_completed' => $exercisesCompleted,
-            'tests_passed'        => $testsPassed,
+            'tests_passed' => $testsPassed,
         ]);
 
         Log::info('Updated lesson progress', [
-            'student_id'          => $student->student_id,
-            'lesson_id'           => $lesson->lesson_id,
+            'student_id' => $student->student_id,
+            'lesson_id' => $lesson->lesson_id,
             'exercises_completed' => $exercisesCompleted,
-            'tests_passed'        => $testsPassed,
+            'tests_passed' => $testsPassed,
         ]);
 
         $exercisesRequired = $lesson->required_exercises ?? 0;
-        $testsRequired     = $lesson->required_tests ?? 0;
+        $testsRequired = $lesson->required_tests ?? 0;
 
         if (
             $exercisesCompleted >= $exercisesRequired &&
@@ -163,9 +164,9 @@ class ExerciseSubmissionService
             $student->addPoints($lesson->completion_reward_points);
 
             $registration->update([
-                'registration_status'       => 'completed',
+                'registration_status' => 'completed',
                 'completion_points_awarded' => $lesson->completion_reward_points,
-                'completed_at'              => now(),
+                'completed_at' => now(),
             ]);
 
             $progress = LessonProgress::firstOrCreate(
@@ -191,8 +192,8 @@ class ExerciseSubmissionService
 
             Log::info('Lesson completed and points awarded', [
                 'student_id' => $student->student_id,
-                'lesson_id'  => $lesson->lesson_id,
-                'points'     => $lesson->completion_reward_points,
+                'lesson_id' => $lesson->lesson_id,
+                'points' => $lesson->completion_reward_points,
             ]);
         }
     }
@@ -200,10 +201,10 @@ class ExerciseSubmissionService
     private function calculateCompletionPercentage(LessonRegistration $registration, Lesson $lesson): int
     {
         $exercisesRequired = max($lesson->required_exercises ?? 1, 1);
-        $testsRequired     = max($lesson->required_tests ?? 1, 1);
+        $testsRequired = max($lesson->required_tests ?? 1, 1);
 
         $exercisesProgress = min($registration->exercises_completed / $exercisesRequired, 1) * 50;
-        $testsProgress     = min($registration->tests_passed / $testsRequired, 1) * 50;
+        $testsProgress = min($registration->tests_passed / $testsRequired, 1) * 50;
 
         return (int) round($exercisesProgress + $testsProgress);
     }

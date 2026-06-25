@@ -20,7 +20,7 @@ return new class extends Migration
 
         // notifications — unread count and paginated list are the two hottest queries
         Schema::table('notifications', function (Blueprint $table) {
-            $table->index(['user_Id', 'is_read'],    'idx_notifications_user_unread');
+            $table->index(['user_Id', 'is_read'], 'idx_notifications_user_unread');
             $table->index(['user_Id', 'created_at'], 'idx_notifications_user_created');
         });
 

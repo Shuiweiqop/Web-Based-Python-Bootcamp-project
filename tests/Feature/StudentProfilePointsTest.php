@@ -54,8 +54,8 @@ class StudentProfilePointsTest extends TestCase
     private function student(): StudentProfile
     {
         $user = User::create([
-            'name' => 'Student ' . uniqid(),
-            'email' => 'student' . uniqid() . '@example.com',
+            'name' => 'Student '.uniqid(),
+            'email' => 'student'.uniqid().'@example.com',
             'password' => 'password',
             'role' => 'student',
         ]);

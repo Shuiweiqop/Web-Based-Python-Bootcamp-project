@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AISessionLog;
+use App\Models\ForumReport;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\LessonRegistration;
-use App\Models\AISessionLog;
-use App\Models\ForumReport;
 use App\Models\Test;
 use App\Models\User;
 use App\Services\DailyChallengeService;
@@ -133,7 +133,7 @@ class DashboardController extends Controller
         $user->load('studentProfile');
         $studentProfile = $user->studentProfile;
 
-        if ($studentProfile && !$studentProfile->hasActiveLearningPath()) {
+        if ($studentProfile && ! $studentProfile->hasActiveLearningPath()) {
             return redirect()->route('student.onboarding.index')
                 ->with('info', 'Welcome! Let\'s find the perfect learning path for you.');
         }
@@ -392,8 +392,8 @@ class DashboardController extends Controller
                     'type' => $item->activity_type,
                     'message' => match ($item->activity_type) {
                         'student_registration' => "{$item->actor_name} joined the platform",
-                        'lesson_completed' => "{$item->actor_name} completed " . ($item->subject_name ?: 'a lesson'),
-                        'test_submitted' => "{$item->actor_name} submitted " . ($item->subject_name ?: 'a test'),
+                        'lesson_completed' => "{$item->actor_name} completed ".($item->subject_name ?: 'a lesson'),
+                        'test_submitted' => "{$item->actor_name} submitted ".($item->subject_name ?: 'a test'),
                         'forum_post' => "{$item->actor_name} posted in the forum",
                         'forum_reply' => "{$item->actor_name} replied in the forum",
                         default => "{$item->actor_name} had new activity",
@@ -419,7 +419,7 @@ class DashboardController extends Controller
                             ? route('forum.show', $item->post_id)
                             : null,
                         'forum_reply' => $item->post_id && $item->reply_id
-                            ? route('forum.show', $item->post_id) . '#reply-' . $item->reply_id
+                            ? route('forum.show', $item->post_id).'#reply-'.$item->reply_id
                             : null,
                         default => null,
                     },
@@ -617,7 +617,7 @@ class DashboardController extends Controller
             ->get()
             ->map(fn ($lesson) => [
                 'title' => $lesson->title ?: 'Untitled lesson',
-                'metric' => round(($lesson->completed_count / max($lesson->tracked_count, 1)) * 100) . '% completion',
+                'metric' => round(($lesson->completed_count / max($lesson->tracked_count, 1)) * 100).'% completion',
                 'supportingText' => "{$lesson->completed_count} of {$lesson->tracked_count} tracked journeys completed",
                 'href' => route('admin.progress.lesson', $lesson->lesson_id),
             ])
@@ -626,23 +626,23 @@ class DashboardController extends Controller
         $lowPassTests = DB::table('test_submissions')
             ->join('tests', 'test_submissions.test_id', '=', 'tests.test_id')
             ->whereIn('test_submissions.status', ['submitted', 'timeout'])
-            ->selectRaw("
+            ->selectRaw('
                 test_submissions.test_id,
                 tests.title,
                 COUNT(*) as attempt_count,
                 SUM(CASE WHEN test_submissions.score >= tests.passing_score THEN 1 ELSE 0 END) as passed_count
-            ")
+            ')
             ->groupBy('test_submissions.test_id', 'tests.title')
             ->havingRaw('COUNT(*) > 0')
-            ->orderByRaw("
+            ->orderByRaw('
                 (SUM(CASE WHEN test_submissions.score >= tests.passing_score THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) ASC
-            ")
+            ')
             ->orderByDesc('attempt_count')
             ->limit(3)
             ->get()
             ->map(fn ($test) => [
                 'title' => $test->title ?: 'Untitled test',
-                'metric' => round(($test->passed_count / max($test->attempt_count, 1)) * 100) . '% pass rate',
+                'metric' => round(($test->passed_count / max($test->attempt_count, 1)) * 100).'% pass rate',
                 'supportingText' => "{$test->passed_count} of {$test->attempt_count} submitted attempts passed",
                 'href' => route('admin.tests.show', $test->test_id),
             ])
@@ -793,7 +793,7 @@ class DashboardController extends Controller
         return [
             'direction' => $percent > 0 ? 'up' : ($percent < 0 ? 'down' : 'neutral'),
             'percent' => abs($percent),
-            'label' => ($percent > 0 ? '+' : '') . $percent . '%',
+            'label' => ($percent > 0 ? '+' : '').$percent.'%',
         ];
     }
 
@@ -806,7 +806,7 @@ class DashboardController extends Controller
         }
 
         if ($difference < 0) {
-            return abs($difference) . " fewer {$subject} than {$previousLabel}";
+            return abs($difference)." fewer {$subject} than {$previousLabel}";
         }
 
         if ($current === 0) {

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\LearningPath;
 use App\Models\Lesson;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class LearningPathSeeder extends Seeder

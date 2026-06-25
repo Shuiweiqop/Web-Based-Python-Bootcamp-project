@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DailyChallengeProgress extends Model
 {
     protected $table = 'daily_challenge_progress';
+
     protected $primaryKey = 'challenge_progress_id';
 
     protected $fillable = [
@@ -50,4 +51,3 @@ class DailyChallengeProgress extends Model
         return $this->hasMany(DailyChallengeEvent::class, 'challenge_progress_id', 'challenge_progress_id');
     }
 }
-

@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\StudentProfile;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class AdminProgressController extends Controller
 {
@@ -177,8 +175,9 @@ class AdminProgressController extends Controller
 
             return back()->with('success', 'Progress recalculated successfully!');
         } catch (\Exception $e) {
-            Log::error('Failed to recalculate progress: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to recalculate progress: ' . $e->getMessage()]);
+            Log::error('Failed to recalculate progress: '.$e->getMessage());
+
+            return back()->withErrors(['error' => 'Failed to recalculate progress: '.$e->getMessage()]);
         }
     }
 
@@ -199,7 +198,7 @@ class AdminProgressController extends Controller
                     $progress->updateProgress($calculatedProgress);
                     $successCount++;
                 } catch (\Exception $e) {
-                    Log::error("Failed to recalculate progress for student {$progress->student_id}: " . $e->getMessage());
+                    Log::error("Failed to recalculate progress for student {$progress->student_id}: ".$e->getMessage());
                     $failCount++;
                 }
             }
@@ -211,8 +210,9 @@ class AdminProgressController extends Controller
 
             return back()->with('success', $message);
         } catch (\Exception $e) {
-            Log::error('Failed to recalculate lesson progress: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to recalculate progress: ' . $e->getMessage()]);
+            Log::error('Failed to recalculate lesson progress: '.$e->getMessage());
+
+            return back()->withErrors(['error' => 'Failed to recalculate progress: '.$e->getMessage()]);
         }
     }
 
@@ -235,8 +235,9 @@ class AdminProgressController extends Controller
 
             return back()->with('success', 'Progress reset successfully!');
         } catch (\Exception $e) {
-            Log::error('Failed to reset progress: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to reset progress: ' . $e->getMessage()]);
+            Log::error('Failed to reset progress: '.$e->getMessage());
+
+            return back()->withErrors(['error' => 'Failed to reset progress: '.$e->getMessage()]);
         }
     }
 
@@ -272,7 +273,7 @@ class AdminProgressController extends Controller
             $progress = $query->orderBy('last_updated_at', 'desc')->get();
 
             // Generate CSV filename with timestamp
-            $filename = 'lesson_progress_' . now()->format('Y-m-d_His') . '.csv';
+            $filename = 'lesson_progress_'.now()->format('Y-m-d_His').'.csv';
 
             $headers = [
                 'Content-Type' => 'text/csv',
@@ -286,7 +287,7 @@ class AdminProgressController extends Controller
                 $file = fopen('php://output', 'w');
 
                 // Write UTF-8 BOM for Excel compatibility
-                fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
                 // Header row
                 fputcsv($file, [
@@ -331,10 +332,12 @@ class AdminProgressController extends Controller
 
             return response()->stream($callback, 200, $headers);
         } catch (\Exception $e) {
-            Log::error('Failed to export progress: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to export progress report: ' . $e->getMessage()]);
+            Log::error('Failed to export progress: '.$e->getMessage());
+
+            return back()->withErrors(['error' => 'Failed to export progress report: '.$e->getMessage()]);
         }
     }
+
     /**
      * Display a specific progress record with details
      */
@@ -446,12 +449,12 @@ class AdminProgressController extends Controller
                 'stats' => $stats,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching progress details: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Error fetching progress details: '.$e->getMessage());
+            Log::error('Stack trace: '.$e->getTraceAsString());
 
             return redirect()
                 ->route('admin.progress.index')
-                ->with('error', 'Failed to load progress details: ' . $e->getMessage());
+                ->with('error', 'Failed to load progress details: '.$e->getMessage());
         }
     }
 }

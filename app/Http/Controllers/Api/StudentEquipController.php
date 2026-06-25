@@ -17,6 +17,7 @@ class StudentEquipController extends Controller
     protected function getStudentProfile()
     {
         $user = Auth::user();
+
         return StudentProfile::where('user_Id', $user->user_Id)->firstOrFail();
     }
 
@@ -91,7 +92,7 @@ class StudentEquipController extends Controller
                         'description' => $inventory->reward->description,
                         'points_cost' => $inventory->reward->points_cost,
                         'metadata' => $inventory->reward->metadata ?? [],
-                    ]
+                    ],
                 ];
             });
 
@@ -106,12 +107,12 @@ class StudentEquipController extends Controller
         } catch (\Exception $e) {
             Log::error('❌ Failed to fetch inventory', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to load inventory: ' . $e->getMessage()
+                'message' => 'Failed to load inventory: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -144,12 +145,12 @@ class StudentEquipController extends Controller
                     'quantity' => $inventory->quantity,
                     'is_equipped' => $inventory->is_equipped,
                     'metadata' => $inventory->reward->metadata ?? [],
-                ]
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item not found'
+                'message' => 'Item not found',
             ], 404);
         }
     }
@@ -174,7 +175,7 @@ class StudentEquipController extends Controller
                 'profile_background' => null,
                 'avatar_frame' => null,
                 'title' => null,
-                'badges' => []
+                'badges' => [],
             ];
 
             foreach ($equippedItems as $inventory) {
@@ -187,7 +188,7 @@ class StudentEquipController extends Controller
                     'reward_type' => $type,
                     'type' => $type,
                     'rarity' => $inventory->reward->rarity,
-                    'metadata' => $inventory->reward->metadata ?? []
+                    'metadata' => $inventory->reward->metadata ?? [],
                 ];
 
                 if ($type === 'badge') {
@@ -203,17 +204,17 @@ class StudentEquipController extends Controller
 
             return response()->json([
                 'success' => true,
-                'equipped' => $equipped
+                'equipped' => $equipped,
             ]);
         } catch (\Exception $e) {
             Log::error('❌ Failed to get equipped items', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to load equipped items'
+                'message' => 'Failed to load equipped items',
             ], 500);
         }
     }
@@ -227,7 +228,7 @@ class StudentEquipController extends Controller
     public function equip(Request $request)
     {
         $request->validate([
-            'item_id' => 'required|integer|exists:student_reward_inventory,inventory_id'
+            'item_id' => 'required|integer|exists:student_reward_inventory,inventory_id',
         ]);
 
         try {
@@ -242,10 +243,10 @@ class StudentEquipController extends Controller
                 ->firstOrFail();
 
             // ✅ 检查是否可以装备
-            if (!$inventory->canEquip()) {
+            if (! $inventory->canEquip()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Item is already equipped or cannot be equipped'
+                    'message' => 'Item is already equipped or cannot be equipped',
                 ], 400);
             }
 
@@ -257,7 +258,7 @@ class StudentEquipController extends Controller
                 'inventory_id' => $itemId,
                 'reward_id' => $inventory->reward_id,
                 'reward_name' => $inventory->reward->name,
-                'type' => $inventory->reward->reward_type
+                'type' => $inventory->reward->reward_type,
             ]);
 
             // ✅ 返回最新装备状态
@@ -265,17 +266,17 @@ class StudentEquipController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item not found or not owned'
+                'message' => 'Item not found or not owned',
             ], 404);
         } catch (\Exception $e) {
             Log::error('❌ Failed to equip item', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to equip item: ' . $e->getMessage()
+                'message' => 'Failed to equip item: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -286,7 +287,7 @@ class StudentEquipController extends Controller
     public function unequip(Request $request)
     {
         $request->validate([
-            'item_id' => 'required|integer|exists:student_reward_inventory,inventory_id'
+            'item_id' => 'required|integer|exists:student_reward_inventory,inventory_id',
         ]);
 
         try {
@@ -300,10 +301,10 @@ class StudentEquipController extends Controller
                 ->firstOrFail();
 
             // ✅ 检查是否已装备
-            if (!$inventory->is_equipped) {
+            if (! $inventory->is_equipped) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Item is not equipped'
+                    'message' => 'Item is not equipped',
                 ], 400);
             }
 
@@ -315,7 +316,7 @@ class StudentEquipController extends Controller
                 'inventory_id' => $itemId,
                 'reward_id' => $inventory->reward_id,
                 'reward_name' => $inventory->reward->name,
-                'type' => $inventory->reward->reward_type
+                'type' => $inventory->reward->reward_type,
             ]);
 
             // ✅ 返回最新装备状态
@@ -323,27 +324,28 @@ class StudentEquipController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item not found'
+                'message' => 'Item not found',
             ], 404);
         } catch (\Exception $e) {
             Log::error('❌ Failed to unequip item', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to unequip item: ' . $e->getMessage()
+                'message' => 'Failed to unequip item: '.$e->getMessage(),
             ], 500);
         }
     }
+
     /**
      * 卸载指定类型的所有物品
      */
     public function unequipAll(Request $request)
     {
         $request->validate([
-            'type' => 'required|string|in:background,profile_background,avatar_frame,title,badge'
+            'type' => 'required|string|in:background,profile_background,avatar_frame,title,badge',
         ]);
 
         try {
@@ -353,12 +355,12 @@ class StudentEquipController extends Controller
             return $this->unequipByType($studentProfile, $type);
         } catch (\Exception $e) {
             Log::error('❌ Failed to unequip all', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to unequip items'
+                'message' => 'Failed to unequip items',
             ], 500);
         }
     }
@@ -383,14 +385,14 @@ class StudentEquipController extends Controller
             Log::info('✅ Items unequipped', [
                 'student_id' => $studentProfile->student_id,
                 'type' => $type,
-                'count' => $equippedItems->count()
+                'count' => $equippedItems->count(),
             ]);
 
             // ✅ 返回最新装备状态
             return $this->getEquipped();
         } catch (\Exception $e) {
             Log::error('❌ Failed to unequip items', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;

@@ -27,7 +27,7 @@ return new class extends Migration
             $table->dropColumn([
                 'enable_live_editor',
                 'test_cases',
-                'coding_instructions'
+                'coding_instructions',
             ]);
         });
     }

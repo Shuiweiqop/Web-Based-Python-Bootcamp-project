@@ -19,7 +19,7 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             abort(401, 'Unauthenticated');
         }
 
@@ -33,14 +33,14 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             abort(401, 'Unauthenticated');
         }
 
         $studentProfile = StudentProfile::where('user_Id', $user->user_Id)->first();
 
         // If no student profile exists, fall back to user ID (compatible with admins and other roles)
-        if (!$studentProfile) {
+        if (! $studentProfile) {
             Log::warning('No student profile found, using user_Id directly', [
                 'user_Id' => $user->user_Id,
                 'role' => $user->role,

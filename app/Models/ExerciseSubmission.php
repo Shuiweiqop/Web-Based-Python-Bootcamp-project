@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class ExerciseSubmission extends Model
 {
@@ -63,7 +62,7 @@ class ExerciseSubmission extends Model
 
         // 自动设置 submitted_at 时间
         static::creating(function ($submission) {
-            if (!$submission->submitted_at) {
+            if (! $submission->submitted_at) {
                 $submission->submitted_at = now();
             }
         });
@@ -190,7 +189,7 @@ class ExerciseSubmission extends Model
      */
     public function getFormattedTimeAttribute()
     {
-        if (!$this->time_taken) {
+        if (! $this->time_taken) {
             return 'N/A';
         }
 
@@ -209,7 +208,7 @@ class ExerciseSubmission extends Model
      */
     public function getPercentageAttribute()
     {
-        if (!$this->exercise || $this->exercise->max_score == 0) {
+        if (! $this->exercise || $this->exercise->max_score == 0) {
             return 0;
         }
 
@@ -223,10 +222,19 @@ class ExerciseSubmission extends Model
     {
         $percentage = $this->percentage;
 
-        if ($percentage >= 90) return 'A';
-        if ($percentage >= 80) return 'B';
-        if ($percentage >= 70) return 'C';
-        if ($percentage >= 60) return 'D';
+        if ($percentage >= 90) {
+            return 'A';
+        }
+        if ($percentage >= 80) {
+            return 'B';
+        }
+        if ($percentage >= 70) {
+            return 'C';
+        }
+        if ($percentage >= 60) {
+            return 'D';
+        }
+
         return 'F';
     }
 
@@ -288,6 +296,7 @@ class ExerciseSubmission extends Model
         if ($this->total_tests_count == 0) {
             return 0;
         }
+
         return round(($this->passed_tests_count / $this->total_tests_count) * 100, 1);
     }
 
@@ -313,9 +322,10 @@ class ExerciseSubmission extends Model
      */
     public function getCodeLinesCountAttribute()
     {
-        if (!$this->submitted_code) {
+        if (! $this->submitted_code) {
             return 0;
         }
+
         return count(array_filter(explode("\n", $this->submitted_code), function ($line) {
             return trim($line) !== '';
         }));
@@ -364,10 +374,14 @@ class ExerciseSubmission extends Model
     {
         try {
             $exercise = $this->exercise;
-            if (!$exercise) return;
+            if (! $exercise) {
+                return;
+            }
 
             $lesson = $exercise->lesson;
-            if (!$lesson) return;
+            if (! $lesson) {
+                return;
+            }
 
             $registration = LessonRegistration::where('student_id', $this->student_id)
                 ->where('lesson_id', $lesson->lesson_id)
@@ -383,7 +397,7 @@ class ExerciseSubmission extends Model
                 }
             }
         } catch (\Exception $e) {
-            \Log::error('Failed to check lesson completion: ' . $e->getMessage());
+            \Log::error('Failed to check lesson completion: '.$e->getMessage());
         }
     }
 
@@ -394,7 +408,7 @@ class ExerciseSubmission extends Model
      */
     public function getTestSummary(): array
     {
-        if (!$this->is_coding_submission) {
+        if (! $this->is_coding_submission) {
             return [];
         }
 
@@ -426,13 +440,13 @@ class ExerciseSubmission extends Model
      */
     public function getExecutionErrors(): ?array
     {
-        if (!$this->is_coding_submission) {
+        if (! $this->is_coding_submission) {
             return null;
         }
 
         $errors = [];
         foreach ($this->test_results as $result) {
-            if (!empty($result['error'])) {
+            if (! empty($result['error'])) {
                 $errors[] = [
                     'test' => $result['test_number'] ?? $result['description'] ?? 'Unknown',
                     'error' => $result['error'],
@@ -440,7 +454,7 @@ class ExerciseSubmission extends Model
             }
         }
 
-        return !empty($errors) ? $errors : null;
+        return ! empty($errors) ? $errors : null;
     }
 
     /**
@@ -454,7 +468,7 @@ class ExerciseSubmission extends Model
             ->orderBy('submitted_at', 'desc')
             ->first();
 
-        if (!$previous) {
+        if (! $previous) {
             return null;
         }
 
@@ -539,7 +553,7 @@ class ExerciseSubmission extends Model
 
         foreach ($submissions as $submission) {
             $lang = $submission->language;
-            if (!isset($stats[$lang])) {
+            if (! isset($stats[$lang])) {
                 $stats[$lang] = [
                     'count' => 0,
                     'avg_score' => 0,
@@ -601,7 +615,7 @@ class ExerciseSubmission extends Model
             if ($errors) {
                 foreach ($errors as $error) {
                     $errorMsg = $error['error'];
-                    if (!isset($errorFrequency[$errorMsg])) {
+                    if (! isset($errorFrequency[$errorMsg])) {
                         $errorFrequency[$errorMsg] = 0;
                     }
                     $errorFrequency[$errorMsg]++;
@@ -610,6 +624,7 @@ class ExerciseSubmission extends Model
         }
 
         arsort($errorFrequency);
+
         return array_slice($errorFrequency, 0, $limit, true);
     }
 }

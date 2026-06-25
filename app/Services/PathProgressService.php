@@ -2,19 +2,15 @@
 
 namespace App\Services;
 
+use App\Models\Lesson;
 use App\Models\StudentLearningPath;
 use App\Models\StudentProfile;
-use App\Models\LearningPath;
-use App\Models\Lesson;
 use Illuminate\Support\Facades\Log;
 
 class PathProgressService
 {
     /**
      * Update progress for a specific student learning path
-     *
-     * @param StudentLearningPath $studentPath
-     * @return array
      */
     public function updatePathProgress(StudentLearningPath $studentPath): array
     {
@@ -59,9 +55,6 @@ class PathProgressService
 
     /**
      * Update all active paths for a student
-     *
-     * @param StudentProfile $student
-     * @return array
      */
     public function updateAllStudentPaths(StudentProfile $student): array
     {
@@ -83,9 +76,6 @@ class PathProgressService
 
     /**
      * Get detailed progress breakdown for a path
-     *
-     * @param StudentLearningPath $studentPath
-     * @return array
      */
     public function getDetailedProgress(StudentLearningPath $studentPath): array
     {
@@ -106,7 +96,7 @@ class PathProgressService
             $totalLessons++;
 
             $progress = $progressMap->get($lesson->lesson_id);
-            $isLocked = !$accessMap->get($lesson->lesson_id, false);
+            $isLocked = ! $accessMap->get($lesson->lesson_id, false);
 
             $lessonStatus = 'not_started';
             $lessonProgress = 0;
@@ -170,20 +160,16 @@ class PathProgressService
 
     /**
      * Get next lesson for student in path
-     *
-     * @param StudentLearningPath $studentPath
-     * @return array|null
      */
     private function getNextLesson(
         StudentLearningPath $studentPath,
         ?\Illuminate\Support\Collection $lessons = null,
         ?\Illuminate\Support\Collection $progressMap = null,
         ?\Illuminate\Support\Collection $accessMap = null
-    ): ?array
-    {
+    ): ?array {
         $nextLesson = $studentPath->getNextLesson($lessons, $progressMap, $accessMap);
 
-        if (!$nextLesson) {
+        if (! $nextLesson) {
             return null;
         }
 
@@ -192,22 +178,20 @@ class PathProgressService
             'title' => $nextLesson->title,
             'difficulty' => $nextLesson->difficulty,
             'estimated_duration' => $nextLesson->estimated_duration,
-            'is_locked' => !($accessMap?->get($nextLesson->lesson_id, true) ?? true),
+            'is_locked' => ! ($accessMap?->get($nextLesson->lesson_id, true) ?? true),
         ];
     }
 
     /**
      * Calculate estimated time remaining for path
      *
-     * @param StudentLearningPath $studentPath
      * @return int Minutes
      */
     private function calculateEstimatedTimeRemaining(
         StudentLearningPath $studentPath,
         ?\Illuminate\Support\Collection $lessons = null,
         ?\Illuminate\Support\Collection $progressMap = null
-    ): int
-    {
+    ): int {
         $lessons = $lessons ?? $studentPath->getOrderedLessons();
         $progressMap = $progressMap ?? $studentPath->getLessonProgressMap($lessons);
         $remainingMinutes = 0;
@@ -216,7 +200,7 @@ class PathProgressService
             $progress = $progressMap->get($lesson->lesson_id);
 
             // Only count incomplete lessons
-            if (!$progress || $progress->status !== 'completed') {
+            if (! $progress || $progress->status !== 'completed') {
                 $duration = $lesson->pivot->estimated_duration_minutes ?? $lesson->estimated_duration ?? 60;
                 $remainingMinutes += $duration;
             }
@@ -227,10 +211,6 @@ class PathProgressService
 
     /**
      * Check if student crossed a milestone
-     *
-     * @param int $previousProgress
-     * @param int $currentProgress
-     * @return bool
      */
     private function checkMilestone(int $previousProgress, int $currentProgress): bool
     {
@@ -247,9 +227,6 @@ class PathProgressService
 
     /**
      * Get milestone details
-     *
-     * @param int $progress
-     * @return array
      */
     private function getMilestone(int $progress): array
     {
@@ -284,9 +261,6 @@ class PathProgressService
 
     /**
      * Handle path completion (awards, notifications, etc.)
-     *
-     * @param StudentLearningPath $studentPath
-     * @return void
      */
     private function handlePathCompletion(StudentLearningPath $studentPath): void
     {
@@ -317,9 +291,6 @@ class PathProgressService
 
     /**
      * Get learning path analytics for student
-     *
-     * @param StudentProfile $student
-     * @return array
      */
     public function getStudentPathAnalytics(StudentProfile $student): array
     {
@@ -350,9 +321,6 @@ class PathProgressService
 
     /**
      * Check if student should be re-evaluated
-     *
-     * @param StudentProfile $student
-     * @return bool
      */
     public function shouldReevaluate(StudentProfile $student): bool
     {

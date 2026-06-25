@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AISessionLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use App\Models\AISessionLog;
 use Illuminate\Support\Str;
 
 class GeminiController extends Controller
@@ -19,10 +19,10 @@ class GeminiController extends Controller
 
             $apiKey = config('services.gemini.key');
 
-            if (!$apiKey) {
+            if (! $apiKey) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'Gemini API key not configured.'
+                    'error' => 'Gemini API key not configured.',
                 ], 500);
             }
 
@@ -36,14 +36,14 @@ class GeminiController extends Controller
             foreach ($conversationHistory as $turn) {
                 $contents[] = [
                     'role' => $turn['role'],
-                    'parts' => [['text' => $turn['text']]]
+                    'parts' => [['text' => $turn['text']]],
                 ];
             }
 
             // Add current message
             $contents[] = [
                 'role' => 'user',
-                'parts' => [['text' => $request->message]]
+                'parts' => [['text' => $request->message]],
             ];
 
             // 🔥 使用 gemini-2.5-flash（你测试成功的模型）
@@ -53,33 +53,33 @@ class GeminiController extends Controller
                     'contents' => $contents,
                     'systemInstruction' => [
                         'parts' => [
-                            ['text' => $this->getSystemPrompt($request->lesson_id, $request->message)]
-                        ]
+                            ['text' => $this->getSystemPrompt($request->lesson_id, $request->message)],
+                        ],
                     ],
                     'generationConfig' => [
                         'temperature' => 0.7,
                         'maxOutputTokens' => 8000,
-                    ]
+                    ],
                 ]
             );
 
             if ($response->failed()) {
                 \Log::error('Gemini API request failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
 
                 // 特殊处理 429 错误
                 if ($response->status() === 429) {
                     return response()->json([
                         'success' => false,
-                        'error' => '⏳ AI is currently busy. Please wait a moment and try again.'
+                        'error' => '⏳ AI is currently busy. Please wait a moment and try again.',
                     ], 429);
                 }
 
                 return response()->json([
                     'success' => false,
-                    'error' => 'Failed to get response from AI. Status: ' . $response->status()
+                    'error' => 'Failed to get response from AI. Status: '.$response->status(),
                 ], 500);
             }
 
@@ -88,18 +88,20 @@ class GeminiController extends Controller
             // Check for errors
             if (isset($data['error'])) {
                 \Log::error('Gemini API Error', ['error' => $data['error']]);
+
                 return response()->json([
                     'success' => false,
-                    'error' => 'API Error: ' . ($data['error']['message'] ?? 'Unknown error')
+                    'error' => 'API Error: '.($data['error']['message'] ?? 'Unknown error'),
                 ], 500);
             }
 
             // Check if candidates exist
-            if (!isset($data['candidates']) || empty($data['candidates'])) {
+            if (! isset($data['candidates']) || empty($data['candidates'])) {
                 \Log::error('No candidates in response', ['data' => $data]);
+
                 return response()->json([
                     'success' => false,
-                    'error' => 'AI did not generate a response.'
+                    'error' => 'AI did not generate a response.',
                 ], 500);
             }
 
@@ -109,7 +111,7 @@ class GeminiController extends Controller
             if (isset($candidate['finishReason']) && $candidate['finishReason'] === 'SAFETY') {
                 return response()->json([
                     'success' => false,
-                    'error' => 'Response blocked by safety filters. Please rephrase your question.'
+                    'error' => 'Response blocked by safety filters. Please rephrase your question.',
                 ], 400);
             }
 
@@ -118,15 +120,15 @@ class GeminiController extends Controller
             }
 
             // Extract text - handle missing parts
-            if (!isset($candidate['content']['parts'][0]['text'])) {
+            if (! isset($candidate['content']['parts'][0]['text'])) {
                 \Log::error('No text in response', [
                     'candidate' => $candidate,
-                    'finishReason' => $candidate['finishReason'] ?? 'unknown'
+                    'finishReason' => $candidate['finishReason'] ?? 'unknown',
                 ]);
 
                 return response()->json([
                     'success' => false,
-                    'error' => 'AI did not generate text content. Please try simplifying your question.'
+                    'error' => 'AI did not generate text content. Please try simplifying your question.',
                 ], 500);
             }
 
@@ -150,24 +152,24 @@ class GeminiController extends Controller
                 'success' => true,
                 'message' => $replyText,
                 'hint_level' => $currentHintLevel, // 🔥 返回提示级别
-                'total_messages' => count($conversationHistory) / 2
+                'total_messages' => count($conversationHistory) / 2,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'Invalid input: ' . implode(', ', $e->validator->errors()->all())
+                'error' => 'Invalid input: '.implode(', ', $e->validator->errors()->all()),
             ], 422);
         } catch (\Exception $e) {
             \Log::error('Gemini chat error', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => 'An unexpected error occurred: ' . $e->getMessage()
+                'error' => 'An unexpected error occurred: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -224,7 +226,7 @@ class GeminiController extends Controller
 - Still encourage them to modify it themselves
 
 **RESPONSE GUIDELINES FOR LEVEL {$hintLevel}:**
-" . $this->getHintLevelInstructions($hintLevel) . "
+".$this->getHintLevelInstructions($hintLevel)."
 
 **TONE:**
 - Friendly and encouraging at all levels
@@ -266,7 +268,7 @@ class GeminiController extends Controller
                     $basePrompt .= "\n- Lesson: {$lesson->title}";
                     $basePrompt .= "\n- Focus: Guide student to understand core concepts of '{$lesson->title}'";
 
-                    if (!empty($lesson->description)) {
+                    if (! empty($lesson->description)) {
                         $basePrompt .= "\n- Learning objectives: {$lesson->description}";
                     }
                 }
@@ -283,10 +285,19 @@ class GeminiController extends Controller
      */
     private function calculateHintLevel($messageCount)
     {
-        if ($messageCount <= 2) return 1;
-        if ($messageCount <= 4) return 2;
-        if ($messageCount <= 6) return 3;
-        if ($messageCount <= 8) return 4;
+        if ($messageCount <= 2) {
+            return 1;
+        }
+        if ($messageCount <= 4) {
+            return 2;
+        }
+        if ($messageCount <= 6) {
+            return 3;
+        }
+        if ($messageCount <= 8) {
+            return 4;
+        }
+
         return 5;
     }
 
@@ -328,7 +339,7 @@ class GeminiController extends Controller
 - Student should adapt it to their problem
 - Explain each part
 - Example: Show a working solution to find even numbers, when they're trying to find odd numbers
-- Still encourage them to understand and modify rather than copy"
+- Still encourage them to understand and modify rather than copy",
         ];
 
         return $instructions[$level] ?? $instructions[5];
@@ -363,7 +374,7 @@ class GeminiController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Conversation cleared successfully.'
+            'message' => 'Conversation cleared successfully.',
         ]);
     }
 
@@ -376,8 +387,9 @@ class GeminiController extends Controller
             // Get current student ID
             $studentId = auth()->check() ? (auth()->user()->studentProfile->student_id ?? null) : null;
 
-            if (!$studentId) {
+            if (! $studentId) {
                 \Log::warning('AI session log skipped: No student profile found');
+
                 return;
             }
 
@@ -385,7 +397,7 @@ class GeminiController extends Controller
             $contextKey = $this->getAIContextKey($request->input('lesson_id'));
             $sessionIds = session('ai_session_ids', []);
             $sessionId = $sessionIds[$contextKey] ?? null;
-            if (!$sessionId) {
+            if (! $sessionId) {
                 $sessionId = Str::uuid()->toString();
                 $sessionIds[$contextKey] = $sessionId;
                 session(['ai_session_ids' => $sessionIds]);
@@ -404,14 +416,14 @@ class GeminiController extends Controller
             // Logging failure should not affect main functionality
             \Log::error('Failed to log AI session', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
 
     private function getAIContextKey($lessonId = null): string
     {
-        return $lessonId ? 'lesson_' . (int) $lessonId : 'global';
+        return $lessonId ? 'lesson_'.(int) $lessonId : 'global';
     }
 
     private function getConversationHistory($lessonId = null): array

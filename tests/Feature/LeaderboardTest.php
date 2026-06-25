@@ -78,8 +78,8 @@ class LeaderboardTest extends TestCase
     private function makeUser(string $role, ?string $name = null): User
     {
         $user = User::create([
-            'name' => $name ?? ucfirst($role) . ' User',
-            'email' => $role . uniqid() . '@example.com',
+            'name' => $name ?? ucfirst($role).' User',
+            'email' => $role.uniqid().'@example.com',
             'password' => 'password',
             'role' => $role,
         ]);

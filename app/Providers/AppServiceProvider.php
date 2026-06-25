@@ -2,17 +2,16 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\Vite;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Auth;
+use App\Models\ForumReply;
+use App\Models\Lesson;
+use App\Models\Notification;
+use App\Models\PlacementTest; // 🔥 Added
+use App\Observers\ForumReplyObserver;
+use App\Observers\LessonObserver;   // 🔥 Added
+use App\Observers\PlacementTestObserver;       // 🔥 Added
+use Illuminate\Support\Facades\Auth; // 🔥 Added
+use Illuminate\Support\ServiceProvider;     // 🔥 Added
 use Inertia\Inertia;
-use App\Models\Notification; // 🔥 Added
-use App\Models\PlacementTest;
-use App\Models\ForumReply;   // 🔥 Added
-use App\Models\Lesson;       // 🔥 Added
-use App\Observers\ForumReplyObserver; // 🔥 Added
-use App\Observers\LessonObserver;     // 🔥 Added
-use App\Observers\PlacementTestObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
             'auth' => function () {
                 $user = Auth::user();
 
-                if (!$user) {
+                if (! $user) {
                     return ['user' => null];
                 }
 
@@ -54,7 +53,7 @@ class AppServiceProvider extends ServiceProvider
                 try {
                     $sharedUser['unread_notifications_count'] = Notification::getUnreadCountForUser($user->user_Id);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to get unread notifications count: ' . $e->getMessage());
+                    \Log::error('Failed to get unread notifications count: '.$e->getMessage());
                     $sharedUser['unread_notifications_count'] = 0;
                 }
 
@@ -76,13 +75,13 @@ class AppServiceProvider extends ServiceProvider
             'equipped' => function () {
                 $user = Auth::user();
 
-                if (!$user) {
+                if (! $user) {
                     return null;
                 }
 
                 $studentProfile = $user->studentProfile;
 
-                if (!$studentProfile) {
+                if (! $studentProfile) {
                     return null;
                 }
 
@@ -99,7 +98,7 @@ class AppServiceProvider extends ServiceProvider
                         'avatar_frame' => $equippedAvatar ? $this->formatEquippedItem($equippedAvatar) : null,
                         'title' => $equippedTitle ? $this->formatEquippedItem($equippedTitle) : null,
                         'badges' => $equippedBadges
-                            ->map(fn($item) => $this->formatEquippedItem($item))
+                            ->map(fn ($item) => $this->formatEquippedItem($item))
                             ->filter()
                             ->values()
                             ->toArray(),
@@ -118,8 +117,9 @@ class AppServiceProvider extends ServiceProvider
 
                     return $result;
                 } catch (\Exception $e) {
-                    \Log::error('Failed to get equipped data: ' . $e->getMessage());
+                    \Log::error('Failed to get equipped data: '.$e->getMessage());
                     \Log::error($e->getTraceAsString());
+
                     return [
                         'snapshot' => null,
                         'background' => null,
@@ -148,7 +148,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function formatEquippedItem($inventoryItem): ?array
     {
-        if (!$inventoryItem || !$inventoryItem->reward) {
+        if (! $inventoryItem || ! $inventoryItem->reward) {
             return null;
         }
 
@@ -167,7 +167,8 @@ class AppServiceProvider extends ServiceProvider
                 'metadata' => $metadata,
             ];
         } catch (\Exception $e) {
-            \Log::error('Error formatting equipped item: ' . $e->getMessage());
+            \Log::error('Error formatting equipped item: '.$e->getMessage());
+
             return null;
         }
     }

@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ForumPost;
-use App\Models\ForumReply;
-use App\Models\ForumFavorite;
-use App\Models\ForumPostLike;
-use App\Models\ForumReplyLike;
 use App\Helpers\ForumHelper;
+use App\Models\ForumFavorite;
+use App\Models\ForumPost;
+use App\Models\ForumPostLike;
+use App\Models\ForumReply;
+use App\Models\ForumReplyLike;
+use App\Models\Notification;
+use App\Services\DailyChallengeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use App\Models\Notification;
-use App\Services\DailyChallengeService;
 
 class ForumController extends Controller
 {
@@ -23,15 +23,16 @@ class ForumController extends Controller
     public function index(Request $request)
     {
         // ✅ 确保用户已登录
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login')->with('error', 'Please login to access the forum.');
         }
 
         $userId = auth()->user()->user_Id;
 
         // 检查权限
-        if (!ForumHelper::canAccessForum()) {
+        if (! ForumHelper::canAccessForum()) {
             Log::warning('Forum access denied', ['user_id' => $userId]);
+
             return redirect()->route('dashboard')->with('error', 'You do not have permission to access the forum.');
         }
 
@@ -46,7 +47,7 @@ class ForumController extends Controller
                             $q->where('reward_type', 'avatar_frame');
                         })
                         ->with('reward');
-                }
+                },
             ])
             ->withCount('replies');
 
@@ -118,7 +119,7 @@ class ForumController extends Controller
      */
     public function create()
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             abort(403, 'You do not have permission to create posts.');
         }
 
@@ -140,7 +141,7 @@ class ForumController extends Controller
      */
     public function store(Request $request)
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             abort(403);
         }
 
@@ -167,7 +168,8 @@ class ForumController extends Controller
             return redirect()->route('forum.show', $post->post_id)
                 ->with('success', 'Post created successfully!');
         } catch (\Exception $e) {
-            Log::error('Forum post creation failed: ' . $e->getMessage());
+            Log::error('Forum post creation failed: '.$e->getMessage());
+
             return back()->withErrors(['error' => 'Failed to create post. Please try again.']);
         }
     }
@@ -177,7 +179,7 @@ class ForumController extends Controller
      */
     public function show($id)
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             return redirect()->route('login')->with('error', 'Please login to view this post.');
         }
 
@@ -222,11 +224,11 @@ class ForumController extends Controller
                                     $r->where('reward_type', 'avatar_frame');
                                 })
                                 ->with('reward');
-                        }
+                        },
                     ])
                     ->orderBy('is_solution', 'desc')
                     ->orderBy('created_at', 'asc');
-            }
+            },
         ])->findOrFail($id);
 
         // ✅ 增加浏览量（带防刷机制）
@@ -236,7 +238,7 @@ class ForumController extends Controller
             Log::info('👁️ Post view counted', [
                 'post_id' => $id,
                 'user_id' => $userId,
-                'total_views' => $post->fresh()->views
+                'total_views' => $post->fresh()->views,
             ]);
         }
 
@@ -269,18 +271,19 @@ class ForumController extends Controller
             'canLock' => false,
         ]);
     }
+
     /**
      * 显示编辑帖子表单
      */
     public function edit($id)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             abort(403, 'You must be logged in to edit posts.');
         }
 
         $post = ForumPost::findOrFail($id);
 
-        if (!$post->canEdit(auth()->id())) {
+        if (! $post->canEdit(auth()->id())) {
             abort(403, 'You do not have permission to edit this post.');
         }
 
@@ -304,13 +307,13 @@ class ForumController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             abort(403);
         }
 
         $post = ForumPost::findOrFail($id);
 
-        if (!$post->canEdit(auth()->id())) {
+        if (! $post->canEdit(auth()->id())) {
             abort(403);
         }
 
@@ -330,7 +333,8 @@ class ForumController extends Controller
             return redirect()->route('forum.show', $post->post_id)
                 ->with('success', 'Post updated successfully!');
         } catch (\Exception $e) {
-            Log::error('Forum post update failed: ' . $e->getMessage());
+            Log::error('Forum post update failed: '.$e->getMessage());
+
             return back()->withErrors(['error' => 'Failed to update post.']);
         }
     }
@@ -340,7 +344,7 @@ class ForumController extends Controller
      */
     public function destroy($id)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             abort(403);
         }
 
@@ -349,7 +353,7 @@ class ForumController extends Controller
 
         $canDelete = $post->canDelete($userId);
 
-        if (!$canDelete) {
+        if (! $canDelete) {
             abort(403, 'You do not have permission to delete this post.');
         }
 
@@ -371,8 +375,6 @@ class ForumController extends Controller
         }
     }
 
-
-
     /**
      * 回复帖子
      */
@@ -381,13 +383,13 @@ class ForumController extends Controller
      */
     public function reply(Request $request, $id)
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             abort(403);
         }
 
         $post = ForumPost::findOrFail($id);
 
-        if ($post->is_locked && !ForumHelper::isAdmin()) {
+        if ($post->is_locked && ! ForumHelper::isAdmin()) {
             return back()->withErrors(['error' => 'This post is locked and cannot be replied to.']);
         }
 
@@ -397,12 +399,12 @@ class ForumController extends Controller
         ]);
 
         $parentReply = null;
-        if (!empty($validated['parent_reply_id'])) {
+        if (! empty($validated['parent_reply_id'])) {
             $parentReply = ForumReply::where('reply_id', $validated['parent_reply_id'])
                 ->where('post_id', $post->post_id)
                 ->first();
 
-            if (!$parentReply) {
+            if (! $parentReply) {
                 return back()->withErrors([
                     'parent_reply_id' => 'The parent reply does not belong to this post.',
                 ]);
@@ -442,7 +444,7 @@ class ForumController extends Controller
                         'type' => 'community',
                         'priority' => 'normal',
                         'title' => '💬 New Reply',
-                        'message' => "{$currentUser->name} replied to your comment: " . \Illuminate\Support\Str::limit($validated['content'], 50),
+                        'message' => "{$currentUser->name} replied to your comment: ".\Illuminate\Support\Str::limit($validated['content'], 50),
                         'icon' => 'message-square',
                         'color' => 'green',
                         'data' => [
@@ -452,7 +454,7 @@ class ForumController extends Controller
                             'replier_name' => $currentUser->name,
                             'reply_preview' => \Illuminate\Support\Str::limit($validated['content'], 100),
                         ],
-                        'action_url' => route('forum.show', $post->post_id) . '#reply-' . $reply->reply_id,
+                        'action_url' => route('forum.show', $post->post_id).'#reply-'.$reply->reply_id,
                         'action_text' => 'View Reply',
                     ]);
 
@@ -479,7 +481,7 @@ class ForumController extends Controller
                             'comment_preview' => \Illuminate\Support\Str::limit($validated['content'], 100),
                             'post_title' => $post->title,
                         ],
-                        'action_url' => route('forum.show', $post->post_id) . '#reply-' . $reply->reply_id,
+                        'action_url' => route('forum.show', $post->post_id).'#reply-'.$reply->reply_id,
                         'action_text' => 'View Comment',
                     ]);
 
@@ -554,11 +556,11 @@ class ForumController extends Controller
                                         $r->where('reward_type', 'avatar_frame');
                                     })
                                     ->with('reward');
-                            }
+                            },
                         ])
                         ->orderBy('is_solution', 'desc')
                         ->orderBy('created_at', 'asc');
-                }
+                },
             ])->findOrFail($id);
 
             Log::info('✅ Reply process completed', [
@@ -579,21 +581,22 @@ class ForumController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to post reply: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to post reply: '.$e->getMessage()]);
         }
     }
+
     /**
      * 编辑回复
      */
     public function updateReply(Request $request, $replyId)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             abort(403);
         }
 
         $reply = ForumReply::findOrFail($replyId);
 
-        if (!$reply->canEdit(auth()->id())) {
+        if (! $reply->canEdit(auth()->id())) {
             abort(403);
         }
 
@@ -608,7 +611,8 @@ class ForumController extends Controller
 
             return back()->with('success', 'Reply updated successfully!');
         } catch (\Exception $e) {
-            Log::error('Forum reply update failed: ' . $e->getMessage());
+            Log::error('Forum reply update failed: '.$e->getMessage());
+
             return back()->withErrors(['error' => 'Failed to update reply.']);
         }
     }
@@ -618,7 +622,7 @@ class ForumController extends Controller
      */
     public function destroyReply($replyId)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             abort(403, 'You must be logged in to delete replies.');
         }
 
@@ -629,7 +633,7 @@ class ForumController extends Controller
 
         $userId = auth()->user()->user_Id;
 
-        if (!$reply->canDelete($userId)) {
+        if (! $reply->canDelete($userId)) {
             abort(403, 'You do not have permission to delete this reply.');
         }
 
@@ -641,7 +645,7 @@ class ForumController extends Controller
                 ->route('forum.show', $postId)
                 ->with('success', 'Reply deleted successfully!');
         } catch (\Exception $e) {
-            Log::error('Forum reply deletion failed: ' . $e->getMessage(), [
+            Log::error('Forum reply deletion failed: '.$e->getMessage(), [
                 'reply_id' => $replyId,
                 'user_id' => $userId,
             ]);
@@ -651,12 +655,13 @@ class ForumController extends Controller
                 ->with('error', 'Failed to delete reply. Please try again.');
         }
     }
+
     /**
      * 标记/取消标记最佳答案
      */
     public function markSolution($replyId)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             abort(403);
         }
 
@@ -664,7 +669,7 @@ class ForumController extends Controller
         $currentUser = auth()->user();
         $userId = $currentUser->user_Id; // ✅ 使用正确的主键
 
-        if (!$reply->canMarkAsSolution($userId)) { // ✅ 改用 $userId
+        if (! $reply->canMarkAsSolution($userId)) { // ✅ 改用 $userId
             abort(403, 'Only the post author can mark solutions.');
         }
 
@@ -692,7 +697,7 @@ class ForumController extends Controller
                             'post_title' => $post ? $post->title : '',
                             'post_author' => $currentUser->name,
                         ],
-                        'action_url' => route('forum.show', $reply->post_id) . '#reply-' . $reply->reply_id,
+                        'action_url' => route('forum.show', $reply->post_id).'#reply-'.$reply->reply_id,
                         'action_text' => 'View Post',
                     ]);
 
@@ -708,7 +713,8 @@ class ForumController extends Controller
 
             return back()->with('success', $message);
         } catch (\Exception $e) {
-            Log::error('Mark solution failed: ' . $e->getMessage());
+            Log::error('Mark solution failed: '.$e->getMessage());
+
             return back()->withErrors(['error' => 'Failed to mark solution.']);
         }
     }
@@ -718,7 +724,7 @@ class ForumController extends Controller
      */
     public function toggleLike($id)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login')->with('error', 'Please login to like posts.');
         }
 
@@ -740,7 +746,7 @@ class ForumController extends Controller
 
             Log::info('Toggle like result', [
                 'is_liked' => $isLiked,
-                'post_id' => $id
+                'post_id' => $id,
             ]);
 
             // ✅ 重新加载帖子数据
@@ -783,11 +789,11 @@ class ForumController extends Controller
                                         $r->where('reward_type', 'avatar_frame');
                                     })
                                     ->with('reward');
-                            }
+                            },
                         ])
                         ->orderBy('is_solution', 'desc')
                         ->orderBy('created_at', 'asc');
-                }
+                },
             ])->findOrFail($id);
 
             // ✅ 发送通知（如果是点赞且不是自己的帖子）
@@ -807,7 +813,7 @@ class ForumController extends Controller
             Log::info('✅ Like toggled successfully', [
                 'post_id' => $id,
                 'is_liked' => $isLiked,
-                'current_likes' => $post->fresh()->likes
+                'current_likes' => $post->fresh()->likes,
             ]);
 
             return back()->with([
@@ -822,20 +828,19 @@ class ForumController extends Controller
                 'post_id' => $id,
                 'user_id' => auth()->user()->user_Id ?? null,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return back()->with('error', 'Failed to like post. Please try again.');
         }
     }
 
-
     /**
      * 点赞/取消点赞回复 (AJAX)
      */
     public function toggleReplyLike($replyId)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login')->with('error', 'Please login to like replies.');
         }
 
@@ -853,7 +858,7 @@ class ForumController extends Controller
 
             Log::info('✅ Reply like toggled', [
                 'reply_id' => $replyId,
-                'is_liked' => $isLiked
+                'is_liked' => $isLiked,
             ]);
 
             // 发送通知
@@ -872,7 +877,7 @@ class ForumController extends Controller
                         'liker_name' => $currentUser->name,
                         'reply_preview' => \Illuminate\Support\Str::limit($reply->content, 100),
                     ],
-                    'action_url' => route('forum.show', $reply->post_id) . '#reply-' . $reply->reply_id,
+                    'action_url' => route('forum.show', $reply->post_id).'#reply-'.$reply->reply_id,
                     'action_text' => 'View Reply',
                 ]);
             }
@@ -881,7 +886,7 @@ class ForumController extends Controller
         } catch (\Exception $e) {
             Log::error('=== Toggle reply like FAILED ===', [
                 'reply_id' => $replyId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return back()->with('error', 'Failed to like reply. Please try again.');
@@ -893,7 +898,7 @@ class ForumController extends Controller
      */
     public function toggleFavorite($id)
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             return redirect()->route('login')->with('error', 'Please login to favorite posts.');
         }
 
@@ -909,11 +914,11 @@ class ForumController extends Controller
                             'childReplies.user',
                             'childReplies.studentProfile',
                             'childReplies.childReplies.user',
-                            'childReplies.childReplies.studentProfile'
+                            'childReplies.childReplies.studentProfile',
                         ])
                         ->orderBy('is_solution', 'desc')
                         ->orderBy('created_at', 'asc');
-                }
+                },
             ])->findOrFail($id);
 
             $isFavorited = ForumFavorite::toggle(auth()->id(), $post->post_id);
@@ -934,7 +939,8 @@ class ForumController extends Controller
                 'hasReported' => $hasReported,
             ]);
         } catch (\Exception $e) {
-            Log::error('Toggle favorite failed: ' . $e->getMessage());
+            Log::error('Toggle favorite failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to favorite post. Please try again.');
         }
     }
@@ -944,19 +950,20 @@ class ForumController extends Controller
      */
     public function togglePin($id)
     {
-        if (!ForumHelper::canPinPost()) {
+        if (! ForumHelper::canPinPost()) {
             abort(403, 'Only administrators can pin posts.');
         }
 
         try {
             $post = ForumPost::findOrFail($id);
-            $post->update(['is_pinned' => !$post->is_pinned]);
+            $post->update(['is_pinned' => ! $post->is_pinned]);
 
             $message = $post->is_pinned ? 'Post pinned successfully!' : 'Post unpinned successfully!';
 
             return back()->with('success', $message);
         } catch (\Exception $e) {
-            Log::error('Toggle pin failed: ' . $e->getMessage());
+            Log::error('Toggle pin failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to pin post. Please try again.');
         }
     }
@@ -966,19 +973,20 @@ class ForumController extends Controller
      */
     public function toggleLock($id)
     {
-        if (!ForumHelper::canLockPost()) {
+        if (! ForumHelper::canLockPost()) {
             abort(403, 'Only administrators can lock posts.');
         }
 
         try {
             $post = ForumPost::findOrFail($id);
-            $post->update(['is_locked' => !$post->is_locked]);
+            $post->update(['is_locked' => ! $post->is_locked]);
 
             $message = $post->is_locked ? 'Post locked successfully!' : 'Post unlocked successfully!';
 
             return back()->with('success', $message);
         } catch (\Exception $e) {
-            Log::error('Toggle lock failed: ' . $e->getMessage());
+            Log::error('Toggle lock failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to lock post. Please try again.');
         }
     }
@@ -988,7 +996,7 @@ class ForumController extends Controller
      */
     public function myPosts()
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             return redirect()->route('login');
         }
 
@@ -1007,7 +1015,7 @@ class ForumController extends Controller
      */
     public function myFavorites()
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             return redirect()->route('login');
         }
 
@@ -1032,7 +1040,7 @@ class ForumController extends Controller
      */
     public function reportPost(Request $request, $id)
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             return redirect()->route('login')->with('error', 'Please login to report posts.');
         }
 
@@ -1056,13 +1064,14 @@ class ForumController extends Controller
                 $validated['description'] ?? null
             );
 
-            if (!$report) {
+            if (! $report) {
                 return back()->with('error', 'You have already reported this post.');
             }
 
             return back()->with('success', 'Report submitted successfully. Our team will review it.');
         } catch (\Exception $e) {
-            Log::error('Report post failed: ' . $e->getMessage());
+            Log::error('Report post failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to submit report. Please try again.');
         }
     }
@@ -1072,7 +1081,7 @@ class ForumController extends Controller
      */
     public function reportReply(Request $request, $replyId)
     {
-        if (!auth()->check() || !ForumHelper::canAccessForum()) {
+        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
             return redirect()->route('login')->with('error', 'Please login to report replies.');
         }
 
@@ -1096,13 +1105,14 @@ class ForumController extends Controller
                 $validated['description'] ?? null
             );
 
-            if (!$report) {
+            if (! $report) {
                 return back()->with('error', 'You have already reported this reply.');
             }
 
             return back()->with('success', 'Report submitted successfully. Our team will review it.');
         } catch (\Exception $e) {
-            Log::error('Report reply failed: ' . $e->getMessage());
+            Log::error('Report reply failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to submit report. Please try again.');
         }
     }
@@ -1115,7 +1125,7 @@ class ForumController extends Controller
                 ->where('type', 'community')
                 ->where('title', '❤️ Post Liked')
                 ->where('created_at', '>=', now()->subMinutes(5))
-                ->whereJsonContains('data->post_id', (string)$postId)
+                ->whereJsonContains('data->post_id', (string) $postId)
                 ->first();
 
             if ($recentNotification) {
@@ -1127,7 +1137,7 @@ class ForumController extends Controller
 
                 $count = count($likers);
                 $message = $count > 1
-                    ? "{$likers[0]} and " . ($count - 1) . " others liked your post"
+                    ? "{$likers[0]} and ".($count - 1).' others liked your post'
                     : "{$likerName} liked your post";
 
                 $recentNotification->update([
@@ -1169,7 +1179,7 @@ class ForumController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Failed to send like notification: ' . $e->getMessage());
+            Log::error('Failed to send like notification: '.$e->getMessage());
         }
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\DailyChallengeDefinition;
 use App\Models\DailyChallengeCycleReward;
+use App\Models\DailyChallengeDefinition;
 use App\Models\DailyChallengeEvent;
 use App\Models\DailyChallengeProgress;
 use App\Models\Notification;
@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\Log;
 class DailyChallengeService
 {
     private const DAILY_FULL_CLEAR_BONUS_CODE = 'daily_full_clear';
+
     private const DAILY_FULL_CLEAR_BONUS_POINTS = 90;
+
     private const DAILY_STREAK_MILESTONES = [
         3 => 40,
         7 => 120,
@@ -70,7 +72,7 @@ class DailyChallengeService
                 'period_label' => $definition->period_type === 'weekly' ? 'This Week' : 'Today',
                 'status_label' => $rewardGranted
                     ? 'Reward sent'
-                    : ($isCompleted ? 'Completed' : ($remainingCount === 0 ? 'Ready' : $remainingCount . ' to go')),
+                    : ($isCompleted ? 'Completed' : ($remainingCount === 0 ? 'Ready' : $remainingCount.' to go')),
                 'category' => $this->resolveCategory($definition->action_type),
                 'ui' => $this->resolveUiMeta($definition->action_type, $definition->period_type, $isCompleted),
             ];
@@ -155,7 +157,7 @@ class DailyChallengeService
                     ->lockForUpdate()
                     ->first();
 
-                if (!$progress) {
+                if (! $progress) {
                     $progress = DailyChallengeProgress::create([
                         'student_id' => $studentId,
                         'challenge_definition_id' => $definition->challenge_definition_id,
@@ -202,7 +204,7 @@ class DailyChallengeService
                 $isCompleted = $wasCompleted || $newCount >= $definition->target_count;
                 $completedAt = $progress->completed_at;
 
-                if (!$wasCompleted && $isCompleted) {
+                if (! $wasCompleted && $isCompleted) {
                     $completedAt = now();
                 }
 
@@ -214,13 +216,13 @@ class DailyChallengeService
                 ]);
 
                 $awardedPoints = 0;
-                if ($isCompleted && !$progress->reward_granted && $definition->reward_points > 0) {
+                if ($isCompleted && ! $progress->reward_granted && $definition->reward_points > 0) {
                     $student = StudentProfile::query()
                         ->where('student_id', $studentId)
                         ->lockForUpdate()
                         ->first();
 
-                    if (!$student) {
+                    if (! $student) {
                         Log::warning('Daily challenge reward skipped because student profile was missing', [
                             'student_id' => $studentId,
                             'challenge_definition_id' => $definition->challenge_definition_id,
@@ -232,7 +234,7 @@ class DailyChallengeService
                         Notification::createPoints(
                             (int) $student->user_Id,
                             (int) $definition->reward_points,
-                            'Challenge complete: ' . $definition->title
+                            'Challenge complete: '.$definition->title
                         );
 
                         $progress->update([
@@ -247,8 +249,8 @@ class DailyChallengeService
                 $missionUpdate = $this->formatMissionProgressItem(
                     $definition,
                     $progress,
-                    !$wasCompleted && $isCompleted,
-                    !$rewardWasGranted && $progress->reward_granted
+                    ! $wasCompleted && $isCompleted,
+                    ! $rewardWasGranted && $progress->reward_granted
                 );
 
                 $summary['missions_updated'][] = $missionUpdate;
@@ -366,7 +368,7 @@ class DailyChallengeService
             ->lockForUpdate()
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             Log::warning('Daily full clear bonus skipped because student profile was missing', [
                 'student_id' => $studentId,
             ]);
@@ -525,7 +527,7 @@ class DailyChallengeService
             'just_rewarded' => $justRewarded,
             'status_label' => $progress->reward_granted
                 ? 'Reward sent'
-                : ($progress->is_completed ? 'Completed' : ($remainingCount === 0 ? 'Ready' : $remainingCount . ' to go')),
+                : ($progress->is_completed ? 'Completed' : ($remainingCount === 0 ? 'Ready' : $remainingCount.' to go')),
             'category' => $this->resolveCategory($definition->action_type),
             'ui' => $this->resolveUiMeta($definition->action_type, $definition->period_type, (bool) $progress->is_completed),
         ];
@@ -548,7 +550,7 @@ class DailyChallengeService
             ->values()
             ->all();
 
-        $summary['show_toast'] = !empty($summary['missions_updated']) || !empty($summary['bonuses_earned']);
+        $summary['show_toast'] = ! empty($summary['missions_updated']) || ! empty($summary['bonuses_earned']);
 
         return $summary;
     }

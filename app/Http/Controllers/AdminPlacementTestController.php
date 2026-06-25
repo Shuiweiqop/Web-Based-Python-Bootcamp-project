@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PlacementTest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;  // 使用专门的模型
 use Inertia\Inertia;
-use App\Models\PlacementTest;  // 使用专门的模型
-use Illuminate\Support\Facades\DB;
 
 class AdminPlacementTestController extends Controller
 {
@@ -231,7 +231,7 @@ class AdminPlacementTestController extends Controller
         // 检查是否有提交记录
         if ($test->submissions()->exists()) {
             return back()->withErrors([
-                'error' => 'Cannot delete placement test that has student submissions. Please set it as inactive instead.'
+                'error' => 'Cannot delete placement test that has student submissions. Please set it as inactive instead.',
             ]);
         }
 
@@ -253,7 +253,7 @@ class AdminPlacementTestController extends Controller
         try {
             // 创建副本
             $newTest = $test->replicate();
-            $newTest->title = $test->title . ' (Copy)';
+            $newTest->title = $test->title.' (Copy)';
             $newTest->status = 'draft';
             $newTest->save();
 
@@ -279,6 +279,7 @@ class AdminPlacementTestController extends Controller
                 ->with('success', 'Placement test duplicated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
+
             return back()->withErrors(['error' => 'Failed to duplicate placement test.']);
         }
     }
@@ -383,11 +384,11 @@ class AdminPlacementTestController extends Controller
 
         // 如果是删除操作，检查是否有提交
         if ($action === 'delete') {
-            $testsWithSubmissions = $tests->filter(fn($test) => $test->submissions()->exists());
+            $testsWithSubmissions = $tests->filter(fn ($test) => $test->submissions()->exists());
 
             if ($testsWithSubmissions->isNotEmpty()) {
                 return back()->withErrors([
-                    'error' => 'Cannot delete tests with submissions. Please set them as inactive instead.'
+                    'error' => 'Cannot delete tests with submissions. Please set them as inactive instead.',
                 ]);
             }
         }

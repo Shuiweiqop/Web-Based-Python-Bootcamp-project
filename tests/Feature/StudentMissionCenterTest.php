@@ -63,8 +63,8 @@ class StudentMissionCenterTest extends TestCase
     private function createVerifiedUser(string $role): User
     {
         $user = User::create([
-            'name' => ucfirst($role) . ' Mission User',
-            'email' => $role . '-mission-' . uniqid() . '@example.com',
+            'name' => ucfirst($role).' Mission User',
+            'email' => $role.'-mission-'.uniqid().'@example.com',
             'password' => 'password',
             'role' => $role,
         ]);

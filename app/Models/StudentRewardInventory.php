@@ -12,6 +12,7 @@ class StudentRewardInventory extends Model
     use HasFactory;
 
     protected $table = 'student_reward_inventory';
+
     protected $primaryKey = 'inventory_id';
 
     protected $fillable = [

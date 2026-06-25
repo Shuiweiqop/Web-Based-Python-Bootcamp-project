@@ -74,7 +74,7 @@ class ProfileController extends Controller
                 try {
                     $user->sendEmailVerificationNotification();
                 } catch (\Throwable $e) {
-                    Log::warning('Email verification send failed: ' . $e->getMessage());
+                    Log::warning('Email verification send failed: '.$e->getMessage());
                 }
             }
         }

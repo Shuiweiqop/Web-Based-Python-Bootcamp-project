@@ -7,9 +7,9 @@ use App\Models\LearningPath;
 use App\Models\StudentLearningPath;
 use App\Services\PathProgressService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class LearningPathController extends Controller
 {
@@ -35,7 +35,7 @@ class LearningPathController extends Controller
 
         $student = $user->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('dashboard')
                 ->with('error', 'Student profile not found.');
         }
@@ -111,7 +111,7 @@ class LearningPathController extends Controller
 
         $student = $user->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('dashboard')
                 ->with('error', 'Student profile not found.');
         }
@@ -120,13 +120,13 @@ class LearningPathController extends Controller
         $studentPath = StudentLearningPath::with([
             'learningPath.lessons' => function ($query) {
                 $query->orderBy('learning_path_lessons.sequence_order');
-            }
+            },
         ])
             ->where('student_path_id', $studentPathId)
             ->where('student_id', $student->student_id)
             ->first();
 
-        if (!$studentPath) {
+        if (! $studentPath) {
             $studentPathFromPathId = StudentLearningPath::where('path_id', $studentPathId)
                 ->where('student_id', $student->student_id)
                 ->whereIn('status', ['active', 'paused', 'completed'])
@@ -170,7 +170,7 @@ class LearningPathController extends Controller
                 'sequence_order' => $lesson->pivot->sequence_order,
                 'status' => $progress ? $progress->status : 'not_started',
                 'progress_percent' => $progress ? $progress->progress_percent : 0,
-                'is_locked' => !$accessMap->get($lesson->lesson_id, false),
+                'is_locked' => ! $accessMap->get($lesson->lesson_id, false),
                 'estimated_duration_minutes' => $lesson->pivot->estimated_duration_minutes
                     ?? $lesson->estimated_duration
                     ?? 0,
@@ -241,7 +241,7 @@ class LearningPathController extends Controller
 
         $student = $user->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('dashboard')
                 ->with('error', 'Student profile not found.');
         }
@@ -250,7 +250,7 @@ class LearningPathController extends Controller
             ->with([
                 'lessons' => function ($query) {
                     $query->orderBy('learning_path_lessons.sequence_order');
-                }
+                },
             ])
             ->findOrFail($pathId);
 
@@ -541,7 +541,7 @@ class LearningPathController extends Controller
             $pathId,
             'self',
             [
-                'is_primary' => !$student->hasActiveLearningPath(),
+                'is_primary' => ! $student->hasActiveLearningPath(),
             ]
         );
 

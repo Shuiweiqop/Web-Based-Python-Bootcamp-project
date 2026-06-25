@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Reward;
-use App\Models\StudentProfile;
 use App\Models\StudentRewardInventory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -131,11 +130,11 @@ class RewardPurchaseTest extends TestCase
 
         $this->assertDatabaseMissing('student_reward_inventory', [
             'student_id' => $profile->student_id,
-            'reward_id'  => $reward->reward_id,
+            'reward_id' => $reward->reward_id,
         ]);
 
         $this->assertDatabaseHas('student_profiles', [
-            'student_id'     => $profile->student_id,
+            'student_id' => $profile->student_id,
             'current_points' => 500,
         ]);
     }
@@ -151,11 +150,11 @@ class RewardPurchaseTest extends TestCase
 
         $this->assertDatabaseMissing('student_reward_inventory', [
             'student_id' => $profile->student_id,
-            'reward_id'  => $reward->reward_id,
+            'reward_id' => $reward->reward_id,
         ]);
 
         $this->assertDatabaseHas('student_profiles', [
-            'student_id'     => $profile->student_id,
+            'student_id' => $profile->student_id,
             'current_points' => 500,
         ]);
     }
@@ -170,23 +169,23 @@ class RewardPurchaseTest extends TestCase
             ->assertRedirect(route('student.inventory.index'));
 
         $this->assertDatabaseHas('student_profiles', [
-            'student_id'     => $profile->student_id,
+            'student_id' => $profile->student_id,
             'current_points' => 200,
         ]);
 
         $this->assertDatabaseHas('student_reward_inventory', [
             'student_id' => $profile->student_id,
-            'reward_id'  => $reward->reward_id,
-            'quantity'   => 3,
+            'reward_id' => $reward->reward_id,
+            'quantity' => 3,
         ]);
 
         $this->assertDatabaseHas('reward_records', [
-            'student_id'    => $profile->student_id,
-            'reward_id'     => $reward->reward_id,
-            'quantity'      => 3,
-            'points_spent'  => 300,
+            'student_id' => $profile->student_id,
+            'reward_id' => $reward->reward_id,
+            'quantity' => 3,
+            'points_spent' => 300,
             'points_before' => 500,
-            'points_after'  => 200,
+            'points_after' => 200,
         ]);
     }
 
@@ -200,7 +199,7 @@ class RewardPurchaseTest extends TestCase
             ->assertRedirect(route('student.inventory.index'));
 
         $this->assertDatabaseHas('reward_catalog', [
-            'reward_id'      => $reward->reward_id,
+            'reward_id' => $reward->reward_id,
             'stock_quantity' => 3,
         ]);
     }

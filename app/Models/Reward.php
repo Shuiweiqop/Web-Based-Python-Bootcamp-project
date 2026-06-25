@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Reward extends Model
 {
     protected $table = 'reward_catalog';
+
     protected $primaryKey = 'reward_id';
+
     public $timestamps = true;
 
     const TYPES = [

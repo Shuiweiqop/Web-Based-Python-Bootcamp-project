@@ -24,9 +24,9 @@ class LessonObserver
             ];
 
             $changedFields = array_keys($lesson->getDirty());
-            $hasNotifiableChange = !empty(array_intersect($changedFields, $notifiableChanges));
+            $hasNotifiableChange = ! empty(array_intersect($changedFields, $notifiableChanges));
 
-            if (!$hasNotifiableChange) {
+            if (! $hasNotifiableChange) {
                 return;
             }
 
@@ -46,7 +46,7 @@ class LessonObserver
             // Create a notification for each student
             foreach ($registrations as $registration) {
                 $student = $registration->studentProfile;
-                if (!$student || !$student->user_Id) {
+                if (! $student || ! $student->user_Id) {
                     continue;
                 }
 
@@ -137,7 +137,7 @@ class LessonObserver
 
             foreach ($registrations as $registration) {
                 $student = $registration->studentProfile;
-                if (!$student || !$student->user_Id) {
+                if (! $student || ! $student->user_Id) {
                     continue;
                 }
 

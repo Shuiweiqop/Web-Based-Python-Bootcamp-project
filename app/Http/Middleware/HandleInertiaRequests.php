@@ -3,8 +3,8 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
-use Inertia\Middleware;
 use Illuminate\Support\Facades\Log;
+use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -59,25 +59,25 @@ class HandleInertiaRequests extends Middleware
                     try {
                         $equippedBackground = $studentProfile->getEquippedBackground();
                     } catch (\Exception $e) {
-                        Log::error('Failed to get equipped background: ' . $e->getMessage());
+                        Log::error('Failed to get equipped background: '.$e->getMessage());
                     }
 
                     try {
                         $equippedAvatarFrame = $studentProfile->getEquippedAvatarFrame();
                     } catch (\Exception $e) {
-                        Log::error('Failed to get equipped avatar frame: ' . $e->getMessage());
+                        Log::error('Failed to get equipped avatar frame: '.$e->getMessage());
                     }
 
                     try {
                         $equippedTitle = $studentProfile->getEquippedTitle();
                     } catch (\Exception $e) {
-                        Log::error('Failed to get equipped title: ' . $e->getMessage());
+                        Log::error('Failed to get equipped title: '.$e->getMessage());
                     }
 
                     try {
                         $equippedBadges = $studentProfile->getEquippedBadges();
                     } catch (\Exception $e) {
-                        Log::error('Failed to get equipped badges: ' . $e->getMessage());
+                        Log::error('Failed to get equipped badges: '.$e->getMessage());
                         $equippedBadges = collect();
                     }
 
@@ -88,7 +88,7 @@ class HandleInertiaRequests extends Middleware
                         'avatar_frame' => $this->formatEquippedItem($equippedAvatarFrame),
                         'title' => $this->formatEquippedItem($equippedTitle),
                         'badges' => $equippedBadges
-                            ->map(fn($item) => $this->formatEquippedItem($item))
+                            ->map(fn ($item) => $this->formatEquippedItem($item))
                             ->filter()
                             ->values()
                             ->toArray(),
@@ -104,7 +104,7 @@ class HandleInertiaRequests extends Middleware
                     ]);
                 }
             } catch (\Exception $e) {
-                Log::error('Error in HandleInertiaRequests share method: ' . $e->getMessage());
+                Log::error('Error in HandleInertiaRequests share method: '.$e->getMessage());
                 Log::error($e->getTraceAsString());
             }
         }
@@ -115,9 +115,9 @@ class HandleInertiaRequests extends Middleware
             ],
             'equipped' => $equippedData,
             'flash' => [
-                'success' => fn() => $request->session()->get('success'),
-                'error' => fn() => $request->session()->get('error'),
-                'missionProgress' => fn() => $request->session()->get('missionProgress'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'missionProgress' => fn () => $request->session()->get('missionProgress'),
             ],
         ]);
 
@@ -129,7 +129,7 @@ class HandleInertiaRequests extends Middleware
      */
     private function formatEquippedItem($inventoryItem): ?array
     {
-        if (!$inventoryItem || !$inventoryItem->reward) {
+        if (! $inventoryItem || ! $inventoryItem->reward) {
             return null;
         }
 
@@ -148,7 +148,8 @@ class HandleInertiaRequests extends Middleware
                 'metadata' => $metadata,
             ];
         } catch (\Exception $e) {
-            Log::error('Error formatting equipped item: ' . $e->getMessage());
+            Log::error('Error formatting equipped item: '.$e->getMessage());
+
             return null;
         }
     }

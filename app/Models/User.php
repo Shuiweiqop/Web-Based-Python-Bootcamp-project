@@ -3,12 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -70,7 +70,7 @@ class User extends Authenticatable implements MustVerifyEmail
         // Lock account for 30 minutes (after 5 failed attempts)
         if ($this->failed_login_attempts >= 5) {
             $this->update([
-                'locked_until' => now()->addMinutes(30)
+                'locked_until' => now()->addMinutes(30),
             ]);
         }
     }
@@ -79,7 +79,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $this->update([
             'failed_login_attempts' => 0,
-            'locked_until' => null
+            'locked_until' => null,
         ]);
     }
 
@@ -97,10 +97,10 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function profilePicture(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value
+            get: fn ($value) => $value
                 ? (filter_var($value, FILTER_VALIDATE_URL)
                     ? $value
-                    : asset('storage/' . $value))
+                    : asset('storage/'.$value))
                 : null,
         );
     }
@@ -121,16 +121,16 @@ class User extends Authenticatable implements MustVerifyEmail
     // Formatted phone attribute
     public function getFormattedPhoneAttribute(): ?string
     {
-        if (!$this->phone_number) {
+        if (! $this->phone_number) {
             return null;
         }
 
         $phone = preg_replace('/[^0-9]/', '', $this->phone_number);
 
         if (strlen($phone) === 10 && substr($phone, 0, 1) === '0') {
-            return substr($phone, 0, 3) . '-' . substr($phone, 3, 3) . '-' . substr($phone, 6);
+            return substr($phone, 0, 3).'-'.substr($phone, 3, 3).'-'.substr($phone, 6);
         } elseif (strlen($phone) === 11 && substr($phone, 0, 2) === '60') {
-            return '+60 ' . substr($phone, 2, 2) . '-' . substr($phone, 4, 3) . '-' . substr($phone, 7);
+            return '+60 '.substr($phone, 2, 2).'-'.substr($phone, 4, 3).'-'.substr($phone, 7);
         }
 
         return $this->phone_number;
@@ -149,7 +149,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getOrCreateStudentProfile()
     {
-        if (!$this->isStudent()) {
+        if (! $this->isStudent()) {
             return null;
         }
 

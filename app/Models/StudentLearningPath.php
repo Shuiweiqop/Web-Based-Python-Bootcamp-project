@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -133,7 +132,7 @@ class StudentLearningPath extends Model
             'last_activity_at' => now(),
         ];
 
-        if (!$this->started_at && $progress > 0) {
+        if (! $this->started_at && $progress > 0) {
             $updates['started_at'] = now();
         }
 
@@ -179,13 +178,13 @@ class StudentLearningPath extends Model
         $accessMap = $accessMap ?? $this->getLessonAccessMap($lessons, $progressMap);
 
         foreach ($lessons as $lesson) {
-            if (!$accessMap->get($lesson->lesson_id, false)) {
+            if (! $accessMap->get($lesson->lesson_id, false)) {
                 continue;
             }
 
             $progress = $progressMap->get($lesson->lesson_id);
 
-            if (!$progress || $progress->status !== 'completed') {
+            if (! $progress || $progress->status !== 'completed') {
                 return $lesson;
             }
         }
@@ -224,7 +223,7 @@ class StudentLearningPath extends Model
         $accessMap = $this->getLessonAccessMap($lessons, $progressMap);
 
         return $lessons->filter(function ($lesson) use ($accessMap) {
-            return !$accessMap->get($lesson->lesson_id, false);
+            return ! $accessMap->get($lesson->lesson_id, false);
         });
     }
 
@@ -234,15 +233,15 @@ class StudentLearningPath extends Model
             ? $this->learningPath
             : $this->learningPath()->first();
 
-        if (!$path) {
+        if (! $path) {
             return collect();
         }
 
-        if (!$path->relationLoaded('lessons')) {
+        if (! $path->relationLoaded('lessons')) {
             $path->load([
                 'lessons' => function ($query) {
                     $query->orderBy('learning_path_lessons.sequence_order');
-                }
+                },
             ]);
         }
 
@@ -306,7 +305,7 @@ class StudentLearningPath extends Model
 
     public function getDaysInPathAttribute(): int
     {
-        if (!$this->started_at) {
+        if (! $this->started_at) {
             return 0;
         }
 
@@ -315,7 +314,7 @@ class StudentLearningPath extends Model
 
     public function getActiveDaysAttribute(): int
     {
-        if (!$this->started_at) {
+        if (! $this->started_at) {
             return 0;
         }
 
@@ -345,7 +344,7 @@ class StudentLearningPath extends Model
 
     public function getDaysUntilTargetAttribute(): ?int
     {
-        if (!$this->target_completion_date) {
+        if (! $this->target_completion_date) {
             return null;
         }
 
@@ -354,7 +353,7 @@ class StudentLearningPath extends Model
 
     public function isOverdueAttribute(): bool
     {
-        if (!$this->target_completion_date) {
+        if (! $this->target_completion_date) {
             return false;
         }
 

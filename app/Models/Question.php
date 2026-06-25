@@ -1,4 +1,5 @@
 <?php
+
 // app/Models/Question.php
 
 namespace App\Models;
@@ -7,7 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\SubmissionAnswer; // 确保导入 SubmissionAnswer 模型
+
+// 确保导入 SubmissionAnswer 模型
 
 class Question extends Model
 {
@@ -26,26 +28,29 @@ class Question extends Model
         'difficulty_level',
         'order',
         'metadata',
-        'status'
+        'status',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'points' => 'integer',
         'difficulty_level' => 'integer',
-        'order' => 'integer'
+        'order' => 'integer',
     ];
 
     const TYPE_MCQ = 'mcq';
+
     const TYPE_CODING = 'coding';
+
     const TYPE_TRUE_FALSE = 'true_false';
+
     const TYPE_SHORT_ANSWER = 'short_answer';
 
     const TYPES = [
         self::TYPE_MCQ => 'Multiple Choice',
         self::TYPE_CODING => 'Coding Exercise',
         self::TYPE_TRUE_FALSE => 'True/False',
-        self::TYPE_SHORT_ANSWER => 'Short Answer'
+        self::TYPE_SHORT_ANSWER => 'Short Answer',
     ];
 
     // Laravel Boot method for auto-setting order
@@ -55,7 +60,7 @@ class Question extends Model
 
         static::creating(function ($question) {
             // 确保 order 有值
-            if (!$question->order) {
+            if (! $question->order) {
                 $maxOrder = static::where('test_id', $question->test_id)->max('order');
                 $question->order = ($maxOrder ?? 0) + 1;
             }
@@ -109,6 +114,7 @@ class Question extends Model
     public function getDifficultyNameAttribute()
     {
         $levels = [1 => 'Easy', 2 => 'Medium', 3 => 'Hard'];
+
         return $levels[$this->difficulty_level] ?? 'Unknown';
     }
 
@@ -166,7 +172,7 @@ class Question extends Model
 
     private function checkMcqAnswer($selectedOptions)
     {
-        if (!is_array($selectedOptions)) {
+        if (! is_array($selectedOptions)) {
             return false;
         }
 
@@ -205,7 +211,7 @@ class Question extends Model
                 return in_array(strtolower($this->correct_answer), ['true', 'false']);
             case self::TYPE_SHORT_ANSWER:
             case self::TYPE_CODING:
-                return !empty(trim($this->correct_answer));
+                return ! empty(trim($this->correct_answer));
             default:
                 return false;
         }

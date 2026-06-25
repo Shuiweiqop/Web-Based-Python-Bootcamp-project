@@ -17,18 +17,16 @@ class CheckRole
      *
      * If no roles are provided, middleware will act as auth + optional email-verified check (see $requireRole flag below).
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  mixed ...$roles
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param  mixed  ...$roles
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         // 如果未登录：对 AJAX 返回 401 JSON，否则重定向到 login
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
+
             return redirect()->guest(route('login'));
         }
 
@@ -39,6 +37,7 @@ class CheckRole
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Email not verified.'], 403);
             }
+
             return redirect()->route('verification.notice');
         }
 
@@ -49,7 +48,7 @@ class CheckRole
 
         // 规范化用户 role 与传入 roles，做大小写不敏感比较并用严格比较
         $userRole = strtolower((string) ($user->role ?? ''));
-        $acceptable = array_map(fn($r) => strtolower(trim((string)$r)), $roles);
+        $acceptable = array_map(fn ($r) => strtolower(trim((string) $r)), $roles);
 
         if (in_array($userRole, $acceptable, true)) {
             return $next($request);

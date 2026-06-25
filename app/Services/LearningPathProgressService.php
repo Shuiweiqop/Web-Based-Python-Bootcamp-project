@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\StudentLearningPath;
 use App\Models\LessonProgress;
+use App\Models\StudentLearningPath;
 use App\Models\StudentProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -37,7 +37,7 @@ class LearningPathProgressService
                 'student_id' => $studentId,
                 'lesson_id' => $lessonId,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
@@ -56,8 +56,9 @@ class LearningPathProgressService
 
             if ($pathLessons->isEmpty()) {
                 Log::warning('No lessons found in learning path', [
-                    'path_id' => $studentPath->path_id
+                    'path_id' => $studentPath->path_id,
                 ]);
+
                 return;
             }
 
@@ -121,7 +122,7 @@ class LearningPathProgressService
                 'progress_percent' => $progressPercent,
                 'status' => $pathStatus,
                 'completed' => $completedCount,
-                'total' => $totalLessons
+                'total' => $totalLessons,
             ]);
         });
     }
@@ -143,7 +144,7 @@ class LearningPathProgressService
             } catch (\Exception $e) {
                 Log::error('Failed to recalculate path progress', [
                     'student_path_id' => $studentPath->student_path_id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -180,10 +181,11 @@ class LearningPathProgressService
 
         try {
             $student = StudentProfile::find($studentPath->student_id);
-            if (!$student) {
+            if (! $student) {
                 Log::warning('Student not found for path completion reward', [
-                    'student_id' => $studentPath->student_id
+                    'student_id' => $studentPath->student_id,
                 ]);
+
                 return;
             }
 
@@ -201,13 +203,13 @@ class LearningPathProgressService
             Log::info('Path completion reward granted', [
                 'student_id' => $studentPath->student_id,
                 'path_id' => $studentPath->path_id,
-                'points' => $rewardPoints
+                'points' => $rewardPoints,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to grant path completion reward', [
                 'student_id' => $studentPath->student_id,
                 'path_id' => $studentPath->path_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -224,7 +226,7 @@ class LearningPathProgressService
                 ->where('lesson_id', $completedLessonId)
                 ->first();
 
-            if (!$currentLesson) {
+            if (! $currentLesson) {
                 return;
             }
 
@@ -241,14 +243,14 @@ class LearningPathProgressService
                     'student_id' => $studentId,
                     'path_id' => $pathId,
                     'lesson_id' => $nextLesson->lesson_id,
-                    'sequence_order' => $nextLesson->sequence_order
+                    'sequence_order' => $nextLesson->sequence_order,
                 ]);
             }
         } catch (\Exception $e) {
             Log::error('Failed to unlock next lesson', [
                 'student_id' => $studentId,
                 'path_id' => $pathId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

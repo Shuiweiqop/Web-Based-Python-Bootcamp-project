@@ -175,4 +175,3 @@ return new class extends Migration
         Schema::dropIfExists('daily_challenge_definitions');
     }
 };
-

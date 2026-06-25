@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Lesson;
 use App\Models\InteractiveExercise;
+use App\Models\Lesson;
+use Illuminate\Database\Seeder;
 
 class InteractiveExerciseSeeder extends Seeder
 {
@@ -14,6 +14,7 @@ class InteractiveExerciseSeeder extends Seeder
 
         if ($lessons->isEmpty()) {
             $this->command->warn('No lessons found. Please run LessonsTableSeeder first.');
+
             return;
         }
 
@@ -416,46 +417,57 @@ class InteractiveExerciseSeeder extends Seeder
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createConditionalExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createLoopExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createFunctionExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createDictionaryExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createFileExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createExceptionExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createOOPExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createModuleExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createComprehensionExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createDecoratorExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
     }
+
     private function createPandasExercises(Lesson $lesson): void
     {
         $this->createGenericExercises($lesson);
@@ -472,7 +484,7 @@ class InteractiveExerciseSeeder extends Seeder
             'time_limit_sec' => 600,
             'is_active' => true,
             'starter_code' => "# Practice exercise\n# Write your code here\n",
-            'solution' => "# Solution will vary based on the exercise",
+            'solution' => '# Solution will vary based on the exercise',
             'content' => json_encode([
                 'instructions' => 'Apply concepts from the lesson',
             ]),

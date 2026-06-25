@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Otp;
 use App\Mail\OtpMail;
+use App\Models\Otp;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,6 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
-use Carbon\Carbon;
 
 class RegisteredUserController extends Controller
 {
@@ -34,7 +34,7 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
+            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -49,7 +49,7 @@ class RegisteredUserController extends Controller
             Otp::create([
                 'email' => $request->email,
                 'otp' => $otpCode,
-                'expires_at' => Carbon::now()->addMinutes(10)
+                'expires_at' => Carbon::now()->addMinutes(10),
             ]);
 
             // 发送邮件
@@ -61,13 +61,13 @@ class RegisteredUserController extends Controller
                     'name' => $request->name,
                     'email' => $request->email,
                     'password' => $request->password,
-                ]
+                ],
             ]);
 
             return redirect()->route('register.verify-otp')->with('success', 'OTP has been sent to your email!');
         } catch (\Exception $e) {
             return back()->withErrors([
-                'email' => 'Failed to send OTP. Please try again.'
+                'email' => 'Failed to send OTP. Please try again.',
             ])->withInput();
         }
     }
@@ -79,12 +79,12 @@ class RegisteredUserController extends Controller
     {
         $registrationData = session('registration_data');
 
-        if (!$registrationData) {
+        if (! $registrationData) {
             return redirect()->route('register');
         }
 
         return Inertia::render('Auth/RegisterVerifyOtp', [
-            'email' => $registrationData['email']
+            'email' => $registrationData['email'],
         ]);
     }
 
@@ -94,14 +94,14 @@ class RegisteredUserController extends Controller
     public function verifyOtp(Request $request): RedirectResponse
     {
         $request->validate([
-            'otp' => 'required|string|size:6'
+            'otp' => 'required|string|size:6',
         ]);
 
         $registrationData = session('registration_data');
 
-        if (!$registrationData) {
+        if (! $registrationData) {
             return redirect()->route('register')->withErrors([
-                'otp' => 'Registration session expired. Please register again.'
+                'otp' => 'Registration session expired. Please register again.',
             ]);
         }
 
@@ -111,17 +111,18 @@ class RegisteredUserController extends Controller
             ->first();
 
         // 检查 OTP 是否存在
-        if (!$otp) {
+        if (! $otp) {
             return back()->withErrors([
-                'otp' => 'Invalid OTP code. Please check and try again.'
+                'otp' => 'Invalid OTP code. Please check and try again.',
             ]);
         }
 
         // 检查是否过期
         if ($otp->isExpired()) {
             $otp->delete();
+
             return back()->withErrors([
-                'otp' => 'OTP has expired. Please request a new one.'
+                'otp' => 'OTP has expired. Please request a new one.',
             ]);
         }
 
@@ -156,9 +157,9 @@ class RegisteredUserController extends Controller
     {
         $registrationData = session('registration_data');
 
-        if (!$registrationData) {
+        if (! $registrationData) {
             return redirect()->route('register')->withErrors([
-                'otp' => 'Registration session expired. Please register again.'
+                'otp' => 'Registration session expired. Please register again.',
             ]);
         }
 
@@ -173,7 +174,7 @@ class RegisteredUserController extends Controller
             Otp::create([
                 'email' => $registrationData['email'],
                 'otp' => $otpCode,
-                'expires_at' => Carbon::now()->addMinutes(10)
+                'expires_at' => Carbon::now()->addMinutes(10),
             ]);
 
             // 发送邮件
@@ -182,7 +183,7 @@ class RegisteredUserController extends Controller
             return back()->with('success', 'New OTP has been sent to your email!');
         } catch (\Exception $e) {
             return back()->withErrors([
-                'otp' => 'Failed to resend OTP. Please try again.'
+                'otp' => 'Failed to resend OTP. Please try again.',
             ]);
         }
     }

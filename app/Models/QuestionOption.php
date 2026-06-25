@@ -1,4 +1,5 @@
 <?php
+
 // 3. app/Models/QuestionOption.php
 
 namespace App\Models;
@@ -18,12 +19,12 @@ class QuestionOption extends Model
         'option_label',
         'option_text',
         'is_correct',
-        'order'
+        'order',
     ];
 
     protected $casts = [
         'is_correct' => 'boolean',
-        'order' => 'integer'
+        'order' => 'integer',
     ];
 
     // Relationships

@@ -27,7 +27,7 @@ class AdminExerciseController extends Controller
         }
 
         if ($q = $request->input('q')) {
-            $query->where('title', 'like', '%' . addcslashes($q, '%_') . '%');
+            $query->where('title', 'like', '%'.addcslashes($q, '%_').'%');
         }
 
         $exercises = $query->paginate(10)->withQueryString();
@@ -35,8 +35,8 @@ class AdminExerciseController extends Controller
 
         return Inertia::render('Admin/Exercises/Index', [
             'exercises' => $exercises,
-            'lessons'   => $lessons,
-            'filters'   => $request->only(['q', 'lesson_id']),
+            'lessons' => $lessons,
+            'filters' => $request->only(['q', 'lesson_id']),
         ]);
     }
 
@@ -46,11 +46,11 @@ class AdminExerciseController extends Controller
         $routeLesson = $request->route('lesson');
 
         return Inertia::render('Admin/Exercises/Create', [
-            'lessons'          => $lessons,
+            'lessons' => $lessons,
             'selectedLessonId' => $request->input('lesson_id'),
-            'lesson'           => $routeLesson ? [
+            'lesson' => $routeLesson ? [
                 'lesson_id' => $routeLesson->lesson_id,
-                'title'     => $routeLesson->title,
+                'title' => $routeLesson->title,
             ] : null,
         ]);
     }
@@ -63,10 +63,10 @@ class AdminExerciseController extends Controller
         $exercise = InteractiveExercise::create($data);
 
         Log::info('Exercise created', [
-            'exercise_id'       => $exercise->exercise_id,
-            'type'              => $exercise->exercise_type,
+            'exercise_id' => $exercise->exercise_id,
+            'type' => $exercise->exercise_type,
             'enable_live_editor' => $exercise->enable_live_editor ?? false,
-            'test_cases_count'  => is_array($exercise->test_cases) ? count($exercise->test_cases) : 0,
+            'test_cases_count' => is_array($exercise->test_cases) ? count($exercise->test_cases) : 0,
         ]);
 
         return redirect()
@@ -82,9 +82,9 @@ class AdminExerciseController extends Controller
 
         return Inertia::render('Admin/Exercises/Show', [
             'exercise' => $exerciseArr,
-            'lesson'   => $exercise->lesson ? [
+            'lesson' => $exercise->lesson ? [
                 'lesson_id' => $exercise->lesson->lesson_id,
-                'title'     => $exercise->lesson->title,
+                'title' => $exercise->lesson->title,
             ] : null,
         ]);
     }
@@ -97,9 +97,9 @@ class AdminExerciseController extends Controller
 
         return Inertia::render('Admin/Exercises/Edit', [
             'exercise' => $exerciseArr,
-            'lesson'   => $exercise->lesson ? [
+            'lesson' => $exercise->lesson ? [
                 'lesson_id' => $exercise->lesson->lesson_id,
-                'title'     => $exercise->lesson->title,
+                'title' => $exercise->lesson->title,
             ] : null,
         ]);
     }
@@ -131,15 +131,15 @@ class AdminExerciseController extends Controller
             ->orderBy('created_at', 'desc');
 
         if ($q = $request->input('q')) {
-            $query->where('title', 'like', '%' . addcslashes($q, '%_') . '%');
+            $query->where('title', 'like', '%'.addcslashes($q, '%_').'%');
         }
 
         $exercises = $query->paginate(10)->withQueryString();
 
         return Inertia::render('Admin/Exercises/Index', [
-            'lesson'    => ['lesson_id' => $lesson->lesson_id, 'title' => $lesson->title],
+            'lesson' => ['lesson_id' => $lesson->lesson_id, 'title' => $lesson->title],
             'exercises' => $exercises,
-            'filters'   => $request->only('q'),
+            'filters' => $request->only('q'),
         ]);
     }
 
@@ -153,15 +153,15 @@ class AdminExerciseController extends Controller
     public function storeForLesson(StoreExerciseRequest $request, Lesson $lesson): RedirectResponse
     {
         $data = $request->validated();
-        $data['lesson_id']  = $lesson->lesson_id;
+        $data['lesson_id'] = $lesson->lesson_id;
         $data['created_by'] = $request->user()->getKey();
 
         $exercise = InteractiveExercise::create($data);
 
         Log::info('Exercise created (nested)', [
-            'exercise_id'        => $exercise->exercise_id,
-            'lesson_id'          => $lesson->lesson_id,
-            'type'               => $exercise->exercise_type,
+            'exercise_id' => $exercise->exercise_id,
+            'lesson_id' => $lesson->lesson_id,
+            'type' => $exercise->exercise_type,
             'enable_live_editor' => $exercise->enable_live_editor ?? false,
         ]);
 
@@ -180,7 +180,7 @@ class AdminExerciseController extends Controller
         $exerciseArr['exercise_id'] = $exercise->exercise_id;
 
         return Inertia::render('Admin/Exercises/Show', [
-            'lesson'   => ['lesson_id' => $lesson->lesson_id, 'title' => $lesson->title],
+            'lesson' => ['lesson_id' => $lesson->lesson_id, 'title' => $lesson->title],
             'exercise' => $exerciseArr,
         ]);
     }
@@ -195,7 +195,7 @@ class AdminExerciseController extends Controller
         $exerciseArr['exercise_id'] = $exercise->exercise_id;
 
         return Inertia::render('Admin/Exercises/Edit', [
-            'lesson'   => ['lesson_id' => $lesson->lesson_id, 'title' => $lesson->title],
+            'lesson' => ['lesson_id' => $lesson->lesson_id, 'title' => $lesson->title],
             'exercise' => $exerciseArr,
         ]);
     }

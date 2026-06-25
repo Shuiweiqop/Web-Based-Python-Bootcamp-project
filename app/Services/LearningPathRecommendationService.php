@@ -3,24 +3,20 @@
 namespace App\Services;
 
 use App\Models\LearningPath;
+use App\Models\StudentLearningPath;
 use App\Models\StudentProfile;
 use App\Models\TestSubmission;
-use App\Models\StudentLearningPath;
-use App\Models\LessonProgress;
 use Illuminate\Support\Facades\Log;
 
 class LearningPathRecommendationService
 {
     /**
      * Recommend a learning path based on placement test score
-     *
-     * @param TestSubmission $submission
-     * @return array
      */
     public function recommendFromPlacementTest(TestSubmission $submission): array
     {
         // Validate this is a placement test
-        if (!$submission->test || $submission->test->test_type !== 'placement') {
+        if (! $submission->test || $submission->test->test_type !== 'placement') {
             return [
                 'success' => false,
                 'message' => 'This is not a placement test submission.',
@@ -35,14 +31,14 @@ class LearningPathRecommendationService
             ->orderBy('min_score_required', 'desc')
             ->first();
 
-        if (!$recommendedPath) {
+        if (! $recommendedPath) {
             // Fallback to beginner path if no match found
             $recommendedPath = LearningPath::active()
                 ->where('difficulty_level', 'beginner')
                 ->first();
         }
 
-        if (!$recommendedPath) {
+        if (! $recommendedPath) {
             return [
                 'success' => false,
                 'message' => 'No suitable learning path found. Please contact support.',
@@ -80,15 +76,12 @@ class LearningPathRecommendationService
 
     /**
      * Re-evaluate student's current path based on recent performance
-     *
-     * @param StudentProfile $student
-     * @return array
      */
     public function reevaluateStudentPath(StudentProfile $student): array
     {
         $primaryPath = $student->getPrimaryLearningPath();
 
-        if (!$primaryPath) {
+        if (! $primaryPath) {
             return [
                 'success' => false,
                 'message' => 'Student has no active learning path.',
@@ -101,8 +94,8 @@ class LearningPathRecommendationService
         if ($recentLessons->count() < config('recommendation.min_lessons_for_reevaluation', 3)) {
             return [
                 'success' => false,
-                'message' => 'Not enough data for re-evaluation. Need at least ' .
-                    config('recommendation.min_lessons_for_reevaluation', 3) . ' completed lessons.',
+                'message' => 'Not enough data for re-evaluation. Need at least '.
+                    config('recommendation.min_lessons_for_reevaluation', 3).' completed lessons.',
             ];
         }
 
@@ -128,10 +121,6 @@ class LearningPathRecommendationService
 
     /**
      * Calculate confidence score for a recommendation
-     *
-     * @param float $score
-     * @param LearningPath $path
-     * @return int
      */
     private function calculateConfidence(float $score, LearningPath $path): int
     {
@@ -155,8 +144,6 @@ class LearningPathRecommendationService
     /**
      * Get alternative learning paths
      *
-     * @param float $score
-     * @param int $excludePathId
      * @return \Illuminate\Support\Collection
      */
     private function getAlternativePaths(float $score, int $excludePathId)
@@ -181,11 +168,6 @@ class LearningPathRecommendationService
 
     /**
      * Get recommendation message based on score and path
-     *
-     * @param float $score
-     * @param LearningPath $path
-     * @param int $confidence
-     * @return string
      */
     private function getRecommendationMessage(float $score, LearningPath $path, int $confidence): string
     {
@@ -201,7 +183,6 @@ class LearningPathRecommendationService
     /**
      * Get recent completed lessons for a student
      *
-     * @param StudentProfile $student
      * @return \Illuminate\Support\Collection
      */
     private function getRecentCompletedLessons(StudentProfile $student)
@@ -217,9 +198,7 @@ class LearningPathRecommendationService
     /**
      * Calculate average performance from recent lessons
      *
-     * @param StudentProfile $student
-     * @param \Illuminate\Support\Collection $recentLessons
-     * @return float
+     * @param  \Illuminate\Support\Collection  $recentLessons
      */
     private function calculateAveragePerformance(StudentProfile $student, $recentLessons): float
     {
@@ -248,11 +227,6 @@ class LearningPathRecommendationService
 
     /**
      * Analyze performance and recommend path changes
-     *
-     * @param StudentProfile $student
-     * @param StudentLearningPath $currentPath
-     * @param float $averageScore
-     * @return array
      */
     private function analyzePerformanceAndRecommend(
         StudentProfile $student,
@@ -317,9 +291,7 @@ class LearningPathRecommendationService
     /**
      * Find next difficulty path (upgrade or downgrade)
      *
-     * @param LearningPath $currentPath
-     * @param string $direction ('up' or 'down')
-     * @return LearningPath|null
+     * @param  string  $direction  ('up' or 'down')
      */
     private function findNextDifficultyPath(LearningPath $currentPath, string $direction): ?LearningPath
     {
@@ -336,7 +308,7 @@ class LearningPathRecommendationService
             $nextIndex = $currentIndex - 1;
         }
 
-        if (!isset($difficultyOrder[$nextIndex])) {
+        if (! isset($difficultyOrder[$nextIndex])) {
             return null; // Already at highest/lowest level
         }
 
@@ -347,11 +319,6 @@ class LearningPathRecommendationService
 
     /**
      * Auto-assign recommended path to student
-     *
-     * @param StudentProfile $student
-     * @param LearningPath $path
-     * @param TestSubmission|null $submission
-     * @return StudentLearningPath
      */
     public function assignPathToStudent(
         StudentProfile $student,
@@ -375,7 +342,7 @@ class LearningPathRecommendationService
             'assigned_by' => 'system',
             'placement_test_submission_id' => $submission?->submission_id,
             'status' => 'active',
-            'is_primary' => !$student->learningPaths()->where('is_primary', true)->exists(),
+            'is_primary' => ! $student->learningPaths()->where('is_primary', true)->exists(),
             'recommendation_score' => $submission ?
                 $this->calculateConfidence($submission->score, $path) : null,
             'recommendation_reason' => $submission ?

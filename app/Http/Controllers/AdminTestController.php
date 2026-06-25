@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Models\Lesson;
 use App\Models\Test;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AdminTestController extends Controller
 {
@@ -113,7 +113,7 @@ class AdminTestController extends Controller
 
         return redirect()->route('admin.lessons.tests.show', [
             'lesson' => $lesson->lesson_id,
-            'test' => $test->test_id
+            'test' => $test->test_id,
         ])
             ->with('success', 'Test created successfully. Now add questions to complete the test.');
     }
@@ -157,7 +157,7 @@ class AdminTestController extends Controller
         return Inertia::render('Admin/Tests/Show', [
             'lesson' => [
                 'lesson_id' => $lesson->lesson_id,
-                'title' => $lesson->title
+                'title' => $lesson->title,
             ],
             'test' => [
                 'test_id' => $test->test_id,
@@ -192,7 +192,7 @@ class AdminTestController extends Controller
         return Inertia::render('Admin/Tests/Edit', [
             'lesson' => [
                 'lesson_id' => $lesson->lesson_id,
-                'title' => $lesson->title
+                'title' => $lesson->title,
             ],
             'test' => [
                 'test_id' => $test->test_id,
@@ -262,7 +262,7 @@ class AdminTestController extends Controller
         // Check if test has any submissions
         if ($test->submissions()->exists()) {
             return back()->withErrors([
-                'error' => 'Cannot delete test that has student submissions. Please archive it instead.'
+                'error' => 'Cannot delete test that has student submissions. Please archive it instead.',
             ]);
         }
 
@@ -277,6 +277,7 @@ class AdminTestController extends Controller
     private function getNextOrder($lessonId)
     {
         $maxOrder = Test::where('lesson_id', $lessonId)->max('order');
+
         return ($maxOrder ?? 0) + 1;
     }
 
@@ -309,8 +310,9 @@ class AdminTestController extends Controller
 
             if ($testsWithSubmissions->isNotEmpty()) {
                 $titles = $testsWithSubmissions->pluck('title')->implode(', ');
+
                 return back()->withErrors([
-                    'error' => "Cannot delete tests with submissions: {$titles}. Please set them as inactive instead."
+                    'error' => "Cannot delete tests with submissions: {$titles}. Please set them as inactive instead.",
                 ]);
             }
         }
@@ -361,7 +363,7 @@ class AdminTestController extends Controller
 
         // Create new test
         $newTest = $test->replicate();
-        $newTest->title = $test->title . ' (Copy)';
+        $newTest->title = $test->title.' (Copy)';
         $newTest->status = 'draft';
         $newTest->order = $this->getNextOrder($lesson->lesson_id);
         $newTest->save();
@@ -384,7 +386,7 @@ class AdminTestController extends Controller
 
         return redirect()->route('admin.lessons.tests.show', [
             'lesson' => $lesson->lesson_id,
-            'test' => $newTest->test_id
+            'test' => $newTest->test_id,
         ])
             ->with('success', 'Test duplicated successfully. You can now modify the copy.');
     }
@@ -401,7 +403,7 @@ class AdminTestController extends Controller
         return Inertia::render('Admin/Tests/Preview', [
             'lesson' => [
                 'lesson_id' => $lesson->lesson_id,
-                'title' => $lesson->title
+                'title' => $lesson->title,
             ],
             'test' => [
                 'test_id' => $test->test_id,
