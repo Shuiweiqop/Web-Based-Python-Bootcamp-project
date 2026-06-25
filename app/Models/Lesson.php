@@ -4,18 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Models\LessonSection;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lesson extends Model
 {
     use HasFactory;
 
     protected $primaryKey = 'lesson_id';
+
     public $incrementing = true;
+
     protected $keyType = 'int';
+
     protected $table = 'lessons';
 
     protected $fillable = [
@@ -44,6 +46,7 @@ class Lesson extends Model
         'min_exercise_score_percent' => 'decimal:2',
         'ai_generated' => 'boolean',
     ];
+
     protected $appends = [
         'video_embed_url',
     ];
@@ -52,9 +55,10 @@ class Lesson extends Model
     {
         return 'lesson_id';
     }
+
     public function getVideoEmbedUrlAttribute(): ?string
     {
-        if (!$this->video_url) {
+        if (! $this->video_url) {
             return null;
         }
 
@@ -69,14 +73,14 @@ class Lesson extends Model
         if (str_contains($url, 'youtube.com/watch')) {
             parse_str(parse_url($url, PHP_URL_QUERY), $query);
 
-            if (!empty($query['v'])) {
-                return 'https://www.youtube.com/embed/' . $query['v'];
+            if (! empty($query['v'])) {
+                return 'https://www.youtube.com/embed/'.$query['v'];
             }
         }
 
         // youtu.be/xxxx
         if (str_contains($url, 'youtu.be/')) {
-            return 'https://www.youtube.com/embed/' . basename($url);
+            return 'https://www.youtube.com/embed/'.basename($url);
         }
 
         // fallback: return original (future-proof for Vimeo, etc.)
@@ -106,7 +110,6 @@ class Lesson extends Model
         return $this->hasMany(\App\Models\InteractiveExercise::class, 'lesson_id', 'lesson_id');
     }
 
-
     public function tests(): HasMany
     {
         return $this->hasMany(\App\Models\Test::class, 'lesson_id', 'lesson_id');
@@ -132,7 +135,7 @@ class Lesson extends Model
             'completion_points_awarded',
             'completed_at',
             'created_at',
-            'updated_at'
+            'updated_at',
         ])->withTimestamps();
     }
 
@@ -145,6 +148,7 @@ class Lesson extends Model
     {
         return $this->hasMany(LessonProgress::class, 'lesson_id', 'lesson_id');
     }
+
     public function learningPaths(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -164,6 +168,7 @@ class Lesson extends Model
         ])->withTimestamps()
             ->orderBy('learning_path_lessons.sequence_order', 'asc');
     }
+
     /**
      * Get progress for a specific student
      */
@@ -339,6 +344,7 @@ class Lesson extends Model
             'required_tests' => $this->tests()->where('status', 'active')->count(),
         ]);
     }
+
     public function isLockedForStudent(int $studentId, int $pathId): bool
     {
         // Get the lesson's pivot data in this specific path
@@ -346,12 +352,12 @@ class Lesson extends Model
             ->where('learning_paths.path_id', $pathId)  // 明确指定表名
             ->first();
 
-        if (!$lessonInPath) {
+        if (! $lessonInPath) {
             return true; // Lesson not in this path
         }
 
         // If unlock_after_previous is false, always unlocked
-        if (!$lessonInPath->pivot->unlock_after_previous) {
+        if (! $lessonInPath->pivot->unlock_after_previous) {
             return false;
         }
 
@@ -362,7 +368,7 @@ class Lesson extends Model
             ->orderBy('sequence_order', 'desc')
             ->first();
 
-        if (!$previousLesson) {
+        if (! $previousLesson) {
             return false; // First lesson, always unlocked
         }
 
@@ -371,7 +377,7 @@ class Lesson extends Model
             ->where('lesson_id', $previousLesson->lesson_id)
             ->first();
 
-        return !($progress && $progress->status === 'completed');
+        return ! ($progress && $progress->status === 'completed');
     }
 
     /**
@@ -391,7 +397,7 @@ class Lesson extends Model
             ->where('path_id', $pathId)
             ->first();
 
-        if (!$currentLesson) {
+        if (! $currentLesson) {
             return null;
         }
 
@@ -411,7 +417,7 @@ class Lesson extends Model
             ->where('path_id', $pathId)
             ->first();
 
-        if (!$currentLesson) {
+        if (! $currentLesson) {
             return null;
         }
 
@@ -429,7 +435,7 @@ class Lesson extends Model
     {
         $path = LearningPath::find($pathId);
 
-        if (!$path) {
+        if (! $path) {
             return null;
         }
 
@@ -437,7 +443,7 @@ class Lesson extends Model
             ->where('path_id', $pathId)
             ->first();
 
-        if (!$currentLesson) {
+        if (! $currentLesson) {
             return null;
         }
 
@@ -465,7 +471,7 @@ class Lesson extends Model
                 'can_start' => false,
                 'reason' => $previousLesson
                     ? "You must complete \"{$previousLesson->title}\" first."
-                    : "This lesson is currently locked.",
+                    : 'This lesson is currently locked.',
             ];
         }
 

@@ -11,6 +11,7 @@ class LessonProgress extends Model
     use HasFactory;
 
     protected $table = 'lesson_progress';
+
     protected $primaryKey = 'progress_id';
 
     protected $fillable = [
@@ -151,7 +152,7 @@ class LessonProgress extends Model
             $updates['completed_at'] = $this->completed_at ?? now();
         }
 
-        if ($this->status === 'completed' && !$this->completed_at) {
+        if ($this->status === 'completed' && ! $this->completed_at) {
             $updates['completed_at'] = now();
         }
 
@@ -198,7 +199,7 @@ class LessonProgress extends Model
             $exerciseIds = $lesson->interactiveExercises()->where('is_active', true)->pluck('exercise_id');
             $completedExercises = ExerciseSubmission::where('student_id', $this->student_id)
                 ->whereIn('exercise_id', $exerciseIds)
-                ->where('score', '>=', function ($query) use ($exerciseIds) {
+                ->where('score', '>=', function ($query) {
                     $query->select('max_score')
                         ->from('interactive_exercises')
                         ->whereColumn('exercise_id', 'exercise_submissions.exercise_id')
@@ -214,7 +215,7 @@ class LessonProgress extends Model
             $completedTests = TestSubmission::where('student_id', $this->student_id)
                 ->whereIn('test_id', $testIds)
                 ->whereIn('status', ['submitted', 'timeout', 'completed'])
-                ->where('score', '>=', function ($query) use ($testIds) {
+                ->where('score', '>=', function ($query) {
                     $query->select('passing_score')
                         ->from('tests')
                         ->whereColumn('test_id', 'test_submissions.test_id')

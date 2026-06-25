@@ -60,8 +60,8 @@ class AdminLessonController extends Controller
     }
 
     private const DRAFT_DEFAULTS = [
-        'estimated_duration'        => 30,
-        'completion_reward_points'  => 100,
+        'estimated_duration' => 30,
+        'completion_reward_points' => 100,
         'min_exercise_score_percent' => 70,
     ];
 
@@ -75,22 +75,22 @@ class AdminLessonController extends Controller
         $createdBy = $request->user()->user_Id;
 
         $lesson = Lesson::create([
-            'title'                      => $data['title'],
-            'content'                    => '',
-            'content_type'               => 'markdown',
-            'difficulty'                 => $data['difficulty'],
-            'estimated_duration'         => self::DRAFT_DEFAULTS['estimated_duration'],
-            'status'                     => 'draft',
-            'completion_reward_points'   => self::DRAFT_DEFAULTS['completion_reward_points'],
-            'required_exercises'         => 0,
-            'required_tests'             => 0,
+            'title' => $data['title'],
+            'content' => '',
+            'content_type' => 'markdown',
+            'difficulty' => $data['difficulty'],
+            'estimated_duration' => self::DRAFT_DEFAULTS['estimated_duration'],
+            'status' => 'draft',
+            'completion_reward_points' => self::DRAFT_DEFAULTS['completion_reward_points'],
+            'required_exercises' => 0,
+            'required_tests' => 0,
             'min_exercise_score_percent' => self::DRAFT_DEFAULTS['min_exercise_score_percent'],
-            'created_by'                 => $createdBy,
+            'created_by' => $createdBy,
         ]);
 
         Log::info('Quick draft lesson created', [
-            'lesson_id'  => $lesson->lesson_id,
-            'title'      => $lesson->title,
+            'lesson_id' => $lesson->lesson_id,
+            'title' => $lesson->title,
             'created_by' => $createdBy,
         ]);
 
@@ -107,9 +107,9 @@ class AdminLessonController extends Controller
 
         try {
             $lessonData = Arr::except($data, ['sections']);
-            $lessonData['created_by']                 = $request->user()->user_Id;
-            $lessonData['required_exercises']         = $lessonData['required_exercises'] ?? 0;
-            $lessonData['required_tests']             = $lessonData['required_tests'] ?? 0;
+            $lessonData['created_by'] = $request->user()->user_Id;
+            $lessonData['required_exercises'] = $lessonData['required_exercises'] ?? 0;
+            $lessonData['required_tests'] = $lessonData['required_tests'] ?? 0;
             $lessonData['min_exercise_score_percent'] = $lessonData['min_exercise_score_percent'] ?? 70.00;
 
             $lesson = Lesson::create($lessonData);
@@ -131,10 +131,10 @@ class AdminLessonController extends Controller
             DB::commit();
 
             Log::info('Lesson created', [
-                'lesson_id'   => $lesson->lesson_id,
-                'title'       => $lesson->title,
+                'lesson_id' => $lesson->lesson_id,
+                'title' => $lesson->title,
                 'has_sections' => isset($data['sections']),
-                'created_by'  => $request->user()->user_Id,
+                'created_by' => $request->user()->user_Id,
             ]);
 
             return redirect()
@@ -149,7 +149,7 @@ class AdminLessonController extends Controller
             ]);
 
             return back()
-                ->withErrors(['error' => 'Failed to create lesson: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to create lesson: '.$e->getMessage()])
                 ->withInput();
         }
     }
@@ -171,7 +171,7 @@ class AdminLessonController extends Controller
             },
             'registrations' => function ($query) {
                 $query->with('student.user')->latest();
-            }
+            },
         ]);
 
         $sectionsData = $lesson->sections->map(function ($section) {
@@ -296,7 +296,7 @@ class AdminLessonController extends Controller
         try {
             $lessonData = Arr::except($data, ['sections']);
 
-            if (!isset($lessonData['status'])) {
+            if (! isset($lessonData['status'])) {
                 unset($lessonData['status']);
             }
 
@@ -321,10 +321,10 @@ class AdminLessonController extends Controller
             DB::commit();
 
             Log::info('Lesson updated successfully', [
-                'lesson_id'   => $lesson->lesson_id,
-                'title'       => $lesson->title,
+                'lesson_id' => $lesson->lesson_id,
+                'title' => $lesson->title,
                 'has_sections' => isset($data['sections']),
-                'updated_by'  => $request->user()->user_Id,
+                'updated_by' => $request->user()->user_Id,
             ]);
 
             // 🔥 关键：使用 303 状态码避免重定向循环
@@ -342,7 +342,7 @@ class AdminLessonController extends Controller
             ]);
 
             return back()
-                ->withErrors(['error' => 'Failed to update lesson: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to update lesson: '.$e->getMessage()])
                 ->withInput()
                 ->setStatusCode(303);
         }
@@ -359,7 +359,6 @@ class AdminLessonController extends Controller
             'current_tests_count' => $lesson->tests()->where('status', 'active')->count(),
         ]);
     }
-
 
     public function destroy(Lesson $lesson)
     {
@@ -418,7 +417,7 @@ class AdminLessonController extends Controller
     public function duplicate(Lesson $lesson)
     {
         $newLesson = $lesson->replicate();
-        $newLesson->title = $lesson->title . ' (Copy)';
+        $newLesson->title = $lesson->title.' (Copy)';
         $newLesson->status = 'draft';
         $newLesson->created_by = auth()->user()->user_Id ?? auth()->id();
         $newLesson->save();

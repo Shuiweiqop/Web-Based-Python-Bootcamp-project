@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\StudentProfile;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rules;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
 class AdminStudentController extends Controller
@@ -199,7 +197,7 @@ class AdminStudentController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $student->user_Id . ',user_Id',
+            'email' => 'required|email|unique:users,email,'.$student->user_Id.',user_Id',
             'phone_number' => 'nullable|string|max:20',
         ]);
 
@@ -237,7 +235,7 @@ class AdminStudentController extends Controller
         ]);
 
         $profile = $student->studentProfile;
-        if (!$profile) {
+        if (! $profile) {
             return back()->withErrors(['error' => 'Student profile not found.']);
         }
 
@@ -255,6 +253,7 @@ class AdminStudentController extends Controller
 
         return back()->with('success', 'Points adjusted successfully.');
     }
+
     public function resetPassword(Request $request, User $student)
     {
         if ($student->role !== 'student') {

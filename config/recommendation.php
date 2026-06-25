@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configure the default placement test ID for student onboarding.
-    | This test will be used to evaluate new students and recommend 
+    | This test will be used to evaluate new students and recommend
     | appropriate learning paths.
     |
     */

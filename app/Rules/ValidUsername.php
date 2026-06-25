@@ -47,6 +47,7 @@ class ValidUsername implements ValidationRule
         // 检查是否为空或只包含空格（在 trim 之前判断）
         if ($raw === null || trim($raw) === '') {
             $fail('The username cannot be empty or contain only spaces.');
+
             return;
         }
 
@@ -57,29 +58,34 @@ class ValidUsername implements ValidationRule
         $len = mb_strlen($username);
         if ($len < 3) {
             $fail('The username must be at least 3 characters.');
+
             return;
         }
 
         if ($len > 50) {
             $fail('The username must not exceed 50 characters.');
+
             return;
         }
 
         // 只允许字母和空格（支持 Unicode 字母）
-        if (!preg_match('/^[\p{L}\s]+$/u', $username)) {
+        if (! preg_match('/^[\p{L}\s]+$/u', $username)) {
             $fail('The username can only contain letters and spaces.');
+
             return;
         }
 
         // 检查是否以数字开头 —— 既然上面只允许字母，这行可移除；保留以防规则改动
         if (preg_match('/^\d/', $username)) {
             $fail('The username cannot start with a number.');
+
             return;
         }
 
         // 检查连续空格（使用规范化后的变量）
         if (preg_match('/\s{2,}/', $username)) {
             $fail('The username cannot contain consecutive spaces.');
+
             return;
         }
 
@@ -91,6 +97,7 @@ class ValidUsername implements ValidationRule
         foreach ($this->forbiddenWords as $word) {
             if (stripos($username, $word) !== false) {
                 $fail('This username contains forbidden words and cannot be used.');
+
                 return;
             }
         }
@@ -98,12 +105,14 @@ class ValidUsername implements ValidationRule
         // 检查保留名称（精确匹配）
         if (in_array($username, $this->reservedNames, true)) {
             $fail('This username is reserved and cannot be used.');
+
             return;
         }
 
         // 检查是否包含常见的不当词汇模式
         if ($this->containsInappropriateContent($username)) {
             $fail('This username is not appropriate. Please choose another one.');
+
             return;
         }
     }

@@ -11,23 +11,23 @@ return new class extends Migration
         $existingColumns = Schema::getColumnListing('test_submissions');
 
         Schema::table('test_submissions', function (Blueprint $table) use ($existingColumns) {
-            if (!in_array('is_completed', $existingColumns)) {
+            if (! in_array('is_completed', $existingColumns)) {
                 $table->boolean('is_completed')->default(false);
             }
 
-            if (!in_array('is_placement_test', $existingColumns)) {
+            if (! in_array('is_placement_test', $existingColumns)) {
                 $table->boolean('is_placement_test')->default(false);
             }
 
-            if (!in_array('recommended_path_id', $existingColumns)) {
+            if (! in_array('recommended_path_id', $existingColumns)) {
                 $table->unsignedBigInteger('recommended_path_id')->nullable();
             }
 
-            if (!in_array('recommendation_confidence', $existingColumns)) {
+            if (! in_array('recommendation_confidence', $existingColumns)) {
                 $table->decimal('recommendation_confidence', 5, 2)->nullable();
             }
 
-            if (!in_array('recommendation_message', $existingColumns)) {
+            if (! in_array('recommendation_message', $existingColumns)) {
                 $table->text('recommendation_message')->nullable();
             }
         });
@@ -38,7 +38,7 @@ return new class extends Migration
             && Schema::hasTable('learning_paths')
         ) {
 
-            if (!$this->foreignKeyExists('test_submissions', 'test_submissions_recommended_path_id_foreign')) {
+            if (! $this->foreignKeyExists('test_submissions', 'test_submissions_recommended_path_id_foreign')) {
                 Schema::table('test_submissions', function (Blueprint $table) {
                     $table->foreign('recommended_path_id')
                         ->references('path_id')

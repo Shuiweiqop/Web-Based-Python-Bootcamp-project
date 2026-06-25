@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Reward;
 use App\Models\User;
 use App\Services\NotificationService; // ✅ 新增
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 
 class AdminRewardController extends Controller
 {
@@ -137,7 +135,7 @@ class AdminRewardController extends Controller
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     return back()
                         ->withInput()
-                        ->withErrors(['metadata' => 'Invalid metadata format: ' . json_last_error_msg()]);
+                        ->withErrors(['metadata' => 'Invalid metadata format: '.json_last_error_msg()]);
                 }
 
                 // 处理 base64 图片
@@ -150,9 +148,9 @@ class AdminRewardController extends Controller
                         throw new \Exception('Failed to decode base64 image');
                     }
 
-                    $fileName = 'backgrounds/' . time() . '_' . uniqid() . '.' . $imageType;
+                    $fileName = 'backgrounds/'.time().'_'.uniqid().'.'.$imageType;
 
-                    if (!Storage::disk('public')->exists('backgrounds')) {
+                    if (! Storage::disk('public')->exists('backgrounds')) {
                         Storage::disk('public')->makeDirectory('backgrounds');
                     }
 
@@ -175,7 +173,7 @@ class AdminRewardController extends Controller
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     return back()
                         ->withInput()
-                        ->withErrors(['metadata' => 'Invalid metadata format: ' . json_last_error_msg()]);
+                        ->withErrors(['metadata' => 'Invalid metadata format: '.json_last_error_msg()]);
                 }
                 $metadata = $decodedMetadata;
             }
@@ -183,7 +181,7 @@ class AdminRewardController extends Controller
             // 处理普通图片上传
             if ($request->hasFile('reward_image')) {
                 $file = $request->file('reward_image');
-                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
                 $path = $file->storeAs('rewards', $fileName, 'public');
                 $imageUrl = Storage::url($path);
             }
@@ -222,7 +220,7 @@ class AdminRewardController extends Controller
 
             return back()
                 ->withInput()
-                ->withErrors(['error' => 'Failed to create reward: ' . $e->getMessage()]);
+                ->withErrors(['error' => 'Failed to create reward: '.$e->getMessage()]);
         }
     }
 
@@ -290,7 +288,7 @@ class AdminRewardController extends Controller
         Log::info('📝 打开编辑页面', [
             'reward_id' => $reward->reward_id,
             'reward_type' => $reward->reward_type,
-            'has_metadata' => !empty($reward->metadata),
+            'has_metadata' => ! empty($reward->metadata),
         ]);
 
         // ✅ 解析 metadata
@@ -385,7 +383,7 @@ class AdminRewardController extends Controller
 
         try {
             // ✅ 记录旧状态
-            $wasInactive = !$reward->is_active;
+            $wasInactive = ! $reward->is_active;
 
             // 处理图片上传
             $imageUrl = $reward->image_url; // 保留原图
@@ -409,7 +407,7 @@ class AdminRewardController extends Controller
                 }
 
                 // 上传新图片
-                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
                 $path = $file->storeAs('rewards', $fileName, 'public');
                 $imageUrl = Storage::url($path);
 
@@ -436,7 +434,7 @@ class AdminRewardController extends Controller
 
                     return back()
                         ->withInput()
-                        ->withErrors(['metadata' => 'Invalid metadata format: ' . json_last_error_msg()]);
+                        ->withErrors(['metadata' => 'Invalid metadata format: '.json_last_error_msg()]);
                 }
 
                 // ✅ 对于 profile_background，直接保存前端的数据结构
@@ -516,7 +514,7 @@ class AdminRewardController extends Controller
 
             return back()
                 ->withInput()
-                ->withErrors(['error' => 'Failed to update reward: ' . $e->getMessage()]);
+                ->withErrors(['error' => 'Failed to update reward: '.$e->getMessage()]);
         }
     }
 
@@ -566,7 +564,7 @@ class AdminRewardController extends Controller
         $this->checkAdmin();
 
         try {
-            $newStatus = !$reward->is_active;
+            $newStatus = ! $reward->is_active;
             $reward->update(['is_active' => $newStatus]);
 
             $statusText = $newStatus ? 'activated' : 'deactivated';
@@ -690,9 +688,9 @@ class AdminRewardController extends Controller
                     throw new \Exception('Failed to decode base64 image');
                 }
 
-                $fileName = 'backgrounds/' . time() . '_' . uniqid() . '.' . $imageType;
+                $fileName = 'backgrounds/'.time().'_'.uniqid().'.'.$imageType;
 
-                if (!Storage::disk('public')->exists('backgrounds')) {
+                if (! Storage::disk('public')->exists('backgrounds')) {
                     Storage::disk('public')->makeDirectory('backgrounds');
                 }
 
@@ -747,14 +745,15 @@ class AdminRewardController extends Controller
 
             return back()
                 ->withInput()
-                ->withErrors(['error' => 'Failed to create background: ' . $e->getMessage()]);
+                ->withErrors(['error' => 'Failed to create background: '.$e->getMessage()]);
         }
     }
+
     /**
      * ✅ 最终修复版本：发送通知给所有学生
-     * 
-     * @param Reward $reward 奖励对象
-     * @param string $action 动作类型: 'new', 'activated', 'reactivated'
+     *
+     * @param  Reward  $reward  奖励对象
+     * @param  string  $action  动作类型: 'new', 'activated', 'reactivated'
      */
     protected function notifyAllStudents(Reward $reward, string $action = 'new')
     {
@@ -775,21 +774,22 @@ class AdminRewardController extends Controller
 
             if (empty($studentIds)) {
                 Log::warning('⚠️ No students found to notify');
+
                 return;
             }
 
             // 2. 根据不同动作设置不同的消息
             $messages = [
                 'new' => [
-                    'title' => "🎁 New Reward Available!",
+                    'title' => '🎁 New Reward Available!',
                     'message' => "Check out '{$reward->name}' in the rewards shop! ({$reward->point_cost} points)",
                 ],
                 'activated' => [
-                    'title' => "🔄 Reward Back in Stock!",
+                    'title' => '🔄 Reward Back in Stock!',
                     'message' => "'{$reward->name}' is now available again! ({$reward->point_cost} points)",
                 ],
                 'reactivated' => [
-                    'title' => "✨ Reward Reactivated!",
+                    'title' => '✨ Reward Reactivated!',
                     'message' => "'{$reward->name}' is back! Don't miss out! ({$reward->point_cost} points)",
                 ],
             ];
@@ -881,7 +881,7 @@ class AdminRewardController extends Controller
      */
     private function transformEffectsToMetadata($metadata)
     {
-        if (!isset($metadata['effects'])) {
+        if (! isset($metadata['effects'])) {
             return [
                 'background_type' => 'image',
                 'url' => $metadata['url'] ?? null,

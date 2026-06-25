@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
 use App\Models\Lesson;
-use App\Models\Test;
 use App\Models\Question;
 use App\Models\QuestionOption;
+use App\Models\Test;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class AdminQuestionController extends Controller
 {
@@ -54,7 +54,7 @@ class AdminQuestionController extends Controller
                 'question_id' => $question->question_id,
                 'type' => $question->type,
                 'type_name' => $question->type_name,
-                'question_text' => substr($question->question_text, 0, 100) . (strlen($question->question_text) > 100 ? '...' : ''),
+                'question_text' => substr($question->question_text, 0, 100).(strlen($question->question_text) > 100 ? '...' : ''),
                 'points' => $question->points,
                 'difficulty_level' => $question->difficulty_level,
                 'difficulty_name' => $question->difficulty_name,
@@ -144,19 +144,20 @@ class AdminQuestionController extends Controller
                     $isCorrect = (bool) $isCorrect;
                 }
                 $opt['is_correct'] = $isCorrect;
+
                 return $opt;
             })->values()->all();
 
             $request->merge(['options' => $normalized]);
             // 检查是否有正确答案被选中
             $hasCorrectOption = collect($normalized)->contains('is_correct', true);
-            if (!$hasCorrectOption) {
+            if (! $hasCorrectOption) {
                 return back()->withErrors(['options' => 'At least one option must be marked as correct.']);
             }
         }
 
         $rules = [
-            'type' => 'required|in:' . implode(',', array_keys(Question::TYPES)),
+            'type' => 'required|in:'.implode(',', array_keys(Question::TYPES)),
             'question_text' => 'required|string|max:2000',
             'code_snippet' => 'nullable|string|max:5000',
             'correct_answer' => 'required|string|max:5000',
@@ -200,18 +201,20 @@ class AdminQuestionController extends Controller
             }
 
             DB::commit();
+
             return redirect()->route('admin.lessons.tests.questions.index', [
                 'lesson' => $lesson->lesson_id,
-                'test' => $test->test_id
+                'test' => $test->test_id,
             ])->with('success', 'Question created successfully.');
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Failed to create question: ' . $e->getMessage(), [
+            Log::error('Failed to create question: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'test_id' => $test->test_id,
                 'question_type' => $request->input('type'),
             ]);
-            return back()->withErrors(['error' => 'Failed to create question: ' . $e->getMessage()]);
+
+            return back()->withErrors(['error' => 'Failed to create question: '.$e->getMessage()]);
         }
     }
 
@@ -278,7 +281,7 @@ class AdminQuestionController extends Controller
         }
 
         $rules = [
-            'type' => 'required|in:' . implode(',', array_keys(Question::TYPES)),
+            'type' => 'required|in:'.implode(',', array_keys(Question::TYPES)),
             'question_text' => 'required|string|max:2000',
             'code_snippet' => 'nullable|string|max:5000',
             'correct_answer' => 'required|string|max:5000',
@@ -303,7 +306,7 @@ class AdminQuestionController extends Controller
             $options = $request->input('options', []);
             $hasCorrectOption = collect($options)->contains('is_correct', true);
 
-            if (!$hasCorrectOption) {
+            if (! $hasCorrectOption) {
                 return back()->withErrors(['options' => 'At least one option must be marked as correct.']);
             }
         } else {
@@ -342,11 +345,12 @@ class AdminQuestionController extends Controller
 
             return redirect()->route('admin.lessons.tests.questions.index', [
                 'lesson' => $lesson->lesson_id,
-                'test' => $test->test_id
+                'test' => $test->test_id,
             ])->with('success', 'Question updated successfully.')
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             DB::rollback();
+
             return back()->withErrors(['error' => 'Failed to update question. Please try again.']);
         }
     }
@@ -361,7 +365,7 @@ class AdminQuestionController extends Controller
         // Check if question has any submission answers
         if ($question->submissionAnswers()->exists()) {
             return back()->withErrors([
-                'error' => 'Cannot delete question that has student answers. Please set it as inactive instead.'
+                'error' => 'Cannot delete question that has student answers. Please set it as inactive instead.',
             ]);
         }
 
@@ -369,7 +373,7 @@ class AdminQuestionController extends Controller
 
         return redirect()->route('admin.lessons.tests.questions.index', [
             'lesson' => $lesson->lesson_id,
-            'test' => $test->test_id
+            'test' => $test->test_id,
         ])
             ->setStatusCode(303)
             ->with('success', 'Question deleted successfully.');
@@ -408,7 +412,7 @@ class AdminQuestionController extends Controller
 
             if ($questionsWithAnswers->isNotEmpty()) {
                 return back()->withErrors([
-                    'error' => 'Cannot delete questions that have student answers. Please set them as inactive instead.'
+                    'error' => 'Cannot delete questions that have student answers. Please set them as inactive instead.',
                 ]);
             }
         }
@@ -430,7 +434,7 @@ class AdminQuestionController extends Controller
 
         return redirect()->route('admin.lessons.tests.questions.index', [
             'lesson' => $lesson->lesson_id,
-            'test' => $test->test_id
+            'test' => $test->test_id,
         ])->with('success', $message);
     }
 
@@ -467,7 +471,7 @@ class AdminQuestionController extends Controller
         try {
             // Create duplicate question
             $newQuestion = $question->replicate();
-            $newQuestion->question_text = $question->question_text . ' (Copy)';
+            $newQuestion->question_text = $question->question_text.' (Copy)';
             $newQuestion->order = $this->getNextOrder($test->test_id);
             $newQuestion->save();
 
@@ -485,10 +489,11 @@ class AdminQuestionController extends Controller
             return redirect()->route('admin.lessons.tests.questions.show', [
                 'lesson' => $lesson->lesson_id,
                 'test' => $test->test_id,
-                'question' => $newQuestion->question_id
+                'question' => $newQuestion->question_id,
             ])->with('success', 'Question duplicated successfully. You can now modify the copy.');
         } catch (\Exception $e) {
             DB::rollback();
+
             return back()->withErrors(['error' => 'Failed to duplicate question. Please try again.']);
         }
     }
@@ -497,8 +502,10 @@ class AdminQuestionController extends Controller
     private function getNextOrder($testId)
     {
         $maxOrder = Question::where('test_id', $testId)->max('order');
+
         return ($maxOrder ?? 0) + 1;
     }
+
     public function showForTest(Lesson $lesson, Test $test, Question $question)
     {
         if ($test->lesson_id !== $lesson->lesson_id || $question->test_id !== $test->test_id) {
@@ -546,6 +553,7 @@ class AdminQuestionController extends Controller
             'question' => $questionData,
         ]);
     }
+
     /**
      * Display questions for placement test (no lesson context)
      */
@@ -582,7 +590,7 @@ class AdminQuestionController extends Controller
                 'question_id' => $question->question_id,
                 'type' => $question->type,
                 'type_name' => $question->type_name,
-                'question_text' => substr($question->question_text, 0, 100) . (strlen($question->question_text) > 100 ? '...' : ''),
+                'question_text' => substr($question->question_text, 0, 100).(strlen($question->question_text) > 100 ? '...' : ''),
                 'points' => $question->points,
                 'difficulty_level' => $question->difficulty_level,
                 'difficulty_name' => $question->difficulty_name,
@@ -666,18 +674,19 @@ class AdminQuestionController extends Controller
                     $isCorrect = (bool) $isCorrect;
                 }
                 $opt['is_correct'] = $isCorrect;
+
                 return $opt;
             })->values()->all();
 
             $request->merge(['options' => $normalized]);
             $hasCorrectOption = collect($normalized)->contains('is_correct', true);
-            if (!$hasCorrectOption) {
+            if (! $hasCorrectOption) {
                 return back()->withErrors(['options' => 'At least one option must be marked as correct.']);
             }
         }
 
         $rules = [
-            'type' => 'required|in:' . implode(',', array_keys(Question::TYPES)),
+            'type' => 'required|in:'.implode(',', array_keys(Question::TYPES)),
             'question_text' => 'required|string|max:2000',
             'code_snippet' => 'nullable|string|max:5000',
             'correct_answer' => 'required|string|max:5000',
@@ -721,16 +730,18 @@ class AdminQuestionController extends Controller
             }
 
             DB::commit();
+
             return redirect()->route('admin.placement-tests.questions.index', $test->test_id)
                 ->with('success', 'Question created successfully.');
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Failed to create question: ' . $e->getMessage(), [
+            Log::error('Failed to create question: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'test_id' => $test->test_id,
                 'question_type' => $request->input('type'),
             ]);
-            return back()->withErrors(['error' => 'Failed to create question: ' . $e->getMessage()]);
+
+            return back()->withErrors(['error' => 'Failed to create question: '.$e->getMessage()]);
         }
     }
 
@@ -795,7 +806,7 @@ class AdminQuestionController extends Controller
         $question = Question::where('test_id', $test->test_id)->findOrFail($questionId);
 
         $rules = [
-            'type' => 'required|in:' . implode(',', array_keys(Question::TYPES)),
+            'type' => 'required|in:'.implode(',', array_keys(Question::TYPES)),
             'question_text' => 'required|string|max:2000',
             'code_snippet' => 'nullable|string|max:5000',
             'correct_answer' => 'required|string|max:5000',
@@ -818,7 +829,7 @@ class AdminQuestionController extends Controller
             $options = $request->input('options', []);
             $hasCorrectOption = collect($options)->contains('is_correct', true);
 
-            if (!$hasCorrectOption) {
+            if (! $hasCorrectOption) {
                 return back()->withErrors(['options' => 'At least one option must be marked as correct.']);
             }
         } else {
@@ -855,6 +866,7 @@ class AdminQuestionController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             DB::rollback();
+
             return back()->withErrors(['error' => 'Failed to update question. Please try again.']);
         }
     }
@@ -869,7 +881,7 @@ class AdminQuestionController extends Controller
 
         if ($question->submissionAnswers()->exists()) {
             return back()->withErrors([
-                'error' => 'Cannot delete question that has student answers. Please set it as inactive instead.'
+                'error' => 'Cannot delete question that has student answers. Please set it as inactive instead.',
             ]);
         }
 
@@ -955,7 +967,7 @@ class AdminQuestionController extends Controller
 
             if ($questionsWithAnswers->isNotEmpty()) {
                 return back()->withErrors([
-                    'error' => 'Cannot delete questions that have student answers.'
+                    'error' => 'Cannot delete questions that have student answers.',
                 ]);
             }
         }
@@ -1006,7 +1018,7 @@ class AdminQuestionController extends Controller
         DB::beginTransaction();
         try {
             $newQuestion = $question->replicate();
-            $newQuestion->question_text = $question->question_text . ' (Copy)';
+            $newQuestion->question_text = $question->question_text.' (Copy)';
             $newQuestion->order = $this->getNextOrder($test->test_id);
             $newQuestion->save();
 
@@ -1022,10 +1034,11 @@ class AdminQuestionController extends Controller
 
             return redirect()->route('admin.placement-tests.questions.show', [
                 'testId' => $test->test_id,
-                'question' => $newQuestion->question_id
+                'question' => $newQuestion->question_id,
             ])->with('success', 'Question duplicated successfully.');
         } catch (\Exception $e) {
             DB::rollback();
+
             return back()->withErrors(['error' => 'Failed to duplicate question.']);
         }
     }

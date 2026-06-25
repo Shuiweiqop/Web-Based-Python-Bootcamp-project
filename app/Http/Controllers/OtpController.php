@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Otp;
 use App\Mail\OtpMail;
+use App\Models\Otp;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use Carbon\Carbon;
 
 class OtpController extends Controller
 {
     public function send(Request $request)
     {
         $request->validate([
-            'email' => 'required|email'
+            'email' => 'required|email',
         ]);
 
         // 生成 6 位数 OTP
@@ -26,7 +26,7 @@ class OtpController extends Controller
         Otp::create([
             'email' => $request->email,
             'otp' => $otpCode,
-            'expires_at' => Carbon::now()->addMinutes(10)
+            'expires_at' => Carbon::now()->addMinutes(10),
         ]);
 
         // 发送邮件
@@ -39,19 +39,20 @@ class OtpController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'otp' => 'required|string|size:6'
+            'otp' => 'required|string|size:6',
         ]);
 
         $otp = Otp::where('email', $request->email)
             ->where('otp', $request->otp)
             ->first();
 
-        if (!$otp) {
+        if (! $otp) {
             return back()->withErrors(['otp' => 'Invalid OTP code.']);
         }
 
         if ($otp->isExpired()) {
             $otp->delete();
+
             return back()->withErrors(['otp' => 'OTP has expired.']);
         }
 

@@ -14,10 +14,10 @@ class SubmitExerciseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'answer'            => 'required|array',
-            'answer.completed'  => 'required|boolean',
-            'answer.score'      => 'required|numeric|min:0',
-            'time_spent'        => 'nullable|numeric|min:0',
+            'answer' => 'required|array',
+            'answer.completed' => 'required|boolean',
+            'answer.score' => 'required|numeric|min:0',
+            'time_spent' => 'nullable|numeric|min:0',
         ];
     }
 }

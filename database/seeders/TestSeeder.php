@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Test;
+use App\Models\Lesson;
 use App\Models\Question;
 use App\Models\QuestionOption;
-use App\Models\Lesson;
+use App\Models\Test;
+use Illuminate\Database\Seeder;
 
 class TestSeeder extends Seeder
 {
@@ -16,6 +16,7 @@ class TestSeeder extends Seeder
 
         if ($lessons->isEmpty()) {
             $this->command->info('No lessons found. Please run LessonSeeder first.');
+
             return;
         }
 
@@ -47,7 +48,7 @@ class TestSeeder extends Seeder
                                     ['label' => 'B', 'text' => 'echo "Hello World"', 'is_correct' => false],
                                     ['label' => 'C', 'text' => 'console.log("Hello World")', 'is_correct' => false],
                                     ['label' => 'D', 'text' => 'printf("Hello World")', 'is_correct' => false],
-                                ]
+                                ],
                             ],
                             [
                                 'type' => 'true_false',
@@ -60,11 +61,11 @@ class TestSeeder extends Seeder
                                 'options' => [
                                     ['label' => 'A', 'text' => 'True', 'is_correct' => true],
                                     ['label' => 'B', 'text' => 'False', 'is_correct' => false],
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
             ],
 
             // Variables and Data Types
@@ -94,7 +95,7 @@ class TestSeeder extends Seeder
                                     ['label' => 'B', 'text' => 'string', 'is_correct' => false],
                                     ['label' => 'C', 'text' => 'float', 'is_correct' => false],
                                     ['label' => 'D', 'text' => 'boolean', 'is_correct' => false],
-                                ]
+                                ],
                             ],
                             [
                                 'type' => 'short_answer',
@@ -104,11 +105,11 @@ class TestSeeder extends Seeder
                                 'order' => 2,
                                 'correct_answer' => 'x = 10',
                                 'explanation' => 'Python uses the = operator for variable assignment.',
-                                'options' => []
-                            ]
-                        ]
-                    ]
-                ]
+                                'options' => [],
+                            ],
+                        ],
+                    ],
+                ],
             ],
 
             // Loops
@@ -138,7 +139,7 @@ class TestSeeder extends Seeder
                                     ['label' => 'B', 'text' => 'for loop', 'is_correct' => true],
                                     ['label' => 'C', 'text' => 'do-while loop', 'is_correct' => false],
                                     ['label' => 'D', 'text' => 'repeat loop', 'is_correct' => false],
-                                ]
+                                ],
                             ],
                             [
                                 'type' => 'coding',
@@ -150,12 +151,12 @@ class TestSeeder extends Seeder
                                 'correct_answer' => 'for i in range(1, 4):
     print(i)',
                                 'explanation' => 'Use range(1, 4) to generate numbers 1, 2, 3.',
-                                'options' => []
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                'options' => [],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         foreach ($lessons as $lesson) {
@@ -207,7 +208,7 @@ class TestSeeder extends Seeder
                         $this->command->info("  - Created question: {$question->question_text}");
 
                         // Create options for MCQ and True/False questions
-                        if (!empty($questionInfo['options'])) {
+                        if (! empty($questionInfo['options'])) {
                             foreach ($questionInfo['options'] as $optionInfo) {
                                 QuestionOption::create([
                                     'question_id' => $question->question_id,

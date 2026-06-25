@@ -9,7 +9,7 @@ class PlacementTestObserver
 {
     /**
      * ✅ 统一处理：创建或更新前执行
-     * 
+     *
      * saving() 事件会在 create 和 update 之前触发
      * 使用这个可以避免重复代码
      */
@@ -38,7 +38,7 @@ class PlacementTestObserver
      */
     public function deleted(PlacementTest $test)
     {
-        Log::info("PlacementTest deleted", [
+        Log::info('PlacementTest deleted', [
             'test_id' => $test->test_id,
             'title' => $test->title,
             'status' => $test->status,

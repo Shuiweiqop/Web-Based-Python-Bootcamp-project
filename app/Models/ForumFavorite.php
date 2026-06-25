@@ -11,12 +11,13 @@ class ForumFavorite extends Model
     use HasFactory;
 
     protected $table = 'forum_favorites';
+
     protected $primaryKey = 'favorite_id';
 
     protected $fillable = [
         'user_id',  // ✅ 改用 user_id
         'post_id',
-        'favorited_at'
+        'favorited_at',
     ];
 
     protected $casts = [
@@ -72,7 +73,7 @@ class ForumFavorite extends Model
         parent::boot();
 
         static::creating(function ($favorite) {
-            if (!$favorite->favorited_at) {
+            if (! $favorite->favorited_at) {
                 $favorite->favorited_at = now();
             }
         });
@@ -91,12 +92,14 @@ class ForumFavorite extends Model
 
         if ($favorite) {
             $favorite->delete();
+
             return false; // Unfavorited
         } else {
             static::create([
                 'user_id' => $userId,
-                'post_id' => $postId
+                'post_id' => $postId,
             ]);
+
             return true; // Favorited
         }
     }

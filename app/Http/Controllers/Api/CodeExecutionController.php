@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CodeExecutionController extends Controller
 {
     private $client;
+
     private $judge0BaseUrl = 'https://judge0-ce.p.rapidapi.com';
+
     private $judge0ApiKey;
+
     private $judge0ApiHost = 'judge0-ce.p.rapidapi.com';
 
     public function __construct()
@@ -20,7 +23,7 @@ class CodeExecutionController extends Controller
         $this->judge0BaseUrl = config('services.judge0.url', 'https://judge0-ce.p.rapidapi.com');
         $this->judge0ApiKey = config('services.judge0.key');
 
-        if (!$this->judge0ApiKey) {
+        if (! $this->judge0ApiKey) {
             throw new \Exception('Judge0 API key not configured. Please set JUDGE0_API_KEY in .env');
         }
 
@@ -32,7 +35,7 @@ class CodeExecutionController extends Controller
 
     /**
      * Execute code using Judge0 API
-     * 
+     *
      * POST /api/code/execute
      */
     public function execute(Request $request)
@@ -55,14 +58,14 @@ class CodeExecutionController extends Controller
             // Get language ID
             $languageId = $this->getLanguageId($language);
 
-            if (!$languageId) {
+            if (! $languageId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unsupported language: ' . $language,
+                    'message' => 'Unsupported language: '.$language,
                 ], 400);
             }
 
-            if (!empty($testCases)) {
+            if (! empty($testCases)) {
                 // Run with test cases
                 return $this->executeWithTestCases($code, $languageId, $testCases);
             } else {
@@ -102,7 +105,7 @@ class CodeExecutionController extends Controller
                 'query' => [
                     'base64_encoded' => 'false',
                     'wait' => 'true',
-                ]
+                ],
             ]);
 
             $result = json_decode($response->getBody());
@@ -115,7 +118,7 @@ class CodeExecutionController extends Controller
                 'test_results' => [],
             ]);
         } catch (RequestException $e) {
-            Log::error('Judge0 API error: ' . $e->getMessage());
+            Log::error('Judge0 API error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -144,7 +147,7 @@ class CodeExecutionController extends Controller
                     'query' => [
                         'base64_encoded' => 'false',
                         'wait' => 'true',
-                    ]
+                    ],
                 ]);
 
                 $result = json_decode($response->getBody());
@@ -155,7 +158,7 @@ class CodeExecutionController extends Controller
                 // Compare results
                 $passed = $this->compareOutputs($expected, $actual);
 
-                if (!$passed) {
+                if (! $passed) {
                     $allPassed = false;
                 }
 
@@ -182,15 +185,15 @@ class CodeExecutionController extends Controller
         }
 
         // Build output summary
-        $passed = count(array_filter($testResults, fn($r) => $r['passed']));
+        $passed = count(array_filter($testResults, fn ($r) => $r['passed']));
         $total = count($testResults);
 
         $output = "Test Results: {$passed}/{$total} passed\n\n";
 
         foreach ($testResults as $i => $result) {
             $status = $result['passed'] ? '✓' : '✗';
-            $output .= "Test " . ($i + 1) . ": {$status}\n";
-            if (!$result['passed']) {
+            $output .= 'Test '.($i + 1).": {$status}\n";
+            if (! $result['passed']) {
                 $output .= "  Input: {$result['input']}\n";
                 $output .= "  Expected: {$result['expected']}\n";
                 $output .= "  Got: {$result['actual']}\n";

@@ -69,8 +69,8 @@ class AdminDailyChallengeController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:160'],
             'description' => ['nullable', 'string', 'max:255'],
-            'period_type' => ['required', 'in:' . implode(',', array_keys(self::PERIOD_OPTIONS))],
-            'action_type' => ['required', 'in:' . implode(',', array_keys(self::ACTION_OPTIONS))],
+            'period_type' => ['required', 'in:'.implode(',', array_keys(self::PERIOD_OPTIONS))],
+            'action_type' => ['required', 'in:'.implode(',', array_keys(self::ACTION_OPTIONS))],
             'target_count' => ['required', 'integer', 'min:1', 'max:999'],
             'reward_points' => ['required', 'integer', 'min:0', 'max:99999'],
             'is_active' => ['required', 'boolean'],

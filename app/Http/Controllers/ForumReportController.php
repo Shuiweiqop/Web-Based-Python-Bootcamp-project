@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ForumHelper;
 use App\Models\ForumPost;
 use App\Models\ForumReply;
 use App\Models\ForumReport;
-use App\Helpers\ForumHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -17,7 +17,7 @@ class ForumReportController extends Controller
      */
     public function index(Request $request)
     {
-        if (!ForumHelper::isAdmin()) {
+        if (! ForumHelper::isAdmin()) {
             abort(403, 'Only administrators can view reports.');
         }
 
@@ -25,7 +25,7 @@ class ForumReportController extends Controller
             'reporter',
             'post.user',
             'reply.user',
-            'reply.post'
+            'reply.post',
         ])->latest();
 
         // 筛选状态
@@ -76,7 +76,7 @@ class ForumReportController extends Controller
      */
     public function show($id)
     {
-        if (!ForumHelper::isAdmin()) {
+        if (! ForumHelper::isAdmin()) {
             abort(403, 'Only administrators can view reports.');
         }
 
@@ -85,7 +85,7 @@ class ForumReportController extends Controller
             'post.user',
             'post.replies',
             'reply.user',
-            'reply.post'
+            'reply.post',
         ])->findOrFail($id);
 
         // 如果是 pending 状态，自动改为 reviewing
@@ -104,7 +104,7 @@ class ForumReportController extends Controller
      */
     public function updateStatus(Request $request, $id)
     {
-        if (!ForumHelper::isAdmin()) {
+        if (! ForumHelper::isAdmin()) {
             abort(403, 'Only administrators can update reports.');
         }
 
@@ -125,7 +125,8 @@ class ForumReportController extends Controller
 
             return back()->with('success', 'Report status updated successfully!');
         } catch (\Exception $e) {
-            Log::error('Update report status failed: ' . $e->getMessage());
+            Log::error('Update report status failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to update report status.');
         }
     }
@@ -135,7 +136,7 @@ class ForumReportController extends Controller
      */
     public function batchUpdate(Request $request)
     {
-        if (!ForumHelper::isAdmin()) {
+        if (! ForumHelper::isAdmin()) {
             abort(403, 'Only administrators can update reports.');
         }
 
@@ -154,9 +155,11 @@ class ForumReportController extends Controller
                 ]);
 
             $count = count($validated['report_ids']);
+
             return back()->with('success', "{$count} reports updated successfully!");
         } catch (\Exception $e) {
-            Log::error('Batch update reports failed: ' . $e->getMessage());
+            Log::error('Batch update reports failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to update reports.');
         }
     }
@@ -166,7 +169,7 @@ class ForumReportController extends Controller
      */
     public function deleteContent($id)
     {
-        if (!ForumHelper::isAdmin()) {
+        if (! ForumHelper::isAdmin()) {
             abort(403, 'Only administrators can delete reported content.');
         }
 
@@ -197,7 +200,8 @@ class ForumReportController extends Controller
 
             return back()->with('success', $message ?? 'Content deleted successfully!');
         } catch (\Exception $e) {
-            Log::error('Delete reported content failed: ' . $e->getMessage());
+            Log::error('Delete reported content failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to delete content.');
         }
     }
@@ -207,7 +211,7 @@ class ForumReportController extends Controller
      */
     public function destroy($id)
     {
-        if (!ForumHelper::isAdmin()) {
+        if (! ForumHelper::isAdmin()) {
             abort(403, 'Only administrators can delete reports.');
         }
 
@@ -218,7 +222,8 @@ class ForumReportController extends Controller
             return redirect()->route('admin.forum.reports.index')
                 ->with('success', 'Report deleted successfully!');
         } catch (\Exception $e) {
-            Log::error('Delete report failed: ' . $e->getMessage());
+            Log::error('Delete report failed: '.$e->getMessage());
+
             return back()->with('error', 'Failed to delete report.');
         }
     }

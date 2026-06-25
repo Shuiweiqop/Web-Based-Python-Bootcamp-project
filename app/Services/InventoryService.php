@@ -5,8 +5,6 @@ namespace App\Services;
 use App\Models\StudentProfile;
 use App\Models\StudentRewardInventory;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Collection;
-use Exception;
 
 class InventoryService
 {
@@ -17,9 +15,9 @@ class InventoryService
     {
         $q = $profile->rewardInventory()->with('reward')->where('quantity', '>', 0);
 
-        if (!empty($filters['type']) && $filters['type'] !== 'all') {
+        if (! empty($filters['type']) && $filters['type'] !== 'all') {
             $type = $filters['type'];
-            $q->whereHas('reward', fn($qq) => $qq->where('reward_type', $type));
+            $q->whereHas('reward', fn ($qq) => $qq->where('reward_type', $type));
         }
 
         if (isset($filters['equipped'])) {
@@ -27,14 +25,16 @@ class InventoryService
             $q->where('is_equipped', $is_eq);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $s = $filters['search'];
-            $q->whereHas('reward', fn($qq) => $qq->where('reward_name', 'LIKE', "%{$s}%")->orWhere('description', 'LIKE', "%{$s}%"));
+            $q->whereHas('reward', fn ($qq) => $qq->where('reward_name', 'LIKE', "%{$s}%")->orWhere('description', 'LIKE', "%{$s}%"));
         }
 
         $q->orderBy('is_equipped', 'desc')->orderBy('obtained_at', 'desc');
 
-        if ($perPage > 0) return $q->paginate($perPage);
+        if ($perPage > 0) {
+            return $q->paginate($perPage);
+        }
 
         return $q->get();
     }
@@ -65,10 +65,13 @@ class InventoryService
             foreach ($items as $inv) {
                 $type = $inv->reward->reward_type ?? null;
                 $entry = $this->formatInventoryEntry($inv);
-                if ($type === 'badge') $snap['badges'][] = $entry;
-                else {
+                if ($type === 'badge') {
+                    $snap['badges'][] = $entry;
+                } else {
                     $snap[$type] = $entry;
-                    if ($type === 'profile_background') $snap['background'] = $entry;
+                    if ($type === 'profile_background') {
+                        $snap['background'] = $entry;
+                    }
                 }
             }
         }
@@ -79,7 +82,7 @@ class InventoryService
             'profile_background' => null,
             'avatar_frame' => null,
             'title' => null,
-            'badges' => []
+            'badges' => [],
         ], $snap);
     }
 
@@ -95,7 +98,7 @@ class InventoryService
             // Unequip same type others
             if ($type) {
                 $profile->rewardInventory()
-                    ->whereHas('reward', fn($q) => $q->where('reward_type', $type))
+                    ->whereHas('reward', fn ($q) => $q->where('reward_type', $type))
                     ->where('inventory_id', '!=', $inventoryId)
                     ->update(['is_equipped' => false, 'equipped_at' => null]);
             }
@@ -109,6 +112,7 @@ class InventoryService
 
             // refresh and return snapshot
             $profile->refresh();
+
             return $this->getEquippedSnapshot($profile);
         });
     }
@@ -136,10 +140,14 @@ class InventoryService
                 if ($rewardType) {
                     if ($rewardType === 'badge') {
                         // 移除该 badge（以 inventory_id 为准）
-                        $snapshot['badges'] = array_values(array_filter($snapshot['badges'], fn($b) => ($b['id'] ?? null) !== $inv->inventory_id));
+                        $snapshot['badges'] = array_values(array_filter($snapshot['badges'], fn ($b) => ($b['id'] ?? null) !== $inv->inventory_id));
                     } else {
-                        if (isset($snapshot[$rewardType])) $snapshot[$rewardType] = null;
-                        if ($rewardType === 'profile_background' && isset($snapshot['background'])) $snapshot['background'] = null;
+                        if (isset($snapshot[$rewardType])) {
+                            $snapshot[$rewardType] = null;
+                        }
+                        if ($rewardType === 'profile_background' && isset($snapshot['background'])) {
+                            $snapshot['background'] = null;
+                        }
                     }
                 }
             } catch (\Throwable $e) {
@@ -157,6 +165,7 @@ class InventoryService
     {
         $r = $inv->reward;
         $meta = $r->metadata ?? [];
+
         return [
             'id' => $inv->inventory_id,
             'reward_id' => $inv->reward_id,

@@ -1,40 +1,39 @@
 <?php
 
-use App\Http\Controllers\AdminLessonController;
-use App\Http\Controllers\LessonController;
-use App\Http\Controllers\ExerciseController;
-use App\Http\Controllers\TestController;
-use App\Http\Controllers\AdminExerciseController;
-use App\Http\Controllers\AdminTestController;
-use App\Http\Controllers\StudentTestController;
-use App\Http\Controllers\AdminQuestionController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\StudentProfileController;
-use App\Http\Controllers\AdminRewardController;
+use App\Http\Controllers\AdminAILogController;
 use App\Http\Controllers\AdminDailyChallengeController;
+use App\Http\Controllers\AdminExerciseController;
+use App\Http\Controllers\AdminLearningPathController;
+use App\Http\Controllers\AdminLessonController;
+use App\Http\Controllers\AdminPlacementTestController;
 use App\Http\Controllers\AdminProgressController;
-use App\Http\Controllers\Student\RewardController as StudentRewardController;
-use App\Http\Controllers\Student\InventoryController as StudentInventoryController;
-use App\Http\Controllers\Student\NotificationController;
+use App\Http\Controllers\AdminQuestionController;
+use App\Http\Controllers\AdminRewardController;
+use App\Http\Controllers\AdminStudentController;
+use App\Http\Controllers\AdminStudentPathController;
+use App\Http\Controllers\AdminTestController;
+use App\Http\Controllers\AILessonController;
 use App\Http\Controllers\Api\CodeExecutionController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\ForumReportController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
-use App\Http\Controllers\Student\OnboardingController;
+use App\Http\Controllers\GeminiController;
+use App\Http\Controllers\LessonController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QuestionImportController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Student\InventoryController as StudentInventoryController;
+use App\Http\Controllers\Student\LeaderboardController;
 use App\Http\Controllers\Student\LearningPathController;
 use App\Http\Controllers\Student\MissionController;
-use App\Http\Controllers\Student\LeaderboardController;
-use App\Http\Controllers\GeminiController;
-use App\Http\Controllers\AdminAILogController;
-use App\Http\Controllers\AdminLearningPathController;
-use App\Http\Controllers\AdminStudentPathController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\AILessonController;
-use App\Http\Controllers\AdminPlacementTestController;
-use App\Http\Controllers\AdminStudentController;
-use App\Http\Controllers\QuestionImportController;
+use App\Http\Controllers\Student\NotificationController;
+use App\Http\Controllers\Student\OnboardingController;
+use App\Http\Controllers\Student\RewardController as StudentRewardController;
+use App\Http\Controllers\StudentProfileController;
+use App\Http\Controllers\StudentTestController;
+use Illuminate\Support\Facades\Route;
+
 // ==================== Public Routes ====================
 Route::get('/', [DashboardController::class, 'home'])->name('home');
 
@@ -177,7 +176,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('lessons.tests.show');
             Route::post('lessons/{lesson}/tests/{test}/start', [StudentTestController::class, 'start'])
                 ->name('lessons.tests.start');
-
 
             // Submit answers
             Route::get('submissions/{submission}', [StudentTestController::class, 'taking'])
@@ -531,7 +529,7 @@ if (app()->environment('local')) {
         try {
             $apiKey = config('services.gemini.key');
 
-            if (!$apiKey) {
+            if (! $apiKey) {
                 return response()->json(['error' => 'API key not found']);
             }
 
@@ -541,17 +539,17 @@ if (app()->environment('local')) {
                     'contents' => [
                         [
                             'parts' => [
-                                ['text' => 'Say hello in one sentence']
-                            ]
-                        ]
-                    ]
+                                ['text' => 'Say hello in one sentence'],
+                            ],
+                        ],
+                    ],
                 ]
             );
 
             if ($response->failed()) {
                 return response()->json([
                     'success' => false,
-                    'error' => $response->json()
+                    'error' => $response->json(),
                 ]);
             }
 
@@ -560,15 +558,15 @@ if (app()->environment('local')) {
             return response()->json([
                 'success' => true,
                 'message' => $data['candidates'][0]['content']['parts'][0]['text'] ?? 'No response',
-                'model_used' => 'gemini-2.5-flash'
+                'model_used' => 'gemini-2.5-flash',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     });
 }
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

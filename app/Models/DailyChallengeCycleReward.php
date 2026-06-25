@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DailyChallengeCycleReward extends Model
 {
     protected $table = 'daily_challenge_cycle_rewards';
+
     protected $primaryKey = 'cycle_reward_id';
 
     protected $fillable = [

@@ -171,7 +171,7 @@ class Test extends Model
             // Allow retake if configured
             $allowRetake = config('recommendation.allow_placement_retake', false);
 
-            if ($completedSubmission && !$allowRetake) {
+            if ($completedSubmission && ! $allowRetake) {
                 return false;
             }
 
@@ -179,7 +179,7 @@ class Test extends Model
         }
 
         // Regular test logic
-        if (!$this->max_attempts) {
+        if (! $this->max_attempts) {
             return true;
         }
 
@@ -241,6 +241,7 @@ class Test extends Model
     public function hasStudentPassed(int $studentId): bool
     {
         $bestScore = $this->getStudentBestScore($studentId);
+
         return $bestScore >= $this->passing_score;
     }
 
@@ -249,7 +250,7 @@ class Test extends Model
      */
     public function hasTimeLimit(): bool
     {
-        return !is_null($this->time_limit) && $this->time_limit > 0;
+        return ! is_null($this->time_limit) && $this->time_limit > 0;
     }
 
     /**
@@ -331,9 +332,9 @@ class Test extends Model
                 ? round(($totalAccepted / $totalRecommended) * 100, 2)
                 : 0,
             'score_distribution' => [
-                'beginner' => $scores->filter(fn($s) => $s <= 60)->count(),
-                'intermediate' => $scores->filter(fn($s) => $s > 60 && $s <= 85)->count(),
-                'advanced' => $scores->filter(fn($s) => $s > 85)->count(),
+                'beginner' => $scores->filter(fn ($s) => $s <= 60)->count(),
+                'intermediate' => $scores->filter(fn ($s) => $s > 60 && $s <= 85)->count(),
+                'advanced' => $scores->filter(fn ($s) => $s > 85)->count(),
             ],
         ];
     }

@@ -1,9 +1,9 @@
 <?php
+
 // app/Models/ForumReply.php
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,9 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class ForumReply extends Model
 {
-
-
     protected $table = 'forum_replies';
+
     protected $primaryKey = 'reply_id';
 
     protected $fillable = [
@@ -118,7 +117,7 @@ class ForumReply extends Model
     {
         $user = $this->user;
 
-        if (!$user) {
+        if (! $user) {
             return [
                 'name' => 'Unknown User',
                 'role' => 'Unknown',
@@ -174,9 +173,10 @@ class ForumReply extends Model
      */
     public function getIsLikedAttribute()
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return false;
         }
+
         return ForumReplyLike::isLiked(auth()->id(), $this->reply_id);
     }
 
@@ -206,6 +206,7 @@ class ForumReply extends Model
     public function unmarkAsSolution(): bool
     {
         $this->update(['is_solution' => false]);
+
         return true;
     }
 
@@ -274,7 +275,9 @@ class ForumReply extends Model
             $reply = $reply->parentReply;
 
             // 防止无限循环
-            if ($depth > 10) break;
+            if ($depth > 10) {
+                break;
+            }
         }
 
         return $depth;
@@ -306,7 +309,9 @@ class ForumReply extends Model
             }
 
             // 防止无限循环
-            if ($ancestors->count() > 10) break;
+            if ($ancestors->count() > 10) {
+                break;
+            }
         }
 
         return $ancestors->reverse();

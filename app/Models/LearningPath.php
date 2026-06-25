@@ -260,7 +260,7 @@ class LearningPath extends Model
 
         foreach ($lessons as $index => $lesson) {
             $this->lessons()->updateExistingPivot($lesson->lesson_id, [
-                'sequence_order' => $index + 1
+                'sequence_order' => $index + 1,
             ]);
         }
     }
@@ -269,7 +269,7 @@ class LearningPath extends Model
     {
         foreach ($lessonIds as $order => $lessonId) {
             $this->lessons()->updateExistingPivot($lessonId, [
-                'sequence_order' => $order + 1
+                'sequence_order' => $order + 1,
             ]);
         }
     }
@@ -299,7 +299,7 @@ class LearningPath extends Model
         parent::boot();
 
         static::creating(function ($path) {
-            if (!$path->display_order) {
+            if (! $path->display_order) {
                 $path->display_order = static::max('display_order') + 1;
             }
         });

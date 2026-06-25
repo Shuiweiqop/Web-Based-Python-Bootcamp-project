@@ -3,17 +3,16 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\User;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -60,7 +59,7 @@ class AuthenticatedSessionController extends Controller
         // 3. 检查用户是否存在
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             RateLimiter::hit($this->throttleKey($request), 60);
 
             Log::warning('❌ Login failed - User not found', ['email' => $request->email]);
@@ -80,7 +79,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         // 5. 尝试认证
-        if (!Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey($request), 60);
 
             Log::warning('❌ Login failed - Invalid password', ['email' => $request->email]);
@@ -154,7 +153,7 @@ class AuthenticatedSessionController extends Controller
      */
     protected function throttleKey(Request $request): string
     {
-        return strtolower($request->input('email')) . '|' . $request->ip();
+        return strtolower($request->input('email')).'|'.$request->ip();
     }
 
     /**
@@ -171,7 +170,7 @@ class AuthenticatedSessionController extends Controller
                 ]);
             } catch (\Exception $e) {
                 // 如果字段不存在，忽略错误
-                Log::debug('Could not update last_login fields: ' . $e->getMessage());
+                Log::debug('Could not update last_login fields: '.$e->getMessage());
             }
         }
     }

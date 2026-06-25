@@ -1,4 +1,5 @@
 <?php
+
 // 3. create_question_options_table.php - 选择题选项表（仅用于MCQ题目）
 
 use Illuminate\Database\Migrations\Migration;

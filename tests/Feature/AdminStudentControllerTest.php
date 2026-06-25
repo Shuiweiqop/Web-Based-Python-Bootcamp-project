@@ -34,7 +34,7 @@ class AdminStudentControllerTest extends TestCase
     {
         $user = User::create([
             'name' => $name,
-            'email' => strtolower(str_replace(' ', '-', $name)) . '-' . uniqid() . '@example.com',
+            'email' => strtolower(str_replace(' ', '-', $name)).'-'.uniqid().'@example.com',
             'password' => 'password',
             'role' => $role,
         ]);

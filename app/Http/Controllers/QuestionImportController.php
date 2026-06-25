@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\PlacementTest;
 use App\Models\Question;
 use App\Models\QuestionOption;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class QuestionImportController extends Controller
 {
@@ -65,15 +65,17 @@ class QuestionImportController extends Controller
             Log::error('Validation failed', [
                 'errors' => $e->errors(),
             ]);
+
             return response()->json([
                 'success' => false,
-                'error' => 'Validation failed: ' . implode(', ', $e->errors()['file'] ?? ['Unknown error']),
+                'error' => 'Validation failed: '.implode(', ', $e->errors()['file'] ?? ['Unknown error']),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Preview failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -139,9 +141,10 @@ class QuestionImportController extends Controller
             Log::error('Import transaction failed', [
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json([
                 'success' => false,
-                'error' => 'Import failed: ' . $e->getMessage(),
+                'error' => 'Import failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -175,7 +178,7 @@ class QuestionImportController extends Controller
         $data = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception('Invalid JSON format: ' . json_last_error_msg());
+            throw new \Exception('Invalid JSON format: '.json_last_error_msg());
         }
 
         // 支持两种格式：
@@ -200,13 +203,13 @@ class QuestionImportController extends Controller
         $questions = [];
         $handle = fopen($filePath, 'r');
 
-        if (!$handle) {
+        if (! $handle) {
             throw new \Exception('Unable to read CSV file');
         }
 
         // 读取标题行
         $headers = fgetcsv($handle);
-        if (!$headers) {
+        if (! $headers) {
             throw new \Exception('CSV file is empty');
         }
 
@@ -216,7 +219,9 @@ class QuestionImportController extends Controller
         }, $headers);
 
         while (($row = fgetcsv($handle)) !== false) {
-            if (empty(array_filter($row))) continue; // 跳过空行
+            if (empty(array_filter($row))) {
+                continue;
+            } // 跳过空行
 
             $question = [];
             foreach ($headers as $index => $header) {
@@ -232,6 +237,7 @@ class QuestionImportController extends Controller
         }
 
         fclose($handle);
+
         return $questions;
     }
 
@@ -244,8 +250,8 @@ class QuestionImportController extends Controller
         $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
 
         foreach ($labels as $label) {
-            $optionKey = 'option_' . strtolower($label);
-            if (!empty($row[$optionKey])) {
+            $optionKey = 'option_'.strtolower($label);
+            if (! empty($row[$optionKey])) {
                 $options[] = [
                     'option_label' => $label,
                     'option_text' => $row[$optionKey],
@@ -263,7 +269,7 @@ class QuestionImportController extends Controller
     private function parseExcel($filePath)
     {
         // 检查是否安装了 PhpSpreadsheet
-        if (!class_exists('\PhpOffice\PhpSpreadsheet\IOFactory')) {
+        if (! class_exists('\PhpOffice\PhpSpreadsheet\IOFactory')) {
             throw new \Exception('PhpSpreadsheet library not installed. Please run: composer require phpoffice/phpspreadsheet');
         }
 
@@ -282,7 +288,9 @@ class QuestionImportController extends Controller
         $questions = [];
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
-            if (empty(array_filter($row))) continue;
+            if (empty(array_filter($row))) {
+                continue;
+            }
 
             $question = [];
             foreach ($headers as $index => $header) {
@@ -315,7 +323,7 @@ class QuestionImportController extends Controller
             ]);
 
             if ($validator->fails()) {
-                throw new \Exception("Question " . ($index + 1) . " validation failed: " . $validator->errors()->first());
+                throw new \Exception('Question '.($index + 1).' validation failed: '.$validator->errors()->first());
             }
 
             $validated[] = [
@@ -354,7 +362,7 @@ class QuestionImportController extends Controller
         ]);
 
         // 如果是 MCQ，创建选项
-        if ($questionData['type'] === 'mcq' && !empty($questionData['options'])) {
+        if ($questionData['type'] === 'mcq' && ! empty($questionData['options'])) {
             foreach ($questionData['options'] as $index => $option) {
                 QuestionOption::create([
                     'question_id' => $question->question_id,
@@ -406,7 +414,7 @@ class QuestionImportController extends Controller
                         ['option_label' => 'B', 'option_text' => '6', 'is_correct' => false],
                         ['option_label' => 'C', 'option_text' => '9', 'is_correct' => false],
                         ['option_label' => 'D', 'option_text' => '5', 'is_correct' => false],
-                    ]
+                    ],
                 ],
                 [
                     'type' => 'true_false',
@@ -427,8 +435,8 @@ class QuestionImportController extends Controller
                     'difficulty_level' => 1,
                     'order' => 3,
                     'status' => 'active',
-                ]
-            ]
+                ],
+            ],
         ];
 
         $json = json_encode($template, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
