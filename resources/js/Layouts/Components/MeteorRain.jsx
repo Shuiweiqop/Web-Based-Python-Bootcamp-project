@@ -1,72 +1,65 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * Modern Meteor Rain - 现代流星雨动画
- * 
- * 特点:
- * - 更自然的流星轨迹
- * - 柔和的光晕效果
- * - 性能优化
- * - 响应式设计
+ * Modern Meteor Rain — canvas meteor shower over a twinkling starfield.
+ *
+ * Rendering notes:
+ * - The canvas is a transparent overlay, so each frame is cleared with
+ *   clearRect (NOT a translucent black fill, which muddies the background).
+ * - Meteor heads/tails are drawn with additive blending ('lighter') for a
+ *   soft glow that brightens where trails overlap.
+ * - Honors prefers-reduced-motion: renders a static starfield, no motion.
  */
-export default function MeteorRain({ 
-  enabled = true, 
-  meteorCount = 15,
+export default function MeteorRain({
+  enabled = true,
+  meteorCount = 16,
   speed = 1.2,
-  palette = ['rgba(59, 130, 246, 0.8)', 'rgba(139, 92, 246, 0.8)', 'rgba(236, 72, 153, 0.8)']
+  palette = ['rgba(96, 165, 250, 0.95)', 'rgba(167, 139, 250, 0.95)', 'rgba(244, 114, 182, 0.95)', 'rgba(94, 234, 212, 0.95)'],
 }) {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const meteorsRef = useRef([]);
+  const starsRef = useRef([]);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [reduced, setReduced] = useState(false);
 
-  // 流星类
   class Meteor {
     constructor(width, height) {
       this.width = width;
       this.height = height;
-      this.reset();
+      this.reset(true);
     }
 
-    reset() {
-      // 从屏幕右上方开始
-      this.x = Math.random() * this.width + this.width * 0.2;
-      this.y = -100 - Math.random() * 200;
-      
-      // 速度和大小
-      this.speed = (2 + Math.random() * 3) * speed;
-      this.length = 60 + Math.random() * 80;
-      this.size = 1 + Math.random() * 1.5;
-      
-      // 颜色
+    reset(initial = false) {
+      // Start above/right of the viewport so meteors streak in diagonally.
+      this.x = Math.random() * this.width * 1.2 - this.width * 0.1;
+      this.y = -120 - Math.random() * 240;
+      if (initial) this.y = Math.random() * this.height - this.height; // spread on first paint
+
+      this.hero = Math.random() < 0.12; // occasional brighter, longer meteor
+      this.speed = (2 + Math.random() * 3) * speed * (this.hero ? 1.4 : 1);
+      this.length = (this.hero ? 130 : 60) + Math.random() * 90;
+      this.size = (this.hero ? 1.8 : 1) + Math.random() * 1.4;
       this.color = palette[Math.floor(Math.random() * palette.length)];
-      
-      // 透明度动画
+
       this.opacity = 0;
       this.fadeIn = true;
-      this.maxOpacity = 0.6 + Math.random() * 0.4;
-      
-      // 角度（45度向下）
-      this.angle = Math.PI / 4 + (Math.random() - 0.5) * 0.3;
+      this.maxOpacity = (this.hero ? 0.85 : 0.55) + Math.random() * 0.3;
+      this.angle = Math.PI / 4 + (Math.random() - 0.5) * 0.25;
     }
 
     update() {
-      // 淡入淡出
       if (this.fadeIn) {
-        this.opacity += 0.05;
-        if (this.opacity >= this.maxOpacity) {
-          this.fadeIn = false;
-        }
+        this.opacity += 0.04;
+        if (this.opacity >= this.maxOpacity) this.fadeIn = false;
       } else {
-        this.opacity -= 0.008;
+        this.opacity -= 0.006;
       }
 
-      // 移动
       this.x += Math.cos(this.angle) * this.speed;
       this.y += Math.sin(this.angle) * this.speed;
 
-      // 重置条件
-      if (this.y > this.height + 100 || this.x > this.width + 100 || this.opacity <= 0) {
+      if (this.y > this.height + 120 || this.x > this.width + 120 || this.opacity <= 0) {
         this.reset();
       }
     }
@@ -77,16 +70,13 @@ export default function MeteorRain({
       ctx.save();
       ctx.globalAlpha = this.opacity;
 
-      // 计算尾部位置
       const tailX = this.x - Math.cos(this.angle) * this.length;
       const tailY = this.y - Math.sin(this.angle) * this.length;
 
-      // 绘制流星尾巴（渐变）
-      const gradient = ctx.createLinearGradient(this.x, this.y, tailX, tailY);
-      gradient.addColorStop(0, this.color);
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-      ctx.strokeStyle = gradient;
+      const tail = ctx.createLinearGradient(this.x, this.y, tailX, tailY);
+      tail.addColorStop(0, this.color);
+      tail.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.strokeStyle = tail;
       ctx.lineWidth = this.size;
       ctx.lineCap = 'round';
       ctx.beginPath();
@@ -94,89 +84,102 @@ export default function MeteorRain({
       ctx.lineTo(this.x, this.y);
       ctx.stroke();
 
-      // 绘制流星头部光晕
-      const glowGradient = ctx.createRadialGradient(
-        this.x, this.y, 0,
-        this.x, this.y, this.size * 4
-      );
-      glowGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-      glowGradient.addColorStop(0.3, this.color);
-      glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-      ctx.fillStyle = glowGradient;
+      const r = this.size * (this.hero ? 6 : 4);
+      const glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+      glow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      glow.addColorStop(0.35, this.color);
+      glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size * 4, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
     }
   }
 
-  // 初始化和窗口大小调整
   useEffect(() => {
-    const updateDimensions = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-    };
-
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-
-    return () => window.removeEventListener('resize', updateDimensions);
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setReduced(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
   }, []);
 
-  // 动画循环
+  useEffect(() => {
+    const update = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   useEffect(() => {
     if (!enabled || !dimensions.width) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    // 设置画布尺寸（高DPI支持）
+    const { width: w, height: h } = dimensions;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = dimensions.width * dpr;
-    canvas.height = dimensions.height * dpr;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
     ctx.scale(dpr, dpr);
 
-    // 初始化流星
-    meteorsRef.current = Array.from(
-      { length: meteorCount },
-      () => new Meteor(dimensions.width, dimensions.height)
-    );
+    // Twinkling starfield (density scales with viewport area).
+    const starCount = Math.min(140, Math.round((w * h) / 11000));
+    starsRef.current = Array.from({ length: starCount }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 1.2 + 0.3,
+      base: 0.25 + Math.random() * 0.5,
+      phase: Math.random() * Math.PI * 2,
+      twSpeed: 0.5 + Math.random() * 1.6,
+    }));
 
-    // 为了更自然的效果，随机分布初始位置
-    meteorsRef.current.forEach((meteor, i) => {
-      meteor.y = (i / meteorCount) * dimensions.height - 200;
-      meteor.x = Math.random() * dimensions.width;
-    });
+    const drawStars = (t) => {
+      ctx.save();
+      for (const s of starsRef.current) {
+        const tw = t === null ? 1 : 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * s.twSpeed + s.phase));
+        ctx.globalAlpha = s.base * tw;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    };
 
-    // 动画函数
+    // Reduced motion: paint a static sky once and stop.
+    if (reduced) {
+      ctx.clearRect(0, 0, w, h);
+      drawStars(null);
+      return;
+    }
+
+    meteorsRef.current = Array.from({ length: meteorCount }, () => new Meteor(w, h));
+
     let lastTime = 0;
     const animate = (currentTime) => {
-      const deltaTime = currentTime - lastTime;
-
-      // 限制帧率到60fps
-      if (deltaTime < 16) {
+      const dt = currentTime - lastTime;
+      if (dt < 16) {
         animationRef.current = requestAnimationFrame(animate);
         return;
       }
-
       lastTime = currentTime;
+      const t = currentTime / 1000;
 
-      // 清空画布（带轻微拖尾效果）
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+      ctx.clearRect(0, 0, w, h);
+      drawStars(t);
 
-      // 更新和绘制所有流星
-      meteorsRef.current.forEach(meteor => {
-        meteor.update();
-        meteor.draw(ctx);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      meteorsRef.current.forEach((m) => {
+        m.update();
+        m.draw(ctx);
       });
+      ctx.restore();
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -184,11 +187,9 @@ export default function MeteorRain({
     animationRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [enabled, dimensions, meteorCount, speed, palette]);
+  }, [enabled, dimensions, meteorCount, speed, palette, reduced]);
 
   if (!enabled) return null;
 
@@ -196,11 +197,7 @@ export default function MeteorRain({
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
-      style={{ 
-        width: dimensions.width,
-        height: dimensions.height,
-        opacity: 0.6
-      }}
+      style={{ width: dimensions.width, height: dimensions.height, opacity: 0.75 }}
     />
   );
 }
