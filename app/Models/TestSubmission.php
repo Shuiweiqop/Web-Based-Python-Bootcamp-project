@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
 
 class TestSubmission extends Model
 {
@@ -49,8 +49,11 @@ class TestSubmission extends Model
     ];
 
     const STATUS_IN_PROGRESS = 'in_progress';
+
     const STATUS_SUBMITTED = 'submitted';
+
     const STATUS_TIMEOUT = 'timeout';
+
     const STATUS_ABANDONED = 'abandoned';
 
     // ==================== Original Relationships ====================
@@ -151,7 +154,7 @@ class TestSubmission extends Model
 
     public function getTimeSpentFormattedAttribute()
     {
-        if (!$this->time_spent) {
+        if (! $this->time_spent) {
             return '0 minutes';
         }
 
@@ -167,7 +170,7 @@ class TestSubmission extends Model
 
     public function getRemainingTimeAttribute()
     {
-        if (!$this->test->time_limit || $this->is_completed) {
+        if (! $this->test->time_limit || $this->is_completed) {
             return null;
         }
 
@@ -204,7 +207,7 @@ class TestSubmission extends Model
         $this->update([
             'score' => $this->calculateScore(),
             'correct_answers' => $this->calculateCorrectAnswers(),
-            'total_questions' => $this->test->questions_count
+            'total_questions' => $this->test->questions_count,
         ]);
     }
 
@@ -246,13 +249,13 @@ class TestSubmission extends Model
 
     /**
      * Recommend a learning path based on test score
-     * 
+     *
      * @return LearningPath|null The recommended path, or null if no suitable path found
      */
     public function recommendPath(): ?LearningPath
     {
         // Only recommend for placement tests
-        if (!$this->is_placement_test) {
+        if (! $this->is_placement_test) {
             return null;
         }
 
@@ -331,13 +334,13 @@ class TestSubmission extends Model
 
     /**
      * Get alternative learning paths that are also suitable
-     * 
-     * @param int $limit Maximum number of alternatives to return
+     *
+     * @param  int  $limit  Maximum number of alternatives to return
      * @return \Illuminate\Support\Collection
      */
     public function getAlternativePaths(int $limit = 3)
     {
-        if (!$this->is_placement_test) {
+        if (! $this->is_placement_test) {
             return collect();
         }
 
@@ -381,7 +384,7 @@ class TestSubmission extends Model
      */
     public function hasAcceptedRecommendation(): bool
     {
-        if (!$this->recommended_path_id) {
+        if (! $this->recommended_path_id) {
             return false;
         }
 
@@ -396,7 +399,7 @@ class TestSubmission extends Model
      */
     public function getAcceptedPathAssignment(): ?StudentLearningPath
     {
-        if (!$this->recommended_path_id) {
+        if (! $this->recommended_path_id) {
             return null;
         }
 
@@ -421,7 +424,7 @@ class TestSubmission extends Model
             if (
                 $submission->is_completed &&
                 $submission->is_placement_test &&
-                !$submission->recommended_path_id
+                ! $submission->recommended_path_id
             ) {
                 $submission->recommendPath();
             }

@@ -22,8 +22,9 @@ class ExerciseController extends Controller
     {
         $student = Auth::user()->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             Log::error('Student profile not found', ['user_id' => Auth::id()]);
+
             return response()->json(['success' => false, 'message' => 'Student profile not found.'], 404);
         }
 
@@ -35,7 +36,7 @@ class ExerciseController extends Controller
             ->where('lesson_id', $lesson->lesson_id)
             ->first();
 
-        if (!$progress || !$progress->content_completed) {
+        if (! $progress || ! $progress->content_completed) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please review the lesson content before starting exercises.',
@@ -59,13 +60,13 @@ class ExerciseController extends Controller
         } catch (\Exception $e) {
             Log::error('Error submitting exercise', [
                 'message' => $e->getMessage(),
-                'file'    => $e->getFile(),
-                'line'    => $e->getLine(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to submit exercise: ' . $e->getMessage(),
+                'message' => 'Failed to submit exercise: '.$e->getMessage(),
             ], 500);
         }
     }

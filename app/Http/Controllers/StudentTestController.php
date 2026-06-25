@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 use App\Models\Lesson;
+use App\Models\LessonProgress;
+use App\Models\Question;
+use App\Models\SubmissionAnswer;
 use App\Models\Test;
 use App\Models\TestSubmission;
-use App\Models\SubmissionAnswer;
-use App\Models\Question;
-use App\Models\LessonProgress;
 use App\Services\DailyChallengeService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class StudentTestController extends Controller
 {
@@ -32,17 +32,17 @@ class StudentTestController extends Controller
     private function getStudentIdOrFail()
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             abort(401, 'User not authenticated.');
         }
 
         // 改为 studentProfile（匹配你的模型关系名）
-        if (!$user->studentProfile) {
+        if (! $user->studentProfile) {
             abort(403, 'Student profile not found. Please complete your student profile before taking tests.');
         }
 
         // 检查属性是否存在
-        if (!isset($user->studentProfile->student_id)) {
+        if (! isset($user->studentProfile->student_id)) {
             abort(500, 'Student profile misconfigured: missing student_id.');
         }
 
@@ -58,7 +58,7 @@ class StudentTestController extends Controller
             ->where('lesson_id', $lesson->lesson_id)
             ->first();
 
-        if (!$progress || !$progress->content_completed) {
+        if (! $progress || ! $progress->content_completed) {
             abort(403, 'Please review the lesson content before accessing tests.');
         }
     }
@@ -255,7 +255,8 @@ class StudentTestController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             // 记录错误到日志方便排查
-            Log::error('Failed to start test: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Failed to start test: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
             return back()->withErrors(['error' => 'Failed to start test. Please try again.']);
         }
     }
@@ -286,6 +287,7 @@ class StudentTestController extends Controller
 
             if (now()->greaterThan($expiresAt)) {
                 $this->autoSubmitTimeout($submission);
+
                 return redirect()->route('student.submissions.result', ['submission' => $submission->submission_id])
                     ->with('warning', 'Time limit expired. Test has been automatically submitted.');
             }
@@ -449,7 +451,8 @@ class StudentTestController extends Controller
                 ->with('missionProgress', $missionProgress);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Failed to complete test: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Failed to complete test: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
             return back()->withErrors(['error' => 'Failed to submit test. Please try again.']);
         }
     }
@@ -557,7 +560,9 @@ class StudentTestController extends Controller
 
         foreach ($answers as $answer) {
             $question = $questions->get($answer->question_id);
-            if (!$question) continue;
+            if (! $question) {
+                continue;
+            }
 
             $isCorrect = false;
             $pointsEarned = 0;
@@ -567,11 +572,11 @@ class StudentTestController extends Controller
                     $correctOptionIds = $question->options
                         ->where('is_correct', true)
                         ->pluck('option_id')
-                        ->map(fn($id) => (string) $id)
+                        ->map(fn ($id) => (string) $id)
                         ->values()
                         ->toArray();
                     $studentOptionIds = collect($answer->selected_options ?? [])
-                        ->map(fn($id) => (string) $id)
+                        ->map(fn ($id) => (string) $id)
                         ->values()
                         ->toArray();
                     sort($correctOptionIds);
@@ -630,7 +635,7 @@ class StudentTestController extends Controller
 
         $submission->refresh();
 
-        if (!$wasCompleted) {
+        if (! $wasCompleted) {
             $submission->studentProfile?->processTestCompletion($submission);
         }
     }

@@ -29,7 +29,7 @@ return new class extends Migration
                 'last_login_at',
                 'last_login_ip',
                 'failed_login_attempts',
-                'locked_until'
+                'locked_until',
             ]);
         });
     }

@@ -2,17 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Notification extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $table = 'notifications';
+
     protected $primaryKey = 'notification_id';
 
     protected $fillable = [
@@ -100,7 +101,7 @@ class Notification extends Model
     protected function timeAgo(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->created_at?->diffForHumans() ?? '',
+            get: fn () => $this->created_at?->diffForHumans() ?? '',
         );
     }
 
@@ -110,7 +111,7 @@ class Notification extends Model
     protected function displayIcon(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->icon ?: match ($this->type) {
+            get: fn () => $this->icon ?: match ($this->type) {
                 'system' => 'info',
                 'reward' => 'gift',
                 'test' => 'clipboard',
@@ -132,7 +133,7 @@ class Notification extends Model
     protected function displayColor(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->color ?: match ($this->priority) {
+            get: fn () => $this->color ?: match ($this->priority) {
                 'urgent' => 'red',
                 'high' => 'orange',
                 'normal' => 'blue',
@@ -168,7 +169,7 @@ class Notification extends Model
 
     public function isExpired(): bool
     {
-        return !$this->is_read &&
+        return ! $this->is_read &&
             $this->created_at->addDays(7)->isPast();
     }
 

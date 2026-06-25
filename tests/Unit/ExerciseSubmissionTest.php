@@ -10,10 +10,11 @@ class ExerciseSubmissionTest extends TestCase
 {
     private function makeSubmission(array $attrs = []): ExerciseSubmission
     {
-        $submission = new ExerciseSubmission();
+        $submission = new ExerciseSubmission;
         foreach ($attrs as $key => $value) {
             $submission->$key = $value;
         }
+
         return $submission;
     }
 
@@ -27,7 +28,7 @@ class ExerciseSubmissionTest extends TestCase
 
     public function test_percentage_is_zero_when_max_score_is_zero(): void
     {
-        $exercise = new InteractiveExercise();
+        $exercise = new InteractiveExercise;
         $exercise->max_score = 0;
 
         $submission = $this->makeSubmission(['score' => 50]);
@@ -38,7 +39,7 @@ class ExerciseSubmissionTest extends TestCase
 
     public function test_percentage_calculated_correctly(): void
     {
-        $exercise = new InteractiveExercise();
+        $exercise = new InteractiveExercise;
         $exercise->max_score = 200;
 
         $submission = $this->makeSubmission(['score' => 150]);
@@ -50,7 +51,7 @@ class ExerciseSubmissionTest extends TestCase
     #[\PHPUnit\Framework\Attributes\DataProvider('gradeProvider')]
     public function test_grade_boundaries(int $score, int $maxScore, string $expectedGrade): void
     {
-        $exercise = new InteractiveExercise();
+        $exercise = new InteractiveExercise;
         $exercise->max_score = $maxScore;
 
         $submission = $this->makeSubmission(['score' => $score]);
@@ -62,22 +63,22 @@ class ExerciseSubmissionTest extends TestCase
     public static function gradeProvider(): array
     {
         return [
-            'A at 90%'          => [90, 100, 'A'],
-            'A at 100%'         => [100, 100, 'A'],
-            'B at 80%'          => [80, 100, 'B'],
-            'B at 89%'          => [89, 100, 'B'],
-            'C at 70%'          => [70, 100, 'C'],
-            'C at 79%'          => [79, 100, 'C'],
-            'D at 60%'          => [60, 100, 'D'],
-            'D at 69%'          => [69, 100, 'D'],
-            'F at 59%'          => [59, 100, 'F'],
-            'F at 0%'           => [0, 100, 'F'],
+            'A at 90%' => [90, 100, 'A'],
+            'A at 100%' => [100, 100, 'A'],
+            'B at 80%' => [80, 100, 'B'],
+            'B at 89%' => [89, 100, 'B'],
+            'C at 70%' => [70, 100, 'C'],
+            'C at 79%' => [79, 100, 'C'],
+            'D at 60%' => [60, 100, 'D'],
+            'D at 69%' => [69, 100, 'D'],
+            'F at 59%' => [59, 100, 'F'],
+            'F at 0%' => [0, 100, 'F'],
         ];
     }
 
     public function test_is_passing_at_70_percent(): void
     {
-        $exercise = new InteractiveExercise();
+        $exercise = new InteractiveExercise;
         $exercise->max_score = 100;
 
         $passing = $this->makeSubmission(['score' => 70]);

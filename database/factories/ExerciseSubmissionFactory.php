@@ -41,7 +41,7 @@ class ExerciseSubmissionFactory extends Factory
      */
     private function generateAnswerData($exercise)
     {
-        if (!$exercise) {
+        if (! $exercise) {
             return ['answer' => 'Sample answer'];
         }
 
@@ -82,7 +82,7 @@ class ExerciseSubmissionFactory extends Factory
             $maxScore = $exercise ? $exercise->max_score : 100;
 
             return [
-                'score' => fake()->numberBetween((int)($maxScore * 0.7), $maxScore),
+                'score' => fake()->numberBetween((int) ($maxScore * 0.7), $maxScore),
                 'completed' => true,
             ];
         });
@@ -98,7 +98,7 @@ class ExerciseSubmissionFactory extends Factory
             $maxScore = $exercise ? $exercise->max_score : 100;
 
             return [
-                'score' => fake()->numberBetween(0, (int)($maxScore * 0.69)),
+                'score' => fake()->numberBetween(0, (int) ($maxScore * 0.69)),
                 'completed' => false,
             ];
         });

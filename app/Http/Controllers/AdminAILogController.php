@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AISessionLog;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class AdminAILogController extends Controller
 {
@@ -57,7 +57,7 @@ class AdminAILogController extends Controller
         return Inertia::render('Admin/AILogs/Index', [
             'logs' => $logs,
             'stats' => $stats,
-            'filters' => $request->only(['search', 'student_id', 'lesson_id', 'date_from', 'date_to'])
+            'filters' => $request->only(['search', 'student_id', 'lesson_id', 'date_from', 'date_to']),
         ]);
     }
 
@@ -125,7 +125,7 @@ class AdminAILogController extends Controller
         } catch (\Exception $e) {
             \Log::error('Bulk delete failed', [
                 'error' => $e->getMessage(),
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
 
             return redirect()->back()->with('error', 'Failed to delete logs. Please try again.');
@@ -145,7 +145,7 @@ class AdminAILogController extends Controller
         } catch (\Exception $e) {
             \Log::error('Session delete failed', [
                 'session_id' => $sessionId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->with('error', 'Failed to delete session. Please try again.');
@@ -171,7 +171,7 @@ class AdminAILogController extends Controller
                 Carbon::parse($request->date_from)->startOfDay(),
                 Carbon::parse($request->date_to)->endOfDay(),
             ])->count();
-        } else if ($request->type === 'all_old') {
+        } elseif ($request->type === 'all_old') {
             $cutoffDate = Carbon::now()->subDays($request->days_old);
             $count = AISessionLog::where('timestamp', '<', $cutoffDate)->count();
         }
@@ -180,7 +180,7 @@ class AdminAILogController extends Controller
             'count' => $count,
             'message' => $count > 0
                 ? "This will delete {$count} log entries."
-                : "No logs found matching the criteria."
+                : 'No logs found matching the criteria.',
         ]);
     }
 }

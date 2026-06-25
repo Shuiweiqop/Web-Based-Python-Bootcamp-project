@@ -13,7 +13,7 @@ use Inertia\Inertia;
 
 /**
  * ✅ 库存管理控制器（Inertia 专用）
- * 
+ *
  * 关键点：
  * 1. equip/unequip 方法只返回 back()（Inertia 响应）
  * 2. AppServiceProvider 会自动重新加载 equipped 数据
@@ -32,12 +32,13 @@ class InventoryController extends Controller
     protected function getStudentProfile()
     {
         $user = Auth::user();
+
         return StudentProfile::where('user_Id', $user->user_Id)->firstOrFail();
     }
 
     /**
      * 显示库存页面
-     * 
+     *
      * GET /student/inventory
      */
     public function index(Request $request)
@@ -68,11 +69,12 @@ class InventoryController extends Controller
 
         // 格式化数据
         $inventory = $inventoryItems->map(function ($item) {
-            if (!$item->reward) {
+            if (! $item->reward) {
                 Log::warning('Missing reward relationship', [
                     'inventory_id' => $item->inventory_id,
                     'reward_id' => $item->reward_id,
                 ]);
+
                 return null;
             }
 
@@ -137,9 +139,9 @@ class InventoryController extends Controller
 
     /**
      * ✅ 获取当前装备状态（仅支持 AJAX）
-     * 
+     *
      * GET /student/inventory/equipped
-     * 
+     *
      * 用途：手动刷新装备状态，不用于 Inertia router 调用
      */
     public function equipped(Request $request)
@@ -165,14 +167,14 @@ class InventoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to load equipped items'
+                'message' => 'Failed to load equipped items',
             ], 500);
         }
     }
 
     /**
      * ✅ 装备物品（只返回 Inertia 响应）
-     * 
+     *
      * POST /student/inventory/{id}/equip
      */
     public function equip($inventoryId)
@@ -228,14 +230,14 @@ class InventoryController extends Controller
             ]);
 
             return back()->withErrors([
-                'equip' => 'Failed to equip item. Please try again.'
+                'equip' => 'Failed to equip item. Please try again.',
             ]);
         }
     }
 
     /**
      * ✅ 卸下物品（只返回 Inertia 响应）
-     * 
+     *
      * POST /student/inventory/{id}/unequip
      */
     public function unequip($inventoryId)
@@ -277,14 +279,14 @@ class InventoryController extends Controller
             ]);
 
             return back()->withErrors([
-                'unequip' => 'Failed to unequip item. Please try again.'
+                'unequip' => 'Failed to unequip item. Please try again.',
             ]);
         }
     }
 
     /**
      * 切换装备状态
-     * 
+     *
      * POST /student/inventory/{id}/toggle
      */
     public function toggle($inventoryId)
@@ -308,7 +310,7 @@ class InventoryController extends Controller
             ]);
 
             return back()->withErrors([
-                'toggle' => 'Failed to toggle item. Please try again.'
+                'toggle' => 'Failed to toggle item. Please try again.',
             ]);
         }
     }

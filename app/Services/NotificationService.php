@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 /**
  * NotificationService
- * 
+ *
  * 通知服务类 - 统一管理所有通知创建和操作
  */
 class NotificationService
@@ -52,7 +52,7 @@ class NotificationService
     {
         $notification = Notification::find($notificationId);
 
-        if (!$notification) {
+        if (! $notification) {
             return false;
         }
 
@@ -79,7 +79,7 @@ class NotificationService
     {
         $notification = Notification::find($notificationId);
 
-        if (!$notification) {
+        if (! $notification) {
             return false;
         }
 
@@ -174,7 +174,7 @@ class NotificationService
             $notification = Notification::create([
                 'user_id' => $userId,
                 'type' => $type,
-                ...$data
+                ...$data,
             ]);
 
             $notifications->push($notification);
@@ -190,7 +190,7 @@ class NotificationService
     {
         $userIds = User::pluck('user_Id')->toArray();
 
-        $insertData = array_map(fn($userId) => [
+        $insertData = array_map(fn ($userId) => [
             'user_id' => $userId,
             'type' => 'announcement',
             'priority' => $priority,
@@ -210,7 +210,7 @@ class NotificationService
 
     /**
      * 获取通知统计
-     * 
+     *
      * ✅ 修复版本 - 不使用 clone()，而是创建新查询
      */
     public function getNotificationStats(int $userId): array
@@ -231,7 +231,7 @@ class NotificationService
 
     /**
      * 获取通知统计（优化版本 - 使用单次查询）
-     * 
+     *
      * ✅ 性能更好的方案
      */
     public function getNotificationStatsOptimized(int $userId): array
@@ -247,7 +247,7 @@ class NotificationService
             'unread' => $notifications->where('is_read', false)->count(),
             'read' => $notifications->where('is_read', true)->count(),
             'by_type' => $notifications->groupBy('type')
-                ->map(fn($items) => $items->count())
+                ->map(fn ($items) => $items->count())
                 ->toArray(),
             'high_priority' => $notifications->where('priority', 'high')->count(),
         ];
@@ -269,7 +269,7 @@ class NotificationService
 
             // 按类型统计
             'by_type' => $notifications->groupBy('type')
-                ->map(fn($items) => [
+                ->map(fn ($items) => [
                     'total' => $items->count(),
                     'unread' => $items->where('is_read', false)->count(),
                 ])
@@ -277,7 +277,7 @@ class NotificationService
 
             // 按优先级统计
             'by_priority' => $notifications->groupBy('priority')
-                ->map(fn($items) => $items->count())
+                ->map(fn ($items) => $items->count())
                 ->toArray(),
 
             // 今日通知

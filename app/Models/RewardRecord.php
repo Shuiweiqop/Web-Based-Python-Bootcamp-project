@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class RewardRecord extends Model
 {
     protected $table = 'reward_records';
+
     protected $primaryKey = 'record_id';
+
     public $timestamps = true;
 
     protected $fillable = [

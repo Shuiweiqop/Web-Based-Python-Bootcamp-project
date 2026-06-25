@@ -12,12 +12,13 @@ class ForumPostLike extends Model
     use HasFactory;
 
     protected $table = 'forum_post_likes';
+
     protected $primaryKey = 'like_id';
 
     protected $fillable = [
         'user_id',
         'post_id',
-        'liked_at'
+        'liked_at',
     ];
 
     protected $casts = [
@@ -68,7 +69,7 @@ class ForumPostLike extends Model
         parent::boot();
 
         static::creating(function ($like) {
-            if (!$like->liked_at) {
+            if (! $like->liked_at) {
                 $like->liked_at = now();
             }
         });
@@ -85,7 +86,7 @@ class ForumPostLike extends Model
             Log::info('=== Toggle Post Like ===', [
                 'user_id' => $userId,
                 'post_id' => $postId,
-                'step' => 'start'
+                'step' => 'start',
             ]);
 
             $like = static::where('user_id', $userId)
@@ -94,7 +95,7 @@ class ForumPostLike extends Model
 
             Log::info('Like check result', [
                 'like_exists' => $like !== null,
-                'like_id' => $like ? $like->like_id : null
+                'like_id' => $like ? $like->like_id : null,
             ]);
 
             if ($like) {
@@ -107,7 +108,7 @@ class ForumPostLike extends Model
                     $post->decrement('likes');
                     Log::info('Post unliked, likes decremented', [
                         'post_id' => $postId,
-                        'new_likes_count' => $post->fresh()->likes
+                        'new_likes_count' => $post->fresh()->likes,
                     ]);
                 }
 
@@ -117,11 +118,11 @@ class ForumPostLike extends Model
                 $newLike = static::create([
                     'user_id' => $userId,
                     'post_id' => $postId,
-                    'liked_at' => now()
+                    'liked_at' => now(),
                 ]);
 
                 Log::info('New like created', [
-                    'like_id' => $newLike->like_id
+                    'like_id' => $newLike->like_id,
                 ]);
 
                 // Increment post likes count
@@ -130,7 +131,7 @@ class ForumPostLike extends Model
                     $post->increment('likes');
                     Log::info('Post liked, likes incremented', [
                         'post_id' => $postId,
-                        'new_likes_count' => $post->fresh()->likes
+                        'new_likes_count' => $post->fresh()->likes,
                     ]);
                 }
 
@@ -141,7 +142,7 @@ class ForumPostLike extends Model
                 'user_id' => $userId,
                 'post_id' => $postId,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw $e; // Re-throw to be caught by controller
@@ -159,8 +160,9 @@ class ForumPostLike extends Model
             Log::error('isLiked check failed', [
                 'user_id' => $userId,
                 'post_id' => $postId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

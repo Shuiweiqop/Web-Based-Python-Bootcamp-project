@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
 use App\Models\StudentProfile;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class StudentProfileSeeder extends Seeder
 {
@@ -18,6 +18,7 @@ class StudentProfileSeeder extends Seeder
 
         if ($students->isEmpty()) {
             $this->command->warn('No student users found. Please run UserSeeder first.');
+
             return;
         }
 
@@ -93,7 +94,7 @@ class StudentProfileSeeder extends Seeder
             }
         }
 
-        $this->command->info('Student profiles created successfully for ' . $students->count() . ' student users.');
+        $this->command->info('Student profiles created successfully for '.$students->count().' student users.');
 
         // Show warning if administrator tries to have a profile
         $adminCount = User::where('role', 'administrator')->count();

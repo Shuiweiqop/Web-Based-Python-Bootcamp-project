@@ -9,7 +9,7 @@ class StudentTestControllerNormalizationTest extends TestCase
 {
     private function invokePrivateMethod(string $method, ...$args)
     {
-        $controller = new StudentTestController();
+        $controller = new StudentTestController;
         $reflection = new \ReflectionMethod(StudentTestController::class, $method);
         $reflection->setAccessible(true);
 

@@ -8,8 +8,8 @@ use App\Models\ForumReport;
 use App\Models\Lesson;
 use App\Models\Test;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -57,7 +57,7 @@ class AdminDashboardTest extends TestCase
             $reply = ForumReply::create([
                 'post_id' => $anchorPost->post_id,
                 'user_id' => $index % 2 === 0 ? $studentA->user_Id : $studentB->user_Id,
-                'content' => 'Reply #' . ($index + 1),
+                'content' => 'Reply #'.($index + 1),
             ]);
 
             $reply->forceFill(['created_at' => $timestamp, 'updated_at' => $timestamp])->save();
@@ -234,7 +234,7 @@ class AdminDashboardTest extends TestCase
             ->component('Admin/Dashboard')
             ->where('recentActivity', fn ($items) => collect($items)->contains(
                 fn (array $item) => $item['type'] === 'forum_reply'
-                    && $item['href'] === route('forum.show', $post->post_id) . '#reply-' . $reply->reply_id
+                    && $item['href'] === route('forum.show', $post->post_id).'#reply-'.$reply->reply_id
             ) && collect($items)->contains(
                 fn (array $item) => $item['type'] === 'student_registration'
                     && $item['href'] === route('admin.students.show', $student->user_Id)
@@ -351,7 +351,7 @@ class AdminDashboardTest extends TestCase
     {
         $user = User::create([
             'name' => $name,
-            'email' => strtolower(str_replace(' ', '-', $name)) . '-' . uniqid() . '@example.com',
+            'email' => strtolower(str_replace(' ', '-', $name)).'-'.uniqid().'@example.com',
             'password' => 'password',
             'role' => $role,
         ]);

@@ -28,7 +28,7 @@ return new class extends Migration
                 'harassment',        // 骚扰
                 'misinformation',    // 错误信息
                 'off_topic',         // 偏离主题
-                'other'              // 其他
+                'other',              // 其他
             ])->default('other');
 
             $table->text('description')->nullable()->comment('详细描述');

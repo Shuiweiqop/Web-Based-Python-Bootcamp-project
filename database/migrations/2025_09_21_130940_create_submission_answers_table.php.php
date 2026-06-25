@@ -1,4 +1,5 @@
 <?php
+
 // 5. create_submission_answers_table.php - 具体答案表
 
 use Illuminate\Database\Migrations\Migration;

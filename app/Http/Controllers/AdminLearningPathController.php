@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\LearningPath;
 use App\Models\Lesson;
 use App\Models\StudentLearningPath;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class AdminLearningPathController extends Controller
 {
@@ -176,7 +175,8 @@ class AdminLearningPathController extends Controller
                 ->with('success', 'Learning path created successfully! Now add lessons to complete the path.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to create learning path: ' . $e->getMessage()])
+
+            return back()->withErrors(['error' => 'Failed to create learning path: '.$e->getMessage()])
                 ->withInput();
         }
     }
@@ -342,7 +342,7 @@ class AdminLearningPathController extends Controller
                 ->with('success', 'Learning path updated successfully!')
                 ->setStatusCode(303);
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to update learning path: ' . $e->getMessage()])
+            return back()->withErrors(['error' => 'Failed to update learning path: '.$e->getMessage()])
                 ->withInput()
                 ->setStatusCode(303);
         }
@@ -360,7 +360,7 @@ class AdminLearningPathController extends Controller
 
         if ($activeEnrollments > 0) {
             return back()->withErrors([
-                'error' => "Cannot delete path with {$activeEnrollments} active student(s). Please set it as inactive instead."
+                'error' => "Cannot delete path with {$activeEnrollments} active student(s). Please set it as inactive instead.",
             ])->setStatusCode(303);
         }
 
@@ -373,7 +373,7 @@ class AdminLearningPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Failed to delete learning path: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to delete learning path: '.$e->getMessage()])
                 ->setStatusCode(303);
         }
     }
@@ -385,7 +385,7 @@ class AdminLearningPathController extends Controller
     {
         $path = LearningPath::withTrashed()->findOrFail($pathId);
 
-        if (!$path->trashed()) {
+        if (! $path->trashed()) {
             return back()->with('info', 'Learning path is not deleted.');
         }
 
@@ -474,7 +474,7 @@ class AdminLearningPathController extends Controller
 
             return back()->with('success', 'Lesson added to path successfully!');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to add lesson: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to add lesson: '.$e->getMessage()]);
         }
     }
 
@@ -495,7 +495,7 @@ class AdminLearningPathController extends Controller
 
         if ($affectedStudents > 0) {
             return back()->withErrors([
-                'error' => "Cannot remove lesson. {$affectedStudents} student(s) have already completed it."
+                'error' => "Cannot remove lesson. {$affectedStudents} student(s) have already completed it.",
             ])->setStatusCode(303);
         }
 
@@ -507,7 +507,7 @@ class AdminLearningPathController extends Controller
                 ->setStatusCode(303);
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Failed to remove lesson: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to remove lesson: '.$e->getMessage()])
                 ->setStatusCode(303);
         }
     }
@@ -530,7 +530,7 @@ class AdminLearningPathController extends Controller
             // ✅ 返回 back() 而不是 JSON，这样 Inertia 才能正确处理
             return back()->with('success', 'Lessons reordered successfully!');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to reorder lessons: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to reorder lessons: '.$e->getMessage()]);
         }
     }
 
@@ -558,7 +558,7 @@ class AdminLearningPathController extends Controller
 
             return back()->with('success', 'Lesson settings updated successfully!');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to update settings: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to update settings: '.$e->getMessage()]);
         }
     }
 
@@ -570,12 +570,12 @@ class AdminLearningPathController extends Controller
         $path = LearningPath::findOrFail($pathId);
 
         try {
-            $newPath = $path->clonePath($path->title . ' (Copy)');
+            $newPath = $path->clonePath($path->title.' (Copy)');
 
             return redirect()->route('admin.learning-paths.edit', $newPath->path_id)
                 ->with('success', 'Learning path cloned successfully! You can now modify the copy.');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to clone path: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to clone path: '.$e->getMessage()]);
         }
     }
 

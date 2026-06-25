@@ -11,6 +11,7 @@ class LessonRegistration extends Model
     use HasFactory;
 
     protected $table = 'lesson_registrations';
+
     protected $primaryKey = 'registration_id';
 
     protected $fillable = [
@@ -97,14 +98,14 @@ class LessonRegistration extends Model
                 'required' => $lesson->required_exercises ?? 0,
                 'percentage' => ($lesson->required_exercises ?? 0) > 0
                     ? round(($this->exercises_completed / $lesson->required_exercises) * 100)
-                    : 0
+                    : 0,
             ],
             'tests' => [
                 'passed' => $this->tests_passed,
                 'required' => $lesson->required_tests ?? 0,
                 'percentage' => ($lesson->required_tests ?? 0) > 0
                     ? round(($this->tests_passed / $lesson->required_tests) * 100)
-                    : 0
+                    : 0,
             ],
         ];
     }

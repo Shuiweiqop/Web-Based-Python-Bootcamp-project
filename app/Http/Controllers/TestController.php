@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Lesson;
+use App\Models\SubmissionAnswer;
+use App\Models\Test;
+use App\Models\TestSubmission;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use App\Models\Lesson;
-use App\Models\Test;
-use App\Models\TestSubmission;
-use App\Models\SubmissionAnswer;
-use Illuminate\Support\Facades\Log;
 
 class TestController extends Controller
 {
@@ -24,7 +23,7 @@ class TestController extends Controller
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('student.dashboard')
                 ->withErrors(['error' => 'Student profile not found.']);
         }
@@ -70,7 +69,7 @@ class TestController extends Controller
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('dashboard')
                 ->with('error', 'Student profile not found.');
         }
@@ -144,13 +143,12 @@ class TestController extends Controller
         ]);
     }
 
-
     // GET student/tests/{test}/take
     public function take(Test $test)
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('dashboard')
                 ->withErrors(['error' => 'Student profile not found.']);
         }
@@ -158,18 +156,20 @@ class TestController extends Controller
         // Get current submission
         $submission = $student->getCurrentTestSubmission();
 
-        if (!$submission || $submission->test_id !== $test->test_id) {
+        if (! $submission || $submission->test_id !== $test->test_id) {
             // 改为 student.lessons.tests.show，并添加 lesson 参数
             $lesson = $test->lesson;
+
             return redirect()->route('student.lessons.tests.show', [
                 'lesson' => $lesson->lesson_id,
-                'test' => $test->test_id
+                'test' => $test->test_id,
             ])->withErrors(['error' => 'No active test session found.']);
         }
 
         // Check if time has expired
         if ($submission->is_time_expired) {
             $submission->timeoutTest();
+
             return redirect()->route('student.tests.results', ['test' => $test->test_id])
                 ->with('info', 'Test has been automatically submitted due to time limit.');
         }
@@ -228,11 +228,12 @@ class TestController extends Controller
             'questions' => $questionsData,
         ]);
     }
+
     public function start(Request $request, Lesson $lesson, Test $test)
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return back()->with('error', 'Student profile not found.');
         }
 
@@ -247,7 +248,7 @@ class TestController extends Controller
         }
 
         // 检查是否还能参加测验
-        if (!$test->canStudentTakeTest($student->student_id)) {
+        if (! $test->canStudentTakeTest($student->student_id)) {
             return back()->with('error', 'You have reached the maximum attempts for this test.');
         }
 
@@ -288,15 +289,17 @@ class TestController extends Controller
                 'test_id' => $test->test_id,
                 'student_id' => $student->student_id,
             ]);
+
             return back()->with('error', 'Failed to start test. Please try again.');
         }
     }
+
     // POST student/tests/{test}/save-answer
     public function saveAnswer(Request $request, TestSubmission $submission)
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student || $submission->student_id !== $student->student_id) {
+        if (! $student || $submission->student_id !== $student->student_id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -338,7 +341,7 @@ class TestController extends Controller
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student || $submission->student_id !== $student->student_id) {
+        if (! $student || $submission->student_id !== $student->student_id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -371,8 +374,9 @@ class TestController extends Controller
             DB::rollback();
             \Log::error('Test submission failed', [
                 'error' => $e->getMessage(),
-                'submission_id' => $submission->submission_id
+                'submission_id' => $submission->submission_id,
             ]);
+
             return response()->json(['error' => 'Failed to submit test. Please try again.'], 500);
         }
     }
@@ -382,7 +386,7 @@ class TestController extends Controller
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('dashboard')
                 ->withErrors(['error' => 'Student profile not found.']);
         }
@@ -394,7 +398,7 @@ class TestController extends Controller
             ->latest('submitted_at')
             ->first();
 
-        if (!$submission) {
+        if (! $submission) {
             return redirect()->route('student.tests.show', ['test' => $test->test_id])
                 ->withErrors(['error' => 'No completed test found.']);
         }
@@ -463,7 +467,7 @@ class TestController extends Controller
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('dashboard')
                 ->withErrors(['error' => 'Student profile not found.']);
         }
@@ -487,11 +491,12 @@ class TestController extends Controller
             'stats' => $student->getTestProgressStats(),
         ]);
     }
+
     public function taking(TestSubmission $submission)
     {
         $student = auth()->user()->studentProfile;
 
-        if (!$student || $submission->student_id !== $student->student_id) {
+        if (! $student || $submission->student_id !== $student->student_id) {
             abort(403, 'Unauthorized access to this test submission.');
         }
 

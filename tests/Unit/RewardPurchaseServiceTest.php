@@ -16,12 +16,13 @@ class RewardPurchaseServiceTest extends TestCase
     {
         $m = new ReflectionMethod(RewardPurchaseService::class, $method);
         $m->setAccessible(true);
-        return $m->invoke(new RewardPurchaseService(), ...$args);
+
+        return $m->invoke(new RewardPurchaseService, ...$args);
     }
 
     // ==================== assertPurchasable ====================
 
-    public function test_assertPurchasable_throws_when_inactive(): void
+    public function test_assert_purchasable_throws_when_inactive(): void
     {
         $reward = new Reward(['is_active' => false, 'stock_quantity' => -1]);
 
@@ -31,7 +32,7 @@ class RewardPurchaseServiceTest extends TestCase
         $this->callPrivate('assertPurchasable', [$reward]);
     }
 
-    public function test_assertPurchasable_throws_when_stock_is_zero(): void
+    public function test_assert_purchasable_throws_when_stock_is_zero(): void
     {
         $reward = new Reward(['is_active' => true, 'stock_quantity' => 0]);
 
@@ -40,7 +41,7 @@ class RewardPurchaseServiceTest extends TestCase
         $this->callPrivate('assertPurchasable', [$reward]);
     }
 
-    public function test_assertPurchasable_passes_when_active_with_unlimited_stock(): void
+    public function test_assert_purchasable_passes_when_active_with_unlimited_stock(): void
     {
         $reward = new Reward(['is_active' => true, 'stock_quantity' => -1]);
 
@@ -51,10 +52,10 @@ class RewardPurchaseServiceTest extends TestCase
 
     // ==================== assertSufficientPoints ====================
 
-    public function test_assertSufficientPoints_throws_when_not_enough_points(): void
+    public function test_assert_sufficient_points_throws_when_not_enough_points(): void
     {
         $student = new StudentProfile(['current_points' => 50]);
-        $reward  = new Reward(['point_cost' => 100]);
+        $reward = new Reward(['point_cost' => 100]);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Not enough points');
@@ -62,10 +63,10 @@ class RewardPurchaseServiceTest extends TestCase
         $this->callPrivate('assertSufficientPoints', [$student, $reward, 1]);
     }
 
-    public function test_assertSufficientPoints_throws_when_multi_quantity_exceeds_balance(): void
+    public function test_assert_sufficient_points_throws_when_multi_quantity_exceeds_balance(): void
     {
         $student = new StudentProfile(['current_points' => 250]);
-        $reward  = new Reward(['point_cost' => 100]);
+        $reward = new Reward(['point_cost' => 100]);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('You need 300 points');
@@ -73,19 +74,19 @@ class RewardPurchaseServiceTest extends TestCase
         $this->callPrivate('assertSufficientPoints', [$student, $reward, 3]);
     }
 
-    public function test_assertSufficientPoints_passes_with_exact_balance(): void
+    public function test_assert_sufficient_points_passes_with_exact_balance(): void
     {
         $student = new StudentProfile(['current_points' => 100]);
-        $reward  = new Reward(['point_cost' => 100]);
+        $reward = new Reward(['point_cost' => 100]);
 
         $this->callPrivate('assertSufficientPoints', [$student, $reward, 1]);
         $this->assertTrue(true);
     }
 
-    public function test_assertSufficientPoints_passes_with_surplus_balance(): void
+    public function test_assert_sufficient_points_passes_with_surplus_balance(): void
     {
         $student = new StudentProfile(['current_points' => 500]);
-        $reward  = new Reward(['point_cost' => 100]);
+        $reward = new Reward(['point_cost' => 100]);
 
         $this->callPrivate('assertSufficientPoints', [$student, $reward, 3]);
         $this->assertTrue(true);
@@ -93,7 +94,7 @@ class RewardPurchaseServiceTest extends TestCase
 
     // ==================== assertStock (no-DB cases only) ====================
 
-    public function test_assertStock_passes_immediately_for_unlimited_stock(): void
+    public function test_assert_stock_passes_immediately_for_unlimited_stock(): void
     {
         // stock_quantity < 0 → returns early, no DB query
         $reward = new Reward(['stock_quantity' => -1]);
@@ -102,7 +103,7 @@ class RewardPurchaseServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_assertStock_passes_immediately_for_null_stock(): void
+    public function test_assert_stock_passes_immediately_for_null_stock(): void
     {
         $reward = new Reward(['stock_quantity' => null]);
 
@@ -110,7 +111,7 @@ class RewardPurchaseServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_assertStock_throws_when_requested_quantity_exceeds_available(): void
+    public function test_assert_stock_throws_when_requested_quantity_exceeds_available(): void
     {
         $reward = new Reward(['stock_quantity' => 2]);
 
@@ -122,20 +123,20 @@ class RewardPurchaseServiceTest extends TestCase
 
     // ==================== assertOwnershipLimit (no-DB cases only) ====================
 
-    public function test_assertOwnershipLimit_passes_when_no_limit_set(): void
+    public function test_assert_ownership_limit_passes_when_no_limit_set(): void
     {
-        $student = new StudentProfile();
-        $reward  = new Reward(['max_owned' => -1]);
+        $student = new StudentProfile;
+        $reward = new Reward(['max_owned' => -1]);
 
         // max_owned < 0 → no DB query, returns early
         $this->callPrivate('assertOwnershipLimit', [$student, $reward, 1]);
         $this->assertTrue(true);
     }
 
-    public function test_assertOwnershipLimit_passes_when_max_owned_is_null(): void
+    public function test_assert_ownership_limit_passes_when_max_owned_is_null(): void
     {
-        $student = new StudentProfile();
-        $reward  = new Reward(['max_owned' => null]);
+        $student = new StudentProfile;
+        $reward = new Reward(['max_owned' => null]);
 
         $this->callPrivate('assertOwnershipLimit', [$student, $reward, 1]);
         $this->assertTrue(true);

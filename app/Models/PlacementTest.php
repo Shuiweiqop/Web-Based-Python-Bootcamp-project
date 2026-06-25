@@ -41,7 +41,7 @@ class PlacementTest extends Test
 
         // 创建时自动设置 test_type
         static::creating(function ($model) {
-            if (!$model->test_type) {
+            if (! $model->test_type) {
                 $model->test_type = 'placement';
             }
         });
@@ -69,7 +69,7 @@ class PlacementTest extends Test
         // 从配置读取是否允许重考
         $allowRetake = config('recommendation.allow_placement_retake', false);
 
-        if ($completedSubmission && !$allowRetake) {
+        if ($completedSubmission && ! $allowRetake) {
             return false;
         }
 
@@ -95,7 +95,7 @@ class PlacementTest extends Test
             ->latest('submitted_at')
             ->first();
 
-        if (!$submission) {
+        if (! $submission) {
             return [];
         }
 
@@ -110,7 +110,7 @@ class PlacementTest extends Test
     public function setLessonIdAttribute($value)
     {
         // 忽略任何设置 lesson_id 的尝试
-        return;
+
     }
 
     /**

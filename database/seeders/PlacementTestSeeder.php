@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Test;
 use App\Models\Question;
 use App\Models\QuestionOption;
+use App\Models\Test;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class PlacementTestSeeder extends Seeder
 {
@@ -18,8 +18,9 @@ class PlacementTestSeeder extends Seeder
         // Get admin user
         $admin = User::where('role', 'administrator')->first();
 
-        if (!$admin) {
+        if (! $admin) {
             $this->command->error('❌ No admin user found. Please create an admin first.');
+
             return;
         }
 
@@ -27,11 +28,12 @@ class PlacementTestSeeder extends Seeder
         $existingTest = Test::where('test_type', 'placement')->first();
 
         if ($existingTest) {
-            $this->command->warn('⚠️  Placement test already exists (ID: ' . $existingTest->test_id . ')');
+            $this->command->warn('⚠️  Placement test already exists (ID: '.$existingTest->test_id.')');
             $this->command->ask('Do you want to delete it and create a new one? (yes/no)');
 
             // You can manually delete if needed
-            $this->command->info('Skipping... Use: Test::find(' . $existingTest->test_id . ')->delete()');
+            $this->command->info('Skipping... Use: Test::find('.$existingTest->test_id.')->delete()');
+
             return;
         }
 
@@ -61,8 +63,8 @@ class PlacementTestSeeder extends Seeder
             ]),
         ]);
 
-        $this->command->info('✅ Placement test created (ID: ' . $test->test_id . ')');
-        $this->command->info('📋 Test Title: ' . $test->title);
+        $this->command->info('✅ Placement test created (ID: '.$test->test_id.')');
+        $this->command->info('📋 Test Title: '.$test->title);
         $this->command->newLine();
 
         // ==================== BEGINNER LEVEL QUESTIONS (0-60%) ====================
@@ -481,8 +483,8 @@ class PlacementTestSeeder extends Seeder
                 ['Test ID', $test->test_id],
                 ['Total Questions', count($allQuestions)],
                 ['Total Points', $totalPoints],
-                ['Time Limit', $test->time_limit . ' minutes'],
-                ['Passing Score', $test->passing_score . '%'],
+                ['Time Limit', $test->time_limit.' minutes'],
+                ['Passing Score', $test->passing_score.'%'],
                 ['Status', $test->status],
             ]
         );
@@ -500,7 +502,7 @@ class PlacementTestSeeder extends Seeder
 
         $this->command->newLine();
         $this->command->warn('⚠️  IMPORTANT: Add this to your .env file:');
-        $this->command->line('PLACEMENT_TEST_ID=' . $test->test_id);
+        $this->command->line('PLACEMENT_TEST_ID='.$test->test_id);
         $this->command->newLine();
 
         $this->command->info('✨ You can now use this placement test for student onboarding!');

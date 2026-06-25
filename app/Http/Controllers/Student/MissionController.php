@@ -63,7 +63,7 @@ class MissionController extends Controller
     {
         $user = $request->user();
 
-        if (!$user || $user->role !== 'student') {
+        if (! $user || $user->role !== 'student') {
             abort(403, 'Only students can access the mission center.');
         }
 
@@ -148,10 +148,10 @@ class MissionController extends Controller
         $bonusRewards = DailyChallengeCycleReward::query()
             ->where('student_id', $studentId)
             ->get()
-            ->groupBy(fn (DailyChallengeCycleReward $reward) => $reward->period_type . '|' . $reward->period_start?->toDateString());
+            ->groupBy(fn (DailyChallengeCycleReward $reward) => $reward->period_type.'|'.$reward->period_start?->toDateString());
 
         return $progressEntries
-            ->groupBy(fn (DailyChallengeProgress $progress) => ($progress->definition?->period_type ?? 'daily') . '|' . $progress->period_start?->toDateString())
+            ->groupBy(fn (DailyChallengeProgress $progress) => ($progress->definition?->period_type ?? 'daily').'|'.$progress->period_start?->toDateString())
             ->map(function ($entries, string $key) use ($bonusRewards) {
                 /** @var DailyChallengeProgress $first */
                 $first = $entries->first();
