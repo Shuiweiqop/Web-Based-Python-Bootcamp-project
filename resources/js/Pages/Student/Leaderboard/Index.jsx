@@ -93,14 +93,6 @@ function PodiumColumn({ entry, order }) {
                     />
                     {entry.rank === 1 && <span className="lb-shine" aria-hidden="true" />}
                 </div>
-                {entry.avatar_frame && (
-                    <img
-                        src={entry.avatar_frame}
-                        alt=""
-                        aria-hidden="true"
-                        className="pointer-events-none absolute left-1/2 top-1/2 z-[2] h-[5.6rem] w-[5.6rem] -translate-x-1/2 -translate-y-1/2 object-contain"
-                    />
-                )}
                 <span className={cn('absolute -bottom-2 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/15 bg-black px-2 text-sm font-extrabold', s.accent)}>
                     #{entry.rank}
                 </span>
@@ -154,17 +146,7 @@ function ListRow({ entry, index, maxXp }) {
         >
             <span className={cn('absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-full', lc.bar)} aria-hidden="true" />
             <div className="w-7 text-center text-sm font-bold text-white/60">#{entry.rank}</div>
-            <span className="relative inline-block h-10 w-10 shrink-0">
-                <img src={avatarUrl(entry.name)} alt={entry.name} className={cn('h-10 w-10 rounded-full ring-2', lc.ring)} />
-                {entry.avatar_frame && (
-                    <img
-                        src={entry.avatar_frame}
-                        alt=""
-                        aria-hidden="true"
-                        className="pointer-events-none absolute left-1/2 top-1/2 h-[3.4rem] w-[3.4rem] -translate-x-1/2 -translate-y-1/2 object-contain"
-                    />
-                )}
-            </span>
+            <img src={avatarUrl(entry.name)} alt={entry.name} className={cn('h-10 w-10 shrink-0 rounded-full ring-2', lc.ring)} />
             <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">
                     {entry.name}
