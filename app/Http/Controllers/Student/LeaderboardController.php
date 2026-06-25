@@ -34,8 +34,6 @@ class LeaderboardController extends Controller
                 'xp' => $p->lifetime_points,
                 'level' => $p->levelInfo()['level'],
                 'level_label' => $p->points_level,
-                // Equipped avatar frame (denormalized on the profile snapshot — no extra query).
-                'avatar_frame' => $p->equipped_snapshot['avatar_frame']['image_url'] ?? null,
                 'is_me' => $p->student_id === $profile->student_id,
             ]);
 
