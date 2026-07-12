@@ -1,36 +1,43 @@
-# testing.md — tests & Definition of Done
+# testing.md — tests & "done"
 
-Scope: writing/running tests and finishing any task.
-**MUST NOT** also read `backend.md` / `frontend.md` / `database.md` for this task.
+You're here to write/run tests or decide a task is finished.
 Root law: [../AGENTS.md](../AGENTS.md).
 
-## 1. Commands
+## Commands
 
 - `composer test` — full PHP suite (sqlite `:memory:`)
 - `php artisan test --filter=Name` — one PHP test
-- `npm run test:unit` — frontend (Vitest) · `npm run test:e2e` — Playwright
+- `npm run test:unit` — frontend (Vitest)
+- `npm run test:e2e` — Playwright admin browser smoke tests (needs the seeded e2e DB; see
+  [database.md](database.md))
 - `vendor/bin/pint` — format PHP
 
-Tests live in `tests/Unit`, `tests/Feature` (PHP) and `tests/e2e` (Playwright);
-frontend specs sit beside the code under `resources/js`.
+PHP tests live in `tests/Unit` (service logic) and `tests/Feature` (request→response).
+Playwright specs live in `tests/e2e`. Frontend specs sit beside the code under `resources/js`.
 
-## 2. Tests are mandatory
+## What running these tests actually gates
 
-- Every new feature or bug fix MUST add/update a test. A change without a test is **NOT done**.
-- PHP: `tests/Feature` for request→response, `tests/Unit` for Service logic.
-- Use factories/seeders for data — NEVER hand-built rows.
+- **The pre-push hook** runs `composer test` + `npm run test:unit`. Enable it once per clone:
+  `git config core.hooksPath .githooks`. It does **not** run e2e.
+- **CI** additionally runs `npm run build` and Playwright e2e. So a push that passes the hook
+  can still fail CI — watch CI after anything touching frontend or pages.
+- `git push --no-verify` skips the hook. Don't, unless it's a stated emergency and you say so.
 
-## 3. The pre-push gate
+Note that Pint is not in either gate. It formats; it doesn't fail a build. Run it to avoid
+noise, but a "clean Pint" is a courtesy, not a green light.
 
-`.githooks/pre-push` runs `composer test` + `npm run test:unit` before every push.
-Enable once per clone: `git config core.hooksPath .githooks`.
-Bypass (`git push --no-verify`) is **FORBIDDEN** except a declared emergency.
+## A change without a test isn't finished
 
-## 4. Definition of Done (check all)
+New feature or bug fix → add or update a test that would have caught the bug. Use
+factories/seeders for test data, never hand-built rows (they drift from the real schema).
+This is the one convention nothing enforces for you — CI runs the tests you write, but nothing
+checks that you wrote them. That's on you.
 
-- [ ] Code follows the relevant domain rules (`.agents/*.md`).
-- [ ] `vendor/bin/pint` clean on touched PHP files.
-- [ ] New/updated test covers the change.
-- [ ] `composer test` green (+ `npm run test:unit` if `resources/js` changed).
+## Definition of Done
+
+- [ ] Follows the domain rules for the area you touched (`.agents/*.md`).
+- [ ] A new/updated test covers the change.
+- [ ] `composer test` green (and `npm run test:unit` if you touched `resources/js`).
+- [ ] `vendor/bin/pint` run on the PHP files you touched (no unrelated files swept in).
 - [ ] Diff is scoped to the task — no drive-by edits.
-- [ ] Commit/push only after the user asks.
+- [ ] Committed/pushed only after the user asked.
