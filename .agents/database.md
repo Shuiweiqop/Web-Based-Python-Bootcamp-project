@@ -1,33 +1,38 @@
-# database.md — schema & environments
+# database.md — schema & the three DB environments
 
-Scope: `database/`, schema, query/connection concerns.
-**MUST NOT** also read `backend.md` / `frontend.md` / `testing.md` for this task.
-Root law: [../AGENTS.md](../AGENTS.md).
+You're here for migrations, schema, and connection concerns (`database/`).
+Root law: [../AGENTS.md](../AGENTS.md). A schema change almost always pairs with a
+backend change — read [backend.md](backend.md) too.
 
-## 1. Three environments — never confuse them
+## Three databases, and which one you're actually hitting
 
-| Context | Connection | Defined in |
+Confusing these is the classic way to "lose" data or debug a phantom failure:
+
+| When | Connection | Set in |
 | --- | --- | --- |
-| Local dev | MySQL (confirm the dev's actual `.env`) | `.env` |
-| PHPUnit | SQLite `:memory:`, queue `sync` | [../phpunit.xml](../phpunit.xml) |
-| Playwright e2e | `database/e2e.sqlite`, app port 8010 | [../playwright.config.js](../playwright.config.js) |
+| Local dev | MySQL (or whatever this dev's `.env` says) | `.env` |
+| `composer test` / PHPUnit | SQLite `:memory:`, queue `sync` | [../phpunit.xml](../phpunit.xml) |
+| Playwright e2e | file `database/e2e.sqlite`, app on port 8010 | [../playwright.config.js](../playwright.config.js) |
 
-- Tests **NEVER** touch the dev DB — PHPUnit forces its own in-memory DB.
-- Before e2e: `php artisan migrate --force && php artisan db:seed --force` against `database/e2e.sqlite`.
+The test suites **never** touch the dev DB — PHPUnit forces its own in-memory database, so a
+test run can't corrupt your local data. Before running e2e, seed its DB:
+`DB_CONNECTION=sqlite DB_DATABASE=database/e2e.sqlite php artisan migrate --force && ... db:seed --force`
+(this is exactly what CI does).
 
-## 2. Rules
+## Migration rules, and the reason for each
 
-- Schema changes MUST be a **new migration** in `database/migrations/`.
-  Editing an already-shipped migration is **FORBIDDEN** → add a new one.
-- Migrations MUST be reversible (`down()`) and run on **both** MySQL and SQLite →
-  vendor-only SQL is FORBIDDEN; use the schema builder.
-- Primary keys are custom `{entity}_id`, **not** `id` — match the existing model
-  (`protected $primaryKey`) when adding tables/columns.
-- Test/dev data MUST come from factories/seeders → hand-inserted rows are FORBIDDEN.
-- All access goes through Eloquent. Raw `DB::statement` is a last resort and MUST carry a
-  comment justifying why the query builder couldn't do it.
+- **A shipped migration is frozen — add a new migration, never edit the old one.** Someone
+  else has already run it; editing it means their DB and yours silently diverge. A new
+  migration re-runs everywhere.
+- **Migrations must run on both MySQL and SQLite** (dev is MySQL, both test suites are SQLite).
+  Use the schema builder, not vendor-specific SQL, or CI's SQLite step goes red. Give every
+  migration a real `down()`.
+- **Primary keys are custom `{entity}_id`, not `id`.** When you add a table or a foreign key,
+  match the existing model's `protected $primaryKey` — assuming `id` will break the relation.
+- Access data through Eloquent. A raw `DB::statement` is a last resort and needs a comment
+  saying why the query builder couldn't do it (usually: it could).
 
-## 3. Done
+## When you're done
 
-After a migration: run it on sqlite (`php artisan migrate` in test env) and confirm
-`composer test` is green. Full DoD: [testing.md](testing.md).
+Run the migration against SQLite (in the test env) and confirm `composer test` is green — that
+proves it works on the connection CI uses. Full checklist: [testing.md](testing.md).
