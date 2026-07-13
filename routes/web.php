@@ -328,11 +328,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         // ==================== AI Lesson Generation Routes ====================
+        // Admin-only (parent group), but still throttled: a single admin session
+        // (or a scripted/compromised one) could otherwise burn the Gemini quota.
+        // generate() actually calls Gemini, so it is the tightest limit.
         Route::prefix('ai-lessons')->name('ai-lessons.')->group(function () {
             Route::get('/create', [AILessonController::class, 'create'])->name('create');
-            Route::post('/generate', [AILessonController::class, 'generate'])->name('generate');
-            Route::post('/store', [AILessonController::class, 'store'])->name('store');
-            Route::get('/test-connection', [AILessonController::class, 'testConnection'])->name('test-connection');
+            Route::post('/generate', [AILessonController::class, 'generate'])
+                ->middleware('throttle:10,1')
+                ->name('generate');
+            Route::post('/store', [AILessonController::class, 'store'])
+                ->middleware('throttle:20,1')
+                ->name('store');
+            Route::get('/test-connection', [AILessonController::class, 'testConnection'])
+                ->middleware('throttle:6,1')
+                ->name('test-connection');
         });
 
         // ==================== Student Learning Path Assignment Routes ====================
