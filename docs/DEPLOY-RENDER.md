@@ -14,9 +14,11 @@ verified to run on a real sqlite file locally).
 1. [dashboard.render.com](https://dashboard.render.com) → **New +** → **Web Service** → connect
    the GitHub repo.
 2. Settings:
-   - **Language:** `PHP` (native — no Docker needed)
-   - **Build Command:** `./render-build.sh`
-   - **Start Command:** `php artisan serve --host 0.0.0.0 --port $PORT`
+   - **Language:** `Docker` (Render's dropdown has no native PHP option, so we ship a
+     `Dockerfile` — PHP 8.2 + the CI extension set, with Vite assets built in a Node stage).
+     With Docker selected, Render ignores the Build/Start command fields and uses the
+     Dockerfile's `CMD` (which runs `render-build.sh` then `php artisan serve`).
+   - **Region:** Singapore (or nearest)
    - **Instance Type:** Free
 
 ## 2. Add a Persistent Disk (this is what keeps your data)
