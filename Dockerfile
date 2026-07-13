@@ -14,7 +14,7 @@ FROM php:8.2-cli-alpine
 
 # System libs + PHP extensions (mirrors the CI extension list).
 RUN apk add --no-cache \
-        bash git libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev icu-dev oniguruma-dev \
+        bash git libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev icu-dev oniguruma-dev sqlite-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" gd zip pdo_sqlite mbstring \
     && rm -rf /var/cache/apk/*
@@ -37,5 +37,5 @@ RUN composer dump-autoload --optimize \
     && chmod +x render-build.sh
 
 # Render provides $PORT at runtime. Migrations/seed/caches run in render-build.sh
-# on each deploy (the SQLite file lives on the mounted disk, not in the image).
+# on each boot (SQLite lives on the ephemeral filesystem on the free tier).
 CMD ["sh", "-c", "./render-build.sh && php artisan serve --host 0.0.0.0 --port ${PORT:-8000}"]
