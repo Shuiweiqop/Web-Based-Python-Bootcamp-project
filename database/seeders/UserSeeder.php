@@ -70,7 +70,12 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // Create more sample students using factory if you have one
-        // User::factory()->count(20)->student()->create();
+        // Top up to at least 10 students so ForumSeeder (which needs 10) has data.
+        // The four named students above stay as stable, memorable demo logins; these
+        // extra ones fill out the community (forum authors, leaderboard, etc.).
+        $studentCount = User::where('role', 'student')->count();
+        if ($studentCount < 10) {
+            User::factory()->count(10 - $studentCount)->student()->create();
+        }
     }
 }

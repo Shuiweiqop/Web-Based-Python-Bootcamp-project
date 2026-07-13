@@ -18,7 +18,7 @@ class ForumSeeder extends Seeder
     public function run(): void
     {
         // 获取管理员和学生用户
-        $admin = User::where('role', 'admin')->first();
+        $admin = User::where('role', 'administrator')->first();
         $students = User::where('role', 'student')->take(10)->get();
 
         if (! $admin || $students->isEmpty()) {
