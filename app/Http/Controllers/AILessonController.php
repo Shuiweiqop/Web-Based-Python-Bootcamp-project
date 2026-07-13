@@ -158,8 +158,8 @@ class AILessonController extends Controller
         return response()->json([
             'success' => $isConnected,
             'message' => $isConnected
-                ? 'OpenAI API connection successful!'
-                : 'Failed to connect to OpenAI API. Check your API key.',
+                ? 'Gemini API connection successful!'
+                : 'Failed to connect to Gemini API. Check your API key.',
         ]);
     }
 }

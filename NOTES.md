@@ -6,9 +6,11 @@ in [AGENTS.md](AGENTS.md); this file is the running scratchpad.
 ## Setup reminders (per clone / new environment)
 
 - Enable the pre-push test gate: `git config core.hooksPath .githooks`
-- Enable the PHP **gd** extension (uncomment `extension=gd` in `php.ini`) — the
-  reward-image tests use `UploadedFile::fake()->image()` and error out without it.
-  CI already has gd; this is a local-env gap only.
+- Enable the PHP **gd** and **zip** extensions (uncomment `extension=gd` and
+  `extension=zip` in `php.ini`). `gd`: the reward-image tests use
+  `UploadedFile::fake()->image()` and error without it. `zip`: `phpspreadsheet`
+  (an Excel-export dep) requires `ext-zip`, so `composer install`/`remove` fails
+  without it. CI already has both — these are local-env gaps only.
 - Apply DB migrations: `php artisan migrate` (the leaderboard needs the
   `lifetime_points` column on `student_profiles`).
 - Start the app: `composer run dev`.

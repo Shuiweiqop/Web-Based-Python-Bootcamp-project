@@ -74,7 +74,7 @@ flowchart LR
 - Backend: Laravel 12 (PHP 8.2+), Eloquent ORM, Inertia
 - Frontend: React, Vite, Tailwind CSS
 - Database: SQLite (default local setup), MySQL-compatible schema
-- AI: Gemini API (OpenAI client package is also installed)
+- AI: Gemini API
 - Tooling: PHPUnit, Laravel Artisan, Vite
 
 ## 7. Screenshots (For Report / Demo)
