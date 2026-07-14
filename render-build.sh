@@ -17,16 +17,15 @@ if [ ! -f "$DB_FILE" ]; then
   touch "$DB_FILE"
 fi
 
-# Schema (idempotent — only new migrations run).
-php artisan migrate --force
-
-# Seed demo data. If the DB is fresh (no users yet), seed it. This is safe to run every boot:
-# on an ephemeral filesystem the DB is new each time, so demo data is always present; on a
-# persistent disk the guard skips re-seeding so live data is kept.
-if [ "$(php artisan tinker --execute='echo \App\Models\User::count();' 2>/dev/null | tail -n1)" = "0" ]; then
-  echo "Empty database — seeding demo data"
-  php artisan db:seed --force
-fi
+# Rebuild the schema from scratch and seed. On Render's free tier the SQLite file lives on
+# the ephemeral filesystem, so each boot starts fresh anyway — migrate:fresh guarantees a
+# clean, consistent schema (avoids "table already exists" if a previous boot left the file
+# half-initialized) and then seeds the full demo dataset.
+#
+# WARNING: migrate:fresh DROPS ALL TABLES. That's intended here (ephemeral demo DB). If you
+# ever move to a persistent disk with real data, switch this back to `migrate --force` and
+# guard the seed.
+php artisan migrate:fresh --force --seed
 
 # Production caches (rebuilt each boot).
 php artisan storage:link || true
