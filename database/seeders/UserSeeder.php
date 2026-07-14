@@ -70,12 +70,30 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // Top up to at least 10 students so ForumSeeder (which needs 10) has data.
-        // The four named students above stay as stable, memorable demo logins; these
-        // extra ones fill out the community (forum authors, leaderboard, etc.).
-        $studentCount = User::where('role', 'student')->count();
-        if ($studentCount < 10) {
-            User::factory()->count(10 - $studentCount)->student()->create();
+        // Additional students so ForumSeeder (which needs 10) has data. Named + explicit
+        // instead of a factory: fakerphp/faker is a dev-only dependency and isn't installed
+        // in production (composer install --no-dev), so User::factory() would fatal there.
+        // All demo logins use the password 'student123'.
+        $extraStudents = [
+            ['name' => 'Ethan Ng', 'email' => 'ethan.ng@student.com', 'phone_number' => '010-111-2222'],
+            ['name' => 'Fiona Lee', 'email' => 'fiona.lee@student.com', 'phone_number' => '011-222-3333'],
+            ['name' => 'George Ho', 'email' => 'george.ho@student.com', 'phone_number' => '012-333-4444'],
+            ['name' => 'Hannah Sim', 'email' => 'hannah.sim@student.com', 'phone_number' => '013-444-5555'],
+            ['name' => 'Ivan Goh', 'email' => 'ivan.goh@student.com', 'phone_number' => '014-555-6666'],
+            ['name' => 'Julia Ong', 'email' => 'julia.ong@student.com', 'phone_number' => '015-666-7777'],
+        ];
+
+        foreach ($extraStudents as $student) {
+            User::firstOrCreate(
+                ['email' => $student['email']],
+                [
+                    'name' => $student['name'],
+                    'password' => Hash::make('student123'),
+                    'phone_number' => $student['phone_number'],
+                    'role' => 'student',
+                    'email_verified_at' => now(),
+                ]
+            );
         }
     }
 }
