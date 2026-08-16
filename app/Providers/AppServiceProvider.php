@@ -9,6 +9,7 @@ use App\Models\PlacementTest; // 🔥 Added
 use App\Observers\ForumReplyObserver;
 use App\Observers\LessonObserver;   // 🔥 Added
 use App\Observers\PlacementTestObserver;       // 🔥 Added
+use App\Services\Mastery\BktEngine;
 use Illuminate\Support\Facades\Auth; // 🔥 Added
 use Illuminate\Support\ServiceProvider;     // 🔥 Added
 use Inertia\Inertia;
@@ -20,7 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // BktEngine takes its parameters as a plain array, so the container
+        // cannot autowire it — bind it to the config explicitly. Everything
+        // else in App\Services\Mastery autowires from here.
+        $this->app->singleton(BktEngine::class, fn () => BktEngine::fromConfig());
     }
 
     /**
