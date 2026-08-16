@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\InventoryService;
 use App\Services\StudentProfileService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -9,7 +10,10 @@ use Inertia\Response;
 
 class StudentProfileController extends Controller
 {
-    public function __construct(private StudentProfileService $service) {}
+    public function __construct(
+        private StudentProfileService $service,
+        private InventoryService $inventory,
+    ) {}
 
     public function show(Request $request): Response
     {
@@ -79,6 +83,38 @@ class StudentProfileController extends Controller
                 'theme' => 'Theme',
                 'effect' => 'Effect',
             ],
+        ]);
+    }
+
+    /**
+     * Profile customisation: equip and unequip owned rewards.
+     *
+     * The route and the Edit.jsx page both already existed; this method did
+     * not, so student.profile.edit returned a 500 on every request.
+     */
+    public function edit(Request $request): Response
+    {
+        $user = $request->user();
+        $studentProfile = $user->studentProfile()->first();
+
+        if (! $studentProfile) {
+            return Inertia::render('Profile/CreateProfile');
+        }
+
+        return Inertia::render('Student/Profile/Edit', [
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar_url ?? null,
+            ],
+            'profile' => [
+                'student_id' => $studentProfile->student_id,
+                'current_points' => $studentProfile->current_points,
+                'points_level' => $studentProfile->points_level,
+            ],
+            'equipped' => $this->service->getEquippedItems($studentProfile),
+            'inventory' => $this->inventory->listInventory($studentProfile),
+            'current_points' => $studentProfile->current_points,
         ]);
     }
 

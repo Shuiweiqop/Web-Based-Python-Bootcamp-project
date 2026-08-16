@@ -429,13 +429,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('lessons.quick-draft');
         Route::resource('lessons', AdminLessonController::class);
         Route::resource('exercises', AdminExerciseController::class);
-        Route::resource('rewards', AdminRewardController::class);
-        Route::get('daily-challenges', [AdminDailyChallengeController::class, 'index'])
-            ->name('daily-challenges.index');
-        Route::put('daily-challenges/{dailyChallengeDefinition}', [AdminDailyChallengeController::class, 'update'])
-            ->name('daily-challenges.update');
 
         // ==================== Reward Customization Routes ====================
+        // These MUST be registered before Route::resource('rewards'): the
+        // resource route rewards/{reward} matches first otherwise, so
+        // /admin/rewards/stats resolves as reward id "stats" and 404s.
+        Route::get('rewards/stats', [AdminRewardController::class, 'getStats'])
+            ->name('rewards.stats');
         Route::get('rewards/background/create', [AdminRewardController::class, 'createBackground'])
             ->name('rewards.background.create');
         Route::post('rewards/background', [AdminRewardController::class, 'storeBackground'])
@@ -444,8 +444,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('rewards.toggleActive');
         Route::post('rewards/batch/update-stock', [AdminRewardController::class, 'batchUpdateStock'])
             ->name('rewards.batchUpdateStock');
-        Route::get('rewards/stats', [AdminRewardController::class, 'getStats'])
-            ->name('rewards.stats');
+
+        Route::resource('rewards', AdminRewardController::class);
+
+        Route::get('daily-challenges', [AdminDailyChallengeController::class, 'index'])
+            ->name('daily-challenges.index');
+        Route::put('daily-challenges/{dailyChallengeDefinition}', [AdminDailyChallengeController::class, 'update'])
+            ->name('daily-challenges.update');
 
         // ==================== Lesson Exercise Management Routes ====================
         Route::prefix('lessons/{lesson}/exercises')->name('lessons.exercises.')->group(function () {

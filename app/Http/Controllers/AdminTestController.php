@@ -15,6 +15,61 @@ class AdminTestController extends Controller
     }
 
     // GET admin/lessons/{lesson}/tests
+    /**
+     * All tests across every lesson.
+     *
+     * The admin/tests route group already pointed here, but this method did not
+     * exist, so the page returned a 500. Mirrors indexForLesson's payload and
+     * leaves `lesson` null — Admin/Tests/Index.jsx already treats that prop as
+     * optional and renders a global listing when it is absent.
+     */
+    public function index(Request $request)
+    {
+        $query = Test::with(['questions', 'lesson'])
+            ->orderByDesc('created_at');
+
+        if ($q = $request->input('q')) {
+            $query->where('title', 'like', "%{$q}%");
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        $tests = $query->paginate(10)->withQueryString();
+
+        $tests->getCollection()->transform(fn (Test $test) => [
+            'test_id' => $test->test_id,
+            'title' => $test->title,
+            'description' => $test->description,
+            'status' => $test->status,
+            'order' => $test->order,
+            'time_limit' => $test->time_limit,
+            'passing_score' => $test->passing_score,
+            'max_attempts' => $test->max_attempts,
+            'questions_count' => $test->questions->count(),
+            'total_points' => $test->total_points,
+            // Only present on the global listing: which lesson a test belongs
+            // to is obvious when scoped to one, and null for standalone tests
+            // such as the placement test.
+            'lesson_id' => $test->lesson_id,
+            'lesson_title' => $test->lesson?->title,
+            'created_at' => $test->created_at,
+            'updated_at' => $test->updated_at,
+        ]);
+
+        return Inertia::render('Admin/Tests/Index', [
+            'lesson' => null,
+            'tests' => $tests,
+            'filters' => $request->only(['q', 'status']),
+            'statusOptions' => [
+                'active' => 'Active',
+                'inactive' => 'Inactive',
+                'draft' => 'Draft',
+            ],
+        ]);
+    }
+
     public function indexForLesson(Lesson $lesson, Request $request)
     {
         $query = Test::with(['questions'])

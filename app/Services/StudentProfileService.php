@@ -133,27 +133,35 @@ class StudentProfileService
         ];
     }
 
+    /**
+     * Points ledger for the student's points page.
+     *
+     * Reads `points_changed` and `issued_by`, which are the columns
+     * reward_records actually has. An earlier version queried `points_change`
+     * and `reason` — neither exists on the table, so this page 500'd on every
+     * request.
+     */
     public function getPointsHistory(StudentProfile $profile, string $timeFilter, string $typeFilter): \Illuminate\Support\Collection
     {
-        $query = $profile->rewardRecords()->orderBy('created_at', 'desc');
+        $query = $profile->rewardRecords()->with('reward')->orderBy('created_at', 'desc');
 
         if ($timeFilter !== 'all') {
             $query->where('created_at', '>=', $this->timeFilterDate($timeFilter));
         }
         if ($typeFilter === 'earned') {
-            $query->where('points_change', '>', 0);
+            $query->where('points_changed', '>', 0);
         } elseif ($typeFilter === 'spent') {
-            $query->where('points_change', '<', 0);
+            $query->where('points_changed', '<', 0);
         }
 
         return $query->limit(50)->get()->map(fn ($record) => [
             'id' => $record->record_id,
-            'type' => $record->points_change > 0 ? 'earned' : 'spent',
-            'points' => abs($record->points_change),
+            'type' => $record->points_changed > 0 ? 'earned' : 'spent',
+            'points' => abs((int) $record->points_changed),
             'balance' => $record->points_after ?? $profile->current_points,
-            'source' => $record->reason ?? 'unknown',
+            'source' => $record->issued_by ?? 'unknown',
             'description' => $this->pointsDescription($record),
-            'created_at' => $record->created_at->diffForHumans(),
+            'created_at' => $record->created_at?->diffForHumans(),
             'reference' => $record->reward_id ?? null,
         ]);
     }
@@ -162,15 +170,15 @@ class StudentProfileService
     {
         $base = fn () => $profile->rewardRecords();
 
-        $totalEarned = (int) $base()->where('points_change', '>', 0)->sum('points_change');
-        $totalSpent = (int) abs($base()->where('points_change', '<', 0)->sum('points_change'));
-        $thisWeek = (int) $base()->where('points_change', '>', 0)->where('created_at', '>=', now()->startOfWeek())->sum('points_change');
-        $thisMonth = (int) $base()->where('points_change', '>', 0)->where('created_at', '>=', now()->startOfMonth())->sum('points_change');
+        $totalEarned = (int) $base()->where('points_changed', '>', 0)->sum('points_changed');
+        $totalSpent = (int) abs($base()->where('points_changed', '<', 0)->sum('points_changed'));
+        $thisWeek = (int) $base()->where('points_changed', '>', 0)->where('created_at', '>=', now()->startOfWeek())->sum('points_changed');
+        $thisMonth = (int) $base()->where('points_changed', '>', 0)->where('created_at', '>=', now()->startOfMonth())->sum('points_changed');
 
         $sourceBreakdown = [];
-        foreach ($base()->where('points_change', '>', 0)->selectRaw('reason, SUM(points_change) as total')->groupBy('reason')->orderByDesc('total')->get() as $row) {
-            $sourceBreakdown[$row->reason] = [
-                'points' => $row->total,
+        foreach ($base()->where('points_changed', '>', 0)->selectRaw('issued_by, SUM(points_changed) as total')->groupBy('issued_by')->orderByDesc('total')->get() as $row) {
+            $sourceBreakdown[$row->issued_by] = [
+                'points' => (int) $row->total,
                 'percentage' => round(($row->total / max($totalEarned, 1)) * 100, 1),
             ];
         }
@@ -265,15 +273,19 @@ class StudentProfileService
         };
     }
 
+    /**
+     * Human label for one ledger entry.
+     *
+     * Keyed on `issued_by`, the enum the table actually carries
+     * (system / admin / student_purchase). There is no finer-grained reason
+     * column to distinguish a test award from a lesson award.
+     */
     private function pointsDescription($record): string
     {
-        if ($record->points_change > 0) {
-            return match ($record->reason) {
-                'test_completion' => 'Test completed',
-                'exercise_completion' => 'Exercise completed',
-                'lesson_completion' => 'Lesson completed',
-                'daily_streak' => 'Daily learning streak',
-                'achievement' => 'Achievement unlocked',
+        if ($record->points_changed > 0) {
+            return match ($record->issued_by) {
+                'system' => 'Earned through learning',
+                'admin' => 'Awarded by an administrator',
                 default => 'Points earned',
             };
         }
