@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\UpdateConceptMastery;
 use App\Models\ExerciseSubmission;
 use App\Models\InteractiveExercise;
 use App\Models\Lesson;
@@ -42,6 +43,12 @@ class ExerciseSubmissionService
                 'student_id' => $student->student_id,
                 'score' => $submission->score,
             ]);
+
+            // Feed the ability model. Deferred to after commit because the job
+            // re-reads the submission by id and would not see an uncommitted row.
+            DB::afterCommit(fn () => dispatch(
+                UpdateConceptMastery::forExercise((int) $submission->submission_id)
+            ));
 
             $missionProgress = null;
             if ($submission->completed) {
