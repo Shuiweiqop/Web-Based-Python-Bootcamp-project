@@ -8,6 +8,17 @@
 
     <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
+    {{-- Progressive Web App: installable to a phone home screen --}}
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" href="/icons/icon-192.png">
+    {{-- iOS ignores the manifest and reads these instead --}}
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ config('app.name', 'Laravel') }}">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />

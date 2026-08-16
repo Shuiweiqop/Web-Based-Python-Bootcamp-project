@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>You're offline</title>
+    <!--
+        Fully self-contained: no stylesheet, font, or script request. This page
+        is shown precisely when the network is unavailable, so anything it
+        needed to fetch would fail with it.
+    -->
+    <style>
+        :root { color-scheme: light dark; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #fff;
+            text-align: center;
+        }
+        .card {
+            max-width: 380px;
+            background: rgba(255, 255, 255, .12);
+            border: 1px solid rgba(255, 255, 255, .25);
+            border-radius: 20px;
+            padding: 40px 28px;
+            backdrop-filter: blur(12px);
+        }
+        .glyph {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            display: block;
+        }
+        h1 { margin: 0 0 10px; font-size: 21px; font-weight: 650; }
+        p { margin: 0 0 24px; font-size: 15px; line-height: 1.55; opacity: .9; }
+        button {
+            font: inherit;
+            font-weight: 600;
+            color: #4f46e5;
+            background: #fff;
+            border: 0;
+            border-radius: 10px;
+            padding: 11px 26px;
+            cursor: pointer;
+        }
+        button:active { transform: translateY(1px); }
+        .hint { margin: 18px 0 0; font-size: 13px; opacity: .75; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <path d="M1 1l22 22"/>
+            <path d="M16.7 16.7A11 11 0 0 0 12 15.5c-2 0-3.9.6-5.4 1.7"/>
+            <path d="M5 12.5a14 14 0 0 1 3.2-1.9"/>
+            <path d="M2 8.8a19 19 0 0 1 5-2.7"/>
+            <path d="M11 5.05A19 19 0 0 1 22 8.8"/>
+            <line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+
+        <h1>You're offline</h1>
+        <p>This page needs a connection. Your progress is saved &mdash; reconnect and pick up where you left off.</p>
+
+        <button type="button" onclick="location.reload()">Try again</button>
+        <p class="hint">Reconnecting automatically&hellip;</p>
+    </div>
+
+    <script>
+        // Reload as soon as the browser reports the connection is back, so the
+        // user does not have to notice and tap the button themselves.
+        window.addEventListener('online', () => location.reload());
+    </script>
+</body>
+</html>
