@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\UpdateConceptMastery;
 use App\Models\LearningPath;
 use App\Models\StudentLearningPath;
 use App\Models\Test;
@@ -275,6 +276,15 @@ class OnboardingController extends Controller
 
                 return back()->with('error', $recommendation['message']);
             }
+
+            // Seed the ability model from the placement answers and freeze the
+            // result as this student's baseline. Guarded by the same
+            // "no recommendation yet" check so it runs once, on first arrival:
+            // re-running is harmless (the baseline is write-once) but pointless.
+            dispatch(UpdateConceptMastery::forPlacement(
+                (int) $student->student_id,
+                (int) $submission->submission_id
+            ));
 
             $submission->refresh();
         }
