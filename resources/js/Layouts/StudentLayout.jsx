@@ -13,6 +13,7 @@ import {
   User, 
   Home,
   BookOpen,
+  Brain,
   Trophy,
   Calendar,
   TrendingUp,
@@ -138,6 +139,12 @@ function StudentLayoutContent({ header, children }) {
       icon: Trophy,
       current: 'student.leaderboard'
     },
+    {
+      href: 'student.skills',
+      label: 'My Skills',
+      icon: Brain,
+      current: 'student.skills'
+    },
     { 
       href: 'student.rewards.index', 
       label: 'Rewards', 
@@ -159,11 +166,11 @@ function StudentLayoutContent({ header, children }) {
   ];
 
   const desktopPrimaryNavItems = mainNavItems.filter((item) =>
-    ['dashboard', 'lessons.index', 'forum.index', 'student.missions.index', 'student.leaderboard', 'student.paths.index'].includes(item.href)
+    ['dashboard', 'lessons.index', 'forum.index', 'student.missions.index', 'student.skills', 'student.paths.index'].includes(item.href)
   );
 
   const desktopOverflowNavItems = mainNavItems.filter((item) =>
-    ['student.rewards.index', 'student.inventory.index'].includes(item.href)
+    ['student.leaderboard', 'student.rewards.index', 'student.inventory.index'].includes(item.href)
   );
 
   return (
