@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminDailyChallengeController;
 use App\Http\Controllers\AdminExerciseController;
 use App\Http\Controllers\AdminLearningPathController;
 use App\Http\Controllers\AdminLessonController;
+use App\Http\Controllers\AdminMasteryController;
 use App\Http\Controllers\AdminPlacementTestController;
 use App\Http\Controllers\AdminProgressController;
 use App\Http\Controllers\AdminQuestionController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Student\InventoryController as StudentInventoryController;
 use App\Http\Controllers\Student\LeaderboardController;
 use App\Http\Controllers\Student\LearningPathController;
+use App\Http\Controllers\Student\MasteryController as StudentMasteryController;
 use App\Http\Controllers\Student\MissionController;
 use App\Http\Controllers\Student\NotificationController;
 use App\Http\Controllers\Student\OnboardingController;
@@ -169,6 +171,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('leaderboard', [LeaderboardController::class, 'index'])
                 ->name('leaderboard');
 
+            // Skill report — per-concept mastery from the knowledge-tracing model
+            Route::get('skills', [StudentMasteryController::class, 'index'])
+                ->name('skills');
+
             // Lesson test listing and details
             Route::get('lessons/{lesson}/tests', [StudentTestController::class, 'index'])
                 ->name('lessons.tests.index');
@@ -235,6 +241,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==================== Admin Area ====================
     Route::prefix('admin')->name('admin.')->middleware(['role:administrator'])->group(function () {
+
+        // ==================== Learning Outcomes (knowledge tracing) ====================
+        Route::prefix('mastery')->name('mastery.')->group(function () {
+            Route::get('/', [AdminMasteryController::class, 'index'])->name('index');
+            Route::get('/students/{student}', [AdminMasteryController::class, 'show'])->name('show');
+        });
 
         // ==================== Student Management ====================
         Route::prefix('students')->name('students.')->group(function () {
