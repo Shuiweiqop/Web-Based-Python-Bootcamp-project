@@ -24,3 +24,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Mobile audit output (screenshots + report, regenerated on each run)
+/tests/e2e/__mobile-audit__
