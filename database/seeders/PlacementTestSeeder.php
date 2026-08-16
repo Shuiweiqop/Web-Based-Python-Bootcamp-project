@@ -2,509 +2,447 @@
 
 namespace Database\Seeders;
 
+use App\Models\Concept;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\Test;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
+/**
+ * The Python placement test: what a new student sits before anything else.
+ *
+ * Two jobs, and both matter:
+ *   1. Score -> recommended learning path (LearningPathRecommendationService).
+ *   2. First evidence for the ability model, frozen as each student's baseline.
+ *
+ * Because of (2) every question carries an explicit `concepts` list. Placement
+ * questions are NOT keyword-tagged by ConceptTagSeeder — that seeder skips
+ * placement tests on purpose, since keyword matching cannot reliably tell a
+ * Python question from an English one. Tagging here, by hand, is both more
+ * accurate and the only source of baseline evidence.
+ *
+ * Difficulty spread is deliberate: easy questions early so a true beginner
+ * scores above zero, hard ones late so an advanced student is separated from an
+ * intermediate one. BKT weights a correct hard answer more heavily than an easy
+ * one, so the spread also sharpens the baseline itself.
+ */
 class PlacementTestSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Get admin user
         $admin = User::where('role', 'administrator')->first();
 
         if (! $admin) {
-            $this->command->error('❌ No admin user found. Please create an admin first.');
+            $this->command?->error('No admin user found. Please create an admin first.');
 
             return;
         }
 
-        // Check if placement test already exists
-        $existingTest = Test::where('test_type', 'placement')->first();
-
-        if ($existingTest) {
-            $this->command->warn('⚠️  Placement test already exists (ID: '.$existingTest->test_id.')');
-            $this->command->ask('Do you want to delete it and create a new one? (yes/no)');
-
-            // You can manually delete if needed
-            $this->command->info('Skipping... Use: Test::find('.$existingTest->test_id.')->delete()');
+        // Idempotent and non-interactive: this runs unattended on deploy, so it
+        // must never block on a prompt (the previous version called ask()).
+        if (Test::where('test_type', 'placement')->exists()) {
+            $this->command?->warn('Placement test already exists — skipping.');
 
             return;
         }
 
-        $this->command->info('🚀 Creating Comprehensive English Placement Test...');
-        $this->command->newLine();
-
-        // Create Placement Test
         $test = Test::create([
-            'title' => 'English Proficiency Placement Test',
-            'description' => 'This comprehensive assessment evaluates your English language skills across grammar, vocabulary, reading comprehension, and language usage. Your results will help us recommend the most suitable learning path tailored to your current proficiency level.',
-            'instructions' => 'This test contains 30 questions covering various aspects of English language proficiency. You have 45 minutes to complete all questions. Choose the best answer for each question. Your score will determine your recommended learning path: Beginner (0-60%), Intermediate (61-85%), or Advanced (86-100%).',
+            'title' => 'Python Proficiency Placement Test',
+            'description' => 'This assessment measures your current Python skills across syntax, data types, control flow, functions, collections, and error handling. Your results determine which learning path fits you best.',
+            'instructions' => 'This test contains 20 questions covering core Python topics. You have 30 minutes. Choose the best answer for each question. Your score determines your recommended path: Beginner (0-60%), Intermediate (61-85%), or Advanced (86-100%).',
             'test_type' => 'placement',
             'status' => 'active',
-            'time_limit' => 45, // 45 minutes
+            'time_limit' => 30,
             'passing_score' => 60,
-            'max_attempts' => 1, // Only one attempt allowed
+            'max_attempts' => 1,
             'shuffle_questions' => true,
             'show_results_immediately' => true,
             'allow_review' => true,
-            'lesson_id' => null, // Not tied to any lesson
+            'lesson_id' => null,
             'order' => 0,
             'skill_tags' => json_encode([
-                'grammar' => 30,
-                'vocabulary' => 25,
-                'reading' => 25,
-                'usage' => 20,
+                'syntax_and_types' => 30,
+                'control_flow' => 25,
+                'collections' => 25,
+                'functions_and_errors' => 20,
             ]),
         ]);
 
-        $this->command->info('✅ Placement test created (ID: '.$test->test_id.')');
-        $this->command->info('📋 Test Title: '.$test->title);
-        $this->command->newLine();
+        $questions = array_merge(
+            $this->beginnerQuestions(),
+            $this->intermediateQuestions(),
+            $this->advancedQuestions()
+        );
 
-        // ==================== BEGINNER LEVEL QUESTIONS (0-60%) ====================
+        $conceptIds = Concept::pluck('concept_id', 'slug');
 
-        $beginnerQuestions = [
-            // Basic Grammar (5 points each)
-            [
-                'text' => 'What is the past tense of "go"?',
-                'type' => 'mcq',
-                'difficulty' => 1,
-                'options' => [
-                    ['text' => 'goed', 'correct' => false],
-                    ['text' => 'went', 'correct' => true],
-                    ['text' => 'gone', 'correct' => false],
-                    ['text' => 'going', 'correct' => false],
-                ],
-                'points' => 5,
-            ],
-            [
-                'text' => 'Choose the correct sentence:',
-                'type' => 'mcq',
-                'difficulty' => 1,
-                'options' => [
-                    ['text' => 'She don\'t like coffee.', 'correct' => false],
-                    ['text' => 'She doesn\'t likes coffee.', 'correct' => false],
-                    ['text' => 'She doesn\'t like coffee.', 'correct' => true],
-                    ['text' => 'She not like coffee.', 'correct' => false],
-                ],
-                'points' => 5,
-            ],
-            [
-                'text' => 'I ___ a student.',
-                'type' => 'mcq',
-                'difficulty' => 1,
-                'options' => [
-                    ['text' => 'am', 'correct' => true],
-                    ['text' => 'is', 'correct' => false],
-                    ['text' => 'are', 'correct' => false],
-                    ['text' => 'be', 'correct' => false],
-                ],
-                'points' => 5,
-            ],
-            [
-                'text' => 'They ___ playing football now.',
-                'type' => 'mcq',
-                'difficulty' => 1,
-                'options' => [
-                    ['text' => 'is', 'correct' => false],
-                    ['text' => 'am', 'correct' => false],
-                    ['text' => 'are', 'correct' => true],
-                    ['text' => 'be', 'correct' => false],
-                ],
-                'points' => 5,
-            ],
+        if ($conceptIds->isEmpty()) {
+            $this->command?->warn(
+                'No concepts found — placement questions will be untagged and produce no baseline. '.
+                'Run ConceptSeeder before this seeder.'
+            );
+        }
 
-            // Basic Vocabulary (5 points each)
-            [
-                'text' => 'Which word is a synonym for "happy"?',
-                'type' => 'mcq',
-                'difficulty' => 1,
-                'options' => [
-                    ['text' => 'sad', 'correct' => false],
-                    ['text' => 'angry', 'correct' => false],
-                    ['text' => 'joyful', 'correct' => true],
-                    ['text' => 'tired', 'correct' => false],
-                ],
-                'points' => 5,
-            ],
-            [
-                'text' => 'What is the opposite of "hot"?',
-                'type' => 'mcq',
-                'difficulty' => 1,
-                'options' => [
-                    ['text' => 'warm', 'correct' => false],
-                    ['text' => 'cold', 'correct' => true],
-                    ['text' => 'cool', 'correct' => false],
-                    ['text' => 'sunny', 'correct' => false],
-                ],
-                'points' => 5,
-            ],
-            [
-                'text' => 'A person who teaches is called a ___.',
-                'type' => 'mcq',
-                'difficulty' => 1,
-                'options' => [
-                    ['text' => 'doctor', 'correct' => false],
-                    ['text' => 'teacher', 'correct' => true],
-                    ['text' => 'student', 'correct' => false],
-                    ['text' => 'engineer', 'correct' => false],
-                ],
-                'points' => 5,
-            ],
-            [
-                'text' => 'Where do you go to buy medicine?',
-                'type' => 'mcq',
-                'difficulty' => 1,
-                'options' => [
-                    ['text' => 'bakery', 'correct' => false],
-                    ['text' => 'library', 'correct' => false],
-                    ['text' => 'pharmacy', 'correct' => true],
-                    ['text' => 'bank', 'correct' => false],
-                ],
-                'points' => 5,
-            ],
-        ];
-
-        // ==================== INTERMEDIATE LEVEL QUESTIONS (61-85%) ====================
-
-        $intermediateQuestions = [
-            // Intermediate Grammar (10 points each)
-            [
-                'text' => 'What is the correct form? "I have been ___ English for 5 years."',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'study', 'correct' => false],
-                    ['text' => 'studied', 'correct' => false],
-                    ['text' => 'studying', 'correct' => true],
-                    ['text' => 'studies', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-            [
-                'text' => 'Choose the correct preposition: "She arrived ___ the airport early."',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'in', 'correct' => false],
-                    ['text' => 'at', 'correct' => true],
-                    ['text' => 'on', 'correct' => false],
-                    ['text' => 'to', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-            [
-                'text' => 'By the time you arrive, I ___ dinner.',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'will finish', 'correct' => false],
-                    ['text' => 'will have finished', 'correct' => true],
-                    ['text' => 'finish', 'correct' => false],
-                    ['text' => 'am finishing', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-            [
-                'text' => 'She made me ___ my homework before going out.',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'to do', 'correct' => false],
-                    ['text' => 'do', 'correct' => true],
-                    ['text' => 'doing', 'correct' => false],
-                    ['text' => 'did', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-            [
-                'text' => 'The book ___ by millions of people worldwide.',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'has read', 'correct' => false],
-                    ['text' => 'has been read', 'correct' => true],
-                    ['text' => 'was reading', 'correct' => false],
-                    ['text' => 'reads', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-
-            // Intermediate Vocabulary (10 points each)
-            [
-                'text' => 'What does "procrastinate" mean?',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'To work very quickly', 'correct' => false],
-                    ['text' => 'To delay or postpone something', 'correct' => true],
-                    ['text' => 'To finish something early', 'correct' => false],
-                    ['text' => 'To forget something', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-            [
-                'text' => 'Which word means "to make something better"?',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'deteriorate', 'correct' => false],
-                    ['text' => 'enhance', 'correct' => true],
-                    ['text' => 'diminish', 'correct' => false],
-                    ['text' => 'reduce', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-            [
-                'text' => 'A person who is "resilient" is:',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'easily discouraged', 'correct' => false],
-                    ['text' => 'able to recover quickly from difficulties', 'correct' => true],
-                    ['text' => 'always happy', 'correct' => false],
-                    ['text' => 'very wealthy', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-
-            // Intermediate Usage (10 points each)
-            [
-                'text' => 'Choose the sentence with correct punctuation:',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'Its a beautiful day isnt it.', 'correct' => false],
-                    ['text' => 'It\'s a beautiful day, isn\'t it?', 'correct' => true],
-                    ['text' => 'Its a beautiful day, isnt it?', 'correct' => false],
-                    ['text' => 'It\'s a beautiful day isnt it.', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-            [
-                'text' => 'Neither the students nor the teacher ___ ready for the exam.',
-                'type' => 'mcq',
-                'difficulty' => 2,
-                'options' => [
-                    ['text' => 'are', 'correct' => false],
-                    ['text' => 'is', 'correct' => true],
-                    ['text' => 'were', 'correct' => false],
-                    ['text' => 'be', 'correct' => false],
-                ],
-                'points' => 10,
-            ],
-        ];
-
-        // ==================== ADVANCED LEVEL QUESTIONS (86-100%) ====================
-
-        $advancedQuestions = [
-            // Advanced Grammar (15 points each)
-            [
-                'text' => 'If I ___ rich, I would travel the world.',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'am', 'correct' => false],
-                    ['text' => 'was', 'correct' => false],
-                    ['text' => 'were', 'correct' => true],
-                    ['text' => 'will be', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-            [
-                'text' => 'Which sentence uses the subjunctive mood correctly?',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'I wish I was there.', 'correct' => false],
-                    ['text' => 'I wish I were there.', 'correct' => true],
-                    ['text' => 'I wish I am there.', 'correct' => false],
-                    ['text' => 'I wish I be there.', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-            [
-                'text' => 'The company ___ considerable progress in developing new products.',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'has made', 'correct' => true],
-                    ['text' => 'have made', 'correct' => false],
-                    ['text' => 'is making', 'correct' => false],
-                    ['text' => 'makes', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-            [
-                'text' => 'Scarcely ___ the door when the phone rang.',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'I had opened', 'correct' => false],
-                    ['text' => 'had I opened', 'correct' => true],
-                    ['text' => 'I opened', 'correct' => false],
-                    ['text' => 'did I open', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-
-            // Advanced Vocabulary (15 points each)
-            [
-                'text' => 'The politician\'s speech was full of ___ remarks that offended many people.',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'benign', 'correct' => false],
-                    ['text' => 'innocuous', 'correct' => false],
-                    ['text' => 'inflammatory', 'correct' => true],
-                    ['text' => 'mundane', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-            [
-                'text' => 'What does "ubiquitous" mean?',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'rare and unusual', 'correct' => false],
-                    ['text' => 'present everywhere', 'correct' => true],
-                    ['text' => 'extremely expensive', 'correct' => false],
-                    ['text' => 'completely hidden', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-            [
-                'text' => 'The evidence was ___, leaving no room for doubt.',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'ambiguous', 'correct' => false],
-                    ['text' => 'equivocal', 'correct' => false],
-                    ['text' => 'irrefutable', 'correct' => true],
-                    ['text' => 'dubious', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-
-            // Advanced Usage & Reading (15 points each)
-            [
-                'text' => 'Choose the sentence with the most appropriate formal tone:',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'We gotta fix this problem ASAP.', 'correct' => false],
-                    ['text' => 'It is imperative that we address this issue promptly.', 'correct' => true],
-                    ['text' => 'Let\'s deal with this thing right now.', 'correct' => false],
-                    ['text' => 'This stuff needs sorting out quick.', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-            [
-                'text' => 'In the sentence "The thesis, which took three years to complete, was groundbreaking," what is the function of the clause?',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'Essential restrictive clause', 'correct' => false],
-                    ['text' => 'Non-essential descriptive clause', 'correct' => true],
-                    ['text' => 'Independent clause', 'correct' => false],
-                    ['text' => 'Subordinate clause of result', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-            [
-                'text' => 'Which word best completes: "The committee will ___ the proposal before making a final decision."',
-                'type' => 'mcq',
-                'difficulty' => 3,
-                'options' => [
-                    ['text' => 'look at', 'correct' => false],
-                    ['text' => 'check out', 'correct' => false],
-                    ['text' => 'scrutinize', 'correct' => true],
-                    ['text' => 'see', 'correct' => false],
-                ],
-                'points' => 15,
-            ],
-        ];
-
-        // Combine all questions
-        $allQuestions = array_merge($beginnerQuestions, $intermediateQuestions, $advancedQuestions);
-
-        $this->command->info('📝 Creating questions...');
-        $progressBar = $this->command->getOutput()->createProgressBar(count($allQuestions));
-        $progressBar->start();
-
-        // Create questions
-        foreach ($allQuestions as $index => $questionData) {
+        foreach ($questions as $index => $data) {
             $question = Question::create([
                 'test_id' => $test->test_id,
-                'question_text' => $questionData['text'],
-                'type' => $questionData['type'],
-                'difficulty_level' => $questionData['difficulty'],
-                'points' => $questionData['points'],
+                'question_text' => $data['text'],
+                'code_snippet' => $data['code'] ?? null,
+                'type' => $data['type'],
+                'difficulty_level' => $data['difficulty'],
+                'points' => $data['points'],
                 'order' => $index + 1,
                 'status' => 'active',
-                'correct_answer' => '', // ← 添加这个字段，MCQ 题目用选项标记正确答案
+                // MCQ correctness lives on the options; kept blank to match the
+                // rest of the question bank.
+                'correct_answer' => '',
             ]);
 
-            // Create options
-            foreach ($questionData['options'] as $optionIndex => $optionData) {
+            foreach ($data['options'] as $optionIndex => $option) {
                 QuestionOption::create([
                     'question_id' => $question->question_id,
-                    'option_text' => $optionData['text'],
-                    'is_correct' => $optionData['correct'],
-                    'option_label' => chr(65 + $optionIndex), // A, B, C, D
+                    'option_text' => $option['text'],
+                    'is_correct' => $option['correct'],
+                    'option_label' => chr(65 + $optionIndex),
                 ]);
             }
 
-            $progressBar->advance();
+            $this->attachConcepts($question, $data['concepts'], $conceptIds);
         }
 
-        $progressBar->finish();
-        $this->command->newLine(2);
-
-        // Calculate statistics
-        $totalPoints = collect($allQuestions)->sum('points');
-        $beginnerPoints = collect($beginnerQuestions)->sum('points');
-        $intermediatePoints = collect($intermediateQuestions)->sum('points');
-        $advancedPoints = collect($advancedQuestions)->sum('points');
-
-        // Display summary
-        $this->command->info('🎉 Placement Test Setup Complete!');
-        $this->command->newLine();
-
-        $this->command->table(
-            ['Metric', 'Value'],
-            [
-                ['Test ID', $test->test_id],
-                ['Total Questions', count($allQuestions)],
-                ['Total Points', $totalPoints],
-                ['Time Limit', $test->time_limit.' minutes'],
-                ['Passing Score', $test->passing_score.'%'],
-                ['Status', $test->status],
-            ]
+        $this->command?->info(
+            'Created Python placement test (ID: '.$test->test_id.') with '.count($questions).' concept-tagged questions.'
         );
+    }
 
-        $this->command->newLine();
+    /**
+     * Attach the hand-authored concept tags.
+     *
+     * The first concept is what the question is really about (weight 1.0); any
+     * others are supporting skills the student also needs (0.5).
+     *
+     * @param  array<int, string>  $slugs
+     */
+    private function attachConcepts(Question $question, array $slugs, $conceptIds): void
+    {
+        $payload = [];
 
-        $this->command->table(
-            ['Level', 'Questions', 'Points', 'Score Range'],
+        foreach ($slugs as $position => $slug) {
+            if (! isset($conceptIds[$slug])) {
+                // A typo here would silently cost the model evidence, so say so.
+                $this->command?->warn("Unknown concept slug '{$slug}' on question {$question->question_id} — skipped.");
+
+                continue;
+            }
+
+            $payload[$conceptIds[$slug]] = ['weight' => $position === 0 ? 1.0 : 0.5];
+        }
+
+        if ($payload !== []) {
+            $question->concepts()->syncWithoutDetaching($payload);
+        }
+    }
+
+    /**
+     * Easy: basic syntax, types, and simple output. A true beginner should get
+     * several of these, so the baseline is not pinned at the floor.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function beginnerQuestions(): array
+    {
+        return [
             [
-                ['Beginner', count($beginnerQuestions), $beginnerPoints, '0-60%'],
-                ['Intermediate', count($intermediateQuestions), $intermediatePoints, '61-85%'],
-                ['Advanced', count($advancedQuestions), $advancedPoints, '86-100%'],
-            ]
-        );
+                'text' => 'Which statement correctly prints "Hello, World!" in Python 3?',
+                'type' => 'mcq',
+                'difficulty' => 1,
+                'points' => 5,
+                'concepts' => ['variables'],
+                'options' => [
+                    ['text' => 'echo "Hello, World!"', 'correct' => false],
+                    ['text' => 'print("Hello, World!")', 'correct' => true],
+                    ['text' => 'System.out.println("Hello, World!")', 'correct' => false],
+                    ['text' => 'printf("Hello, World!")', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'Which data type represents whole numbers in Python?',
+                'type' => 'mcq',
+                'difficulty' => 1,
+                'points' => 5,
+                'concepts' => ['data_types'],
+                'options' => [
+                    ['text' => 'float', 'correct' => false],
+                    ['text' => 'str', 'correct' => false],
+                    ['text' => 'int', 'correct' => true],
+                    ['text' => 'bool', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'How do you assign the value 10 to a variable named x?',
+                'type' => 'mcq',
+                'difficulty' => 1,
+                'points' => 5,
+                'concepts' => ['variables'],
+                'options' => [
+                    ['text' => 'x = 10', 'correct' => true],
+                    ['text' => 'x == 10', 'correct' => false],
+                    ['text' => 'int x = 10', 'correct' => false],
+                    ['text' => 'let x = 10', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'What is the result of the expression 7 // 2 in Python 3?',
+                'type' => 'mcq',
+                'difficulty' => 1,
+                'points' => 5,
+                'concepts' => ['operators', 'data_types'],
+                'options' => [
+                    ['text' => '3.5', 'correct' => false],
+                    ['text' => '3', 'correct' => true],
+                    ['text' => '4', 'correct' => false],
+                    ['text' => '1', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'Which keyword starts a conditional branch in Python?',
+                'type' => 'mcq',
+                'difficulty' => 1,
+                'points' => 5,
+                'concepts' => ['conditionals'],
+                'options' => [
+                    ['text' => 'switch', 'correct' => false],
+                    ['text' => 'when', 'correct' => false],
+                    ['text' => 'if', 'correct' => true],
+                    ['text' => 'case', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'What does this code print?',
+                'code' => "name = \"Ada\"\nprint(\"Hi, \" + name)",
+                'type' => 'mcq',
+                'difficulty' => 1,
+                'points' => 5,
+                'concepts' => ['strings', 'variables'],
+                'options' => [
+                    ['text' => 'Hi, name', 'correct' => false],
+                    ['text' => 'Hi, Ada', 'correct' => true],
+                    ['text' => 'Hi,  + Ada', 'correct' => false],
+                    ['text' => 'An error', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'Which symbol begins a single-line comment in Python?',
+                'type' => 'mcq',
+                'difficulty' => 1,
+                'points' => 5,
+                'concepts' => ['variables'],
+                'options' => [
+                    ['text' => '//', 'correct' => false],
+                    ['text' => '#', 'correct' => true],
+                    ['text' => '/*', 'correct' => false],
+                    ['text' => '--', 'correct' => false],
+                ],
+            ],
+        ];
+    }
 
-        $this->command->newLine();
-        $this->command->warn('⚠️  IMPORTANT: Add this to your .env file:');
-        $this->command->line('PLACEMENT_TEST_ID='.$test->test_id);
-        $this->command->newLine();
+    /**
+     * Medium: loops, collections, and functions — the intermediate boundary.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function intermediateQuestions(): array
+    {
+        return [
+            [
+                'text' => 'Which loop is best for iterating over every item in a sequence?',
+                'type' => 'mcq',
+                'difficulty' => 2,
+                'points' => 10,
+                'concepts' => ['loops'],
+                'options' => [
+                    ['text' => 'while loop', 'correct' => false],
+                    ['text' => 'for loop', 'correct' => true],
+                    ['text' => 'do-while loop', 'correct' => false],
+                    ['text' => 'repeat loop', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'What does this code print?',
+                'code' => "for i in range(3):\n    print(i)",
+                'type' => 'mcq',
+                'difficulty' => 2,
+                'points' => 10,
+                'concepts' => ['loops'],
+                'options' => [
+                    ['text' => '1 2 3 (on separate lines)', 'correct' => false],
+                    ['text' => '0 1 2 (on separate lines)', 'correct' => true],
+                    ['text' => '0 1 2 3 (on separate lines)', 'correct' => false],
+                    ['text' => '3 (once)', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'Which method adds a single item to the end of a list?',
+                'type' => 'mcq',
+                'difficulty' => 2,
+                'points' => 10,
+                'concepts' => ['lists'],
+                'options' => [
+                    ['text' => 'add()', 'correct' => false],
+                    ['text' => 'push()', 'correct' => false],
+                    ['text' => 'append()', 'correct' => true],
+                    ['text' => 'insert()', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'What is the value of nums[1] after this code runs?',
+                'code' => "nums = [10, 20, 30]\nnums[1] = 99",
+                'type' => 'mcq',
+                'difficulty' => 2,
+                'points' => 10,
+                'concepts' => ['lists'],
+                'options' => [
+                    ['text' => '10', 'correct' => false],
+                    ['text' => '20', 'correct' => false],
+                    ['text' => '99', 'correct' => true],
+                    ['text' => '30', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'Which keyword defines a function in Python?',
+                'type' => 'mcq',
+                'difficulty' => 2,
+                'points' => 10,
+                'concepts' => ['functions'],
+                'options' => [
+                    ['text' => 'func', 'correct' => false],
+                    ['text' => 'def', 'correct' => true],
+                    ['text' => 'function', 'correct' => false],
+                    ['text' => 'lambda', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'What does this function return when called as add(2, 3)?',
+                'code' => "def add(a, b):\n    return a + b",
+                'type' => 'mcq',
+                'difficulty' => 2,
+                'points' => 10,
+                'concepts' => ['functions', 'operators'],
+                'options' => [
+                    ['text' => '5', 'correct' => true],
+                    ['text' => '23', 'correct' => false],
+                    ['text' => 'None', 'correct' => false],
+                    ['text' => 'An error', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'How do you access the value stored under the key "age" in a dictionary named person?',
+                'type' => 'mcq',
+                'difficulty' => 2,
+                'points' => 10,
+                'concepts' => ['dictionaries'],
+                'options' => [
+                    ['text' => 'person.age', 'correct' => false],
+                    ['text' => 'person["age"]', 'correct' => true],
+                    ['text' => 'person(age)', 'correct' => false],
+                    ['text' => 'person->age', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'Which method converts a string to uppercase?',
+                'type' => 'mcq',
+                'difficulty' => 2,
+                'points' => 10,
+                'concepts' => ['strings'],
+                'options' => [
+                    ['text' => 'toUpper()', 'correct' => false],
+                    ['text' => 'capitalize()', 'correct' => false],
+                    ['text' => 'upper()', 'correct' => true],
+                    ['text' => 'uppercase()', 'correct' => false],
+                ],
+            ],
+        ];
+    }
 
-        $this->command->info('✨ You can now use this placement test for student onboarding!');
+    /**
+     * Hard: slicing, exceptions, comprehensions, and classes. These separate an
+     * advanced student from an intermediate one.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function advancedQuestions(): array
+    {
+        return [
+            [
+                'text' => 'What does this code print?',
+                'code' => "nums = [0, 1, 2, 3, 4, 5]\nprint(nums[1:4])",
+                'type' => 'mcq',
+                'difficulty' => 3,
+                'points' => 15,
+                'concepts' => ['lists'],
+                'options' => [
+                    ['text' => '[1, 2, 3]', 'correct' => true],
+                    ['text' => '[1, 2, 3, 4]', 'correct' => false],
+                    ['text' => '[0, 1, 2, 3]', 'correct' => false],
+                    ['text' => '[2, 3, 4]', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'Which block runs only when no exception was raised?',
+                'type' => 'mcq',
+                'difficulty' => 3,
+                'points' => 15,
+                'concepts' => ['error_handling'],
+                'options' => [
+                    ['text' => 'finally', 'correct' => false],
+                    ['text' => 'except', 'correct' => false],
+                    ['text' => 'else', 'correct' => true],
+                    ['text' => 'catch', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'What does this code print?',
+                'code' => "try:\n    result = 10 / 0\nexcept ZeroDivisionError:\n    print(\"caught\")",
+                'type' => 'mcq',
+                'difficulty' => 3,
+                'points' => 15,
+                'concepts' => ['error_handling'],
+                'options' => [
+                    ['text' => 'The program crashes', 'correct' => false],
+                    ['text' => 'caught', 'correct' => true],
+                    ['text' => 'Nothing', 'correct' => false],
+                    ['text' => 'inf', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'What is the value of squares after this code runs?',
+                'code' => 'squares = [x * x for x in range(4)]',
+                'type' => 'mcq',
+                'difficulty' => 3,
+                'points' => 15,
+                'concepts' => ['lists', 'loops'],
+                'options' => [
+                    ['text' => '[1, 4, 9, 16]', 'correct' => false],
+                    ['text' => '[0, 1, 4, 9]', 'correct' => true],
+                    ['text' => '[0, 1, 2, 3]', 'correct' => false],
+                    ['text' => '[0, 2, 4, 6]', 'correct' => false],
+                ],
+            ],
+            [
+                'text' => 'In a class, what is the conventional name of the first parameter of an instance method?',
+                'type' => 'mcq',
+                'difficulty' => 3,
+                'points' => 15,
+                'concepts' => ['oop_basics', 'functions'],
+                'options' => [
+                    ['text' => 'this', 'correct' => false],
+                    ['text' => 'self', 'correct' => true],
+                    ['text' => 'cls', 'correct' => false],
+                    ['text' => 'me', 'correct' => false],
+                ],
+            ],
+        ];
     }
 }

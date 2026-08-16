@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\UpdateConceptMastery;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\Question;
@@ -445,6 +446,19 @@ class StudentTestController extends Controller
             }
 
             DB::commit();
+
+            // After commit: the job re-reads the submission by id, so the
+            // graded answers must already be visible to it.
+            //
+            // Placement tests are excluded here even though they submit through
+            // this same route (the onboarding group has no submit route of its
+            // own). Their evidence is applied by the placement flow instead, so
+            // that recording and baseline-snapshotting happen in one ordered
+            // step — feeding it from both places would count the same answers
+            // twice AND leave initial_mastery above the student's real start.
+            if (! $submission->is_placement_test) {
+                dispatch(UpdateConceptMastery::forTest((int) $submission->submission_id));
+            }
 
             return redirect()->route('student.submissions.result', ['submission' => $submission->submission_id])
                 ->with('success', 'Test submitted successfully!')

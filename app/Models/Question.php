@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // 确保导入 SubmissionAnswer 模型
@@ -82,6 +83,20 @@ class Question extends Model
     public function submissionAnswers(): HasMany
     {
         return $this->hasMany(SubmissionAnswer::class, 'question_id', 'question_id');
+    }
+
+    /**
+     * Concepts this question exercises. Drives the knowledge-tracing update:
+     * answering this question moves mastery for each tagged concept.
+     */
+    public function concepts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Concept::class,
+            'concept_question',
+            'question_id',
+            'concept_id'
+        )->withPivot('weight')->withTimestamps();
     }
 
     // Scopes
