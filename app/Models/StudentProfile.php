@@ -92,6 +92,15 @@ class StudentProfile extends Model
         return $this->hasMany(LessonProgress::class, 'student_id', 'student_id');
     }
 
+    /**
+     * Per-concept mastery estimates (the knowledge-tracing ability model).
+     * Read freely; write only through App\Services\Mastery\ConceptMasteryService.
+     */
+    public function conceptMastery(): HasMany
+    {
+        return $this->hasMany(StudentConceptMastery::class, 'student_id', 'student_id');
+    }
+
     // ==================== NEW: Learning Path Relationships ====================
 
     /**

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class InteractiveExercise extends Model
 {
@@ -159,6 +160,20 @@ class InteractiveExercise extends Model
     public function getRouteKeyName()
     {
         return 'exercise_id';
+    }
+
+    /**
+     * Concepts this exercise practises. Second evidence stream for knowledge
+     * tracing: a student who never sits a test still generates mastery signal.
+     */
+    public function concepts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Concept::class,
+            'concept_exercise',
+            'exercise_id',
+            'concept_id'
+        )->withPivot('weight')->withTimestamps();
     }
 
     // ==================== Submission Related Methods ====================
