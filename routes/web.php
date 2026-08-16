@@ -22,6 +22,7 @@ use App\Http\Controllers\ForumReportController;
 use App\Http\Controllers\GeminiController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\QuestionImportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Student\InventoryController as StudentInventoryController;
@@ -38,6 +39,10 @@ use Illuminate\Support\Facades\Route;
 
 // ==================== Public Routes ====================
 Route::get('/', [DashboardController::class, 'home'])->name('home');
+
+// PWA manifest. Must be unauthenticated: the browser fetches it to decide
+// whether the app is installable, and does so without the session.
+Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
 
 // ==================== Authenticated Routes ====================
 Route::middleware(['auth', 'verified'])->group(function () {

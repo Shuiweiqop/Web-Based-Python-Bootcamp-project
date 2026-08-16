@@ -7,7 +7,10 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { router } from '@inertiajs/react';
 import { SFXProvider } from '@/Contexts/SFXContext';
+import { registerServiceWorker } from './pwa';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+registerServiceWorker();
 router.on('error', (event) => {
     if (event.detail?.status === 419) {
         location.reload();
