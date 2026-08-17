@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { router } from '@inertiajs/react';
-import { Mail, Lock, Eye, EyeOff, LogIn, Sparkles, AlertCircle, UserPlus, ArrowRight } from 'lucide-react';
+import { Link, router } from '@inertiajs/react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Sparkles, AlertCircle, UserPlus, ArrowRight, ArrowLeft } from 'lucide-react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 
 export default function Login({ canResetPassword, status }) {
@@ -48,11 +48,23 @@ export default function Login({ canResetPassword, status }) {
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           
-          {/* Logo/Brand */}
+          {/* Back to the landing page. This page does not use GuestLayout, so
+              without an explicit link there is no way out of it. */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 mb-6 text-sm font-medium text-gray-200 hover:text-white transition-colors drop-shadow-lg"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to home
+          </Link>
+
+          {/* Logo/Brand — also links home, matching every other layout here */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-2xl animate-float">
-              <Sparkles className="w-10 h-10 text-white drop-shadow-[0_4px_12px_rgba(255,255,255,0.5)]" strokeWidth={2.5} />
-            </div>
+            <Link href="/" className="inline-block group" aria-label="Go to home page">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-2xl animate-float group-hover:scale-105 transition-transform">
+                <Sparkles className="w-10 h-10 text-white drop-shadow-[0_4px_12px_rgba(255,255,255,0.5)]" strokeWidth={2.5} />
+              </div>
+            </Link>
             <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
               Welcome Back
             </h1>
