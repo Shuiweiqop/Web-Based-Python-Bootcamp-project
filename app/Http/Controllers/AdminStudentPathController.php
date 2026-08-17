@@ -654,16 +654,25 @@ class AdminStudentPathController extends Controller
             })
             ->filter();
 
-        // Monthly assignment trends
-        $monthlyTrends = StudentLearningPath::selectRaw('
-                DATE_FORMAT(assigned_at, "%Y-%m") as month,
-                COUNT(*) as total,
-                SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed
-            ')
+        // Monthly assignment trends.
+        //
+        // Grouped in PHP rather than SQL: DATE_FORMAT is MySQL-only and this
+        // page 500s on SQLite, which is what every environment here actually
+        // runs (dev, both test suites, and the deployment). Twelve months of
+        // assignments is a small set, so formatting after the fetch costs
+        // nothing and works on every connection.
+        $monthlyTrends = StudentLearningPath::query()
             ->where('assigned_at', '>=', now()->subMonths(12))
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
+            ->get(['assigned_at', 'status'])
+            ->groupBy(fn (StudentLearningPath $sp) => $sp->assigned_at?->format('Y-m'))
+            ->filter(fn ($group, $month) => $month !== '')
+            ->map(fn ($group, $month) => [
+                'month' => $month,
+                'total' => $group->count(),
+                'completed' => $group->where('status', 'completed')->count(),
+            ])
+            ->sortKeys()
+            ->values();
 
         return Inertia::render('Admin/StudentPath/Analytics', [
             'stats' => [
