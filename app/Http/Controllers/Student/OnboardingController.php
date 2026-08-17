@@ -50,12 +50,19 @@ class OnboardingController extends Controller
                 ->with('info', 'You already have an active learning path!');
         }
 
-        // Check if student has completed placement test
+        // Already sat the placement test: send them to their result rather than
+        // back to a "Start Placement Test" page whose button can only refuse.
+        //
+        // Note the condition is completion alone, not completion-with-a-
+        // recommendation. A submission whose recommended_path_id is still null
+        // (the recommendation is generated on the result page, so any
+        // interruption before that leaves it unset) previously fell through to
+        // the welcome screen, where the only action available was a button that
+        // silently declined because the test was already taken.
         if ($student->hasCompletedPlacementTest()) {
             $latestSubmission = $student->getLatestPlacementTest();
 
-            // If they have a recommendation but haven't accepted
-            if ($latestSubmission->recommended_path_id && ! $latestSubmission->hasAcceptedRecommendation()) {
+            if ($latestSubmission && ! $latestSubmission->hasAcceptedRecommendation()) {
                 return redirect()->route('student.onboarding.result', $latestSubmission->submission_id);
             }
         }
