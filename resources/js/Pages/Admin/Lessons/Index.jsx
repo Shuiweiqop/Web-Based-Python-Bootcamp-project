@@ -49,9 +49,6 @@ export default function Index({ auth }) {
 
     router.delete(safeRoute('admin.lessons.destroy', lessonId), {
       preserveScroll: true,
-      onSuccess: () => {
-        console.log('Lesson deleted successfully');
-      },
       onError: (errs) => {
         console.error('Delete failed', errs);
         alert('Failed to delete lesson. See console for details.');

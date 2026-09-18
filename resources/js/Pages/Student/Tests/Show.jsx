@@ -77,7 +77,6 @@ export default function Show({
             const startUrl = safeRoute('student.lessons.tests.start', [lesson.lesson_id, test.test_id])
                 || `/student/lessons/${lesson.lesson_id}/tests/${test.test_id}/start`;
 
-            console.log('🚀 Starting test with URL:', startUrl);
 
             router.visit(startUrl, {
                 method: 'post',

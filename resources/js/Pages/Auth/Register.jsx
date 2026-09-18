@@ -74,9 +74,6 @@ export default function Register() {
         setErrors(errs);
         setIsLoading(false);
       },
-      onSuccess: () => {
-        console.log('Registration successful');
-      },
       onFinish: () => {
         setIsLoading(false);
       }

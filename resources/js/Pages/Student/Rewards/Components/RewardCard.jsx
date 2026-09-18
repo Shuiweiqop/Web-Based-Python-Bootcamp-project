@@ -208,11 +208,6 @@ export default function RewardCard({ reward, studentPoints, rewardTypes, onOpenP
         <div className="flex gap-2">
           <Link
             href={route('student.rewards.show', reward.reward_id)}
-            onClick={() => {
-              console.log('🔍 Clicked View Details');
-              console.log('Reward ID:', reward.reward_id);
-              console.log('Route:', route('student.rewards.show', reward.reward_id));
-            }}
             className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all text-center text-sm hover:scale-105"
           >
             View Details
