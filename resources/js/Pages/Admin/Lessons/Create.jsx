@@ -106,9 +106,6 @@ export default function Create({ auth }) {
     e.preventDefault();
     post(safeRoute('admin.lessons.store'), {
       preserveScroll: true,
-      onSuccess: () => {
-        console.log('Lesson created successfully');
-      },
       onError: (submitErrors) => {
         if (
           Object.keys(submitErrors).some((key) =>

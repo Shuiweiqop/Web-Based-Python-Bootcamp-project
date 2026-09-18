@@ -79,7 +79,6 @@ export default function TestList({ tests, lessonId, createRoute, isDark = true }
     router.delete(safeRoute('admin.lessons.tests.destroy', [lessonId, testId]), {
       preserveScroll: true,
       onSuccess: () => {
-        console.log('Test deleted successfully');
         setDeletingId(null);
       },
       onError: (errors) => {

@@ -23,9 +23,6 @@ export default function Login({ canResetPassword, status }) {
           setErrors(errs);
           setIsLoading(false);
         },
-        onSuccess: () => {
-          console.log('Login successful');
-        },
         onFinish: () => {
           setIsLoading(false);
         }

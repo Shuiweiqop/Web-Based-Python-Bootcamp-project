@@ -35,9 +35,10 @@ export default function StudentLayout({ header, children }) {
   const isAuthenticated = Boolean(user && (user.id || user.user_Id));
   const studentPoints = user?.student_profile?.current_points || 0;
 
+  // TODO: not implemented — the search boxes in the nav are wired to this, but
+  // there is no search endpoint behind it yet.
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log('Searching for:', searchQuery);
   };
 
   // Navigation items configuration

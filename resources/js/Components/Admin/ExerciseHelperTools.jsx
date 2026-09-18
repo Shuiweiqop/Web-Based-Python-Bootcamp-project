@@ -58,12 +58,6 @@ export default function ExerciseHelperTools({ exerciseType, data, onFixIssues })
     const zones = content.drop_zones || content.zones || [];
     const items = content.items || [];
 
-    console.log('🔍 Validating Drag & Drop:', {
-      zones: zones.length,
-      items: items.length,
-      contentKeys: Object.keys(content)
-    });
-
     if (zones.length === 0) {
       issues.push('No drop zones created');
     }

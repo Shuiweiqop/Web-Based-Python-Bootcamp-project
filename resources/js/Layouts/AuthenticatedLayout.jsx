@@ -197,11 +197,9 @@ function AuthenticatedLayoutContent({ header, children }) {
   // 添加点击处理函数
   const handleNavClick = (e, item) => {
     e.preventDefault();
-    console.log(`Navigating to ${item.label}:`, item.href);
     
     // 如果是 # 开头的链接，不做跳转
     if (item.href.startsWith('#')) {
-      console.log('Placeholder link, not navigating');
       return;
     }
 

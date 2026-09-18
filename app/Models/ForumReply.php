@@ -7,7 +7,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Log;
 
 class ForumReply extends Model
 {
@@ -208,50 +207,6 @@ class ForumReply extends Model
         $this->update(['is_solution' => false]);
 
         return true;
-    }
-
-    /**
-     * 检查用户是否可以编辑此回复
-     */
-    public function canEdit($userId): bool
-    {
-        return $this->user_id === $userId;
-    }
-
-    /**
-     * 检查用户是否可以删除此回复
-     */
-    public function canDelete($userId)
-    {
-        // 🔥 添加日志用于调试
-        Log::debug('Checking canDelete permission', [
-            'post_user_id' => $this->user_id,
-            'current_user_id' => $userId,
-            'post_user_id_type' => gettype($this->user_id),
-            'current_user_id_type' => gettype($userId),
-        ]);
-
-        // 检查是否是作者本人
-        if ((int) $this->user_id === (int) $userId) {
-            return true;
-        }
-
-        // 检查是否是管理员
-        $user = User::find($userId);
-        if ($user && $user->role === 'administrator') {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * 检查用户是否可以标记为解决方案
-     */
-    public function canMarkAsSolution($userId): bool
-    {
-        // 只有帖子作者可以标记解决方案
-        return $this->post->user_id === $userId;
     }
 
     /**

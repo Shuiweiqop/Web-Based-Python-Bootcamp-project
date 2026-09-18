@@ -61,7 +61,6 @@ export default function Index({ auth, exercises, filters }) {
     const deleteExercise = (exercise) => {
         if (confirm(`Are you sure you want to delete "${exercise.title}"? This action cannot be undone.`)) {
             router.delete(route('admin.exercises.destroy', exercise.exercise_id), {
-                onSuccess: () => console.log('Exercise deleted successfully'),
                 onError: (errors) => console.error('Delete failed:', errors)
             });
         }

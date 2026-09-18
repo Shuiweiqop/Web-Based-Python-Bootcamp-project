@@ -17,10 +17,6 @@ class ForumReportController extends Controller
      */
     public function index(Request $request)
     {
-        if (! ForumHelper::isAdmin()) {
-            abort(403, 'Only administrators can view reports.');
-        }
-
         $query = ForumReport::with([
             'reporter',
             'post.user',
@@ -76,10 +72,6 @@ class ForumReportController extends Controller
      */
     public function show($id)
     {
-        if (! ForumHelper::isAdmin()) {
-            abort(403, 'Only administrators can view reports.');
-        }
-
         $report = ForumReport::with([
             'reporter',
             'post.user',
@@ -104,10 +96,6 @@ class ForumReportController extends Controller
      */
     public function updateStatus(Request $request, $id)
     {
-        if (! ForumHelper::isAdmin()) {
-            abort(403, 'Only administrators can update reports.');
-        }
-
         $validated = $request->validate([
             'status' => 'required|in:pending,reviewing,resolved,dismissed',
             'admin_notes' => 'nullable|string|max:1000',
@@ -119,7 +107,7 @@ class ForumReportController extends Controller
             $report->update([
                 'status' => $validated['status'],
                 'admin_notes' => $validated['admin_notes'] ?? $report->admin_notes,
-                'reviewed_by' => auth()->id(),
+                'reviewed_by_admin_id' => auth()->user()->user_Id,
                 'reviewed_at' => now(),
             ]);
 
@@ -136,10 +124,6 @@ class ForumReportController extends Controller
      */
     public function batchUpdate(Request $request)
     {
-        if (! ForumHelper::isAdmin()) {
-            abort(403, 'Only administrators can update reports.');
-        }
-
         $validated = $request->validate([
             'report_ids' => 'required|array',
             'report_ids.*' => 'exists:forum_reports,report_id',
@@ -150,7 +134,7 @@ class ForumReportController extends Controller
             ForumReport::whereIn('report_id', $validated['report_ids'])
                 ->update([
                     'status' => $validated['status'],
-                    'reviewed_by' => auth()->id(),
+                    'reviewed_by_admin_id' => auth()->user()->user_Id,
                     'reviewed_at' => now(),
                 ]);
 
@@ -169,10 +153,6 @@ class ForumReportController extends Controller
      */
     public function deleteContent($id)
     {
-        if (! ForumHelper::isAdmin()) {
-            abort(403, 'Only administrators can delete reported content.');
-        }
-
         try {
             $report = ForumReport::findOrFail($id);
 
@@ -194,7 +174,7 @@ class ForumReportController extends Controller
             $report->update([
                 'status' => 'resolved',
                 'admin_notes' => 'Content deleted by admin',
-                'reviewed_by' => auth()->id(),
+                'reviewed_by_admin_id' => auth()->user()->user_Id,
                 'reviewed_at' => now(),
             ]);
 
@@ -211,10 +191,6 @@ class ForumReportController extends Controller
      */
     public function destroy($id)
     {
-        if (! ForumHelper::isAdmin()) {
-            abort(403, 'Only administrators can delete reports.');
-        }
-
         try {
             $report = ForumReport::findOrFail($id);
             $report->delete();
