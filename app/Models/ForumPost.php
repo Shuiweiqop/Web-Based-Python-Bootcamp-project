@@ -161,6 +161,48 @@ class ForumPost extends Model
         return $query->where('is_locked', false);
     }
 
+    /**
+     * Everything the post detail page needs: the author, the reply tree three
+     * levels deep, and each author's equipped avatar frame.
+     *
+     * This was copied out verbatim in three places — show(), reply() and
+     * toggleLike() — and had to be kept in step by hand. The frame constraint
+     * repeats per level because the relation is reached by a different path
+     * each time; that repetition is the query, not an oversight.
+     */
+    public function scopeWithForumDetail($query)
+    {
+        $equippedFrame = function ($query) {
+            $query->where('is_equipped', true)
+                ->whereHas('reward', function ($q) {
+                    $q->where('reward_type', 'avatar_frame');
+                })
+                ->with('reward');
+        };
+
+        return $query->with([
+            'user.studentProfile',
+            'studentProfile',
+            'user.studentProfile.rewardInventory' => $equippedFrame,
+            'replies' => function ($query) use ($equippedFrame) {
+                $query->topLevel()
+                    ->with([
+                        'user.studentProfile',
+                        'studentProfile',
+                        'user.studentProfile.rewardInventory' => $equippedFrame,
+                        'childReplies.user.studentProfile',
+                        'childReplies.studentProfile',
+                        'childReplies.user.studentProfile.rewardInventory' => $equippedFrame,
+                        'childReplies.childReplies.user.studentProfile',
+                        'childReplies.childReplies.studentProfile',
+                        'childReplies.childReplies.user.studentProfile.rewardInventory' => $equippedFrame,
+                    ])
+                    ->orderBy('is_solution', 'desc')
+                    ->orderBy('created_at', 'asc');
+            },
+        ]);
+    }
+
     /* -------------------------
        Accessors
        ------------------------- */
