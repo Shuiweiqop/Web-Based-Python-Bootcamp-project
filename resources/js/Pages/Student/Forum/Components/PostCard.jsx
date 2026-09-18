@@ -2,26 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Heart, MessageSquare, Eye, Pin, Lock, CheckCircle } from 'lucide-react';
 import { useSFX } from '@/Contexts/SFXContext';
 import { avatarUrl } from '@/utils/avatar';
-
-function CategoryBadge({ category }) {
-    const categoryStyles = {
-        general: 'from-blue-500 to-cyan-500',
-        help: 'from-green-500 to-emerald-500',
-        discussion: 'from-purple-500 to-pink-500',
-        announcement: 'from-orange-500 to-red-500',
-    };
-
-    return (
-        <span className={`
-            inline-flex items-center gap-1 px-3 py-1 
-            bg-gradient-to-r ${categoryStyles[category] || 'from-gray-500 to-gray-600'}
-            text-white text-xs font-bold rounded-lg
-            shadow-lg animate-pulse-slow
-        `}>
-            {category}
-        </span>
-    );
-}
+import CategoryBadge from './CategoryBadge';
 
 function UserAvatar({ author, size = 'lg' }) {
     const sizeClasses = {
@@ -145,15 +126,18 @@ export default function PostCard({ post, currentUserId, isDark }) {
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    {/* Pinned Badge */}
+                                    {/* Pinned Badge — a translucent fill and a 300-weight
+                                        text only carry on the dark card; on the light one
+                                        they leave pale text on near-white. */}
                                     {post.is_pinned && (
-                                        <span className="
-                                            inline-flex items-center gap-1 px-2 py-1 
-                                            bg-yellow-500/20 border border-yellow-500/30
-                                            text-yellow-300 text-xs font-bold rounded-lg
-                                            shadow-lg shadow-yellow-500/20
+                                        <span className={`
+                                            inline-flex items-center gap-1 px-2 py-1
+                                            text-xs font-bold rounded-lg
                                             animate-pulse-slow
-                                        ">
+                                            ${resolvedIsDark
+                                                ? 'bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 shadow-lg shadow-yellow-500/20'
+                                                : 'bg-yellow-100 border border-yellow-400 text-yellow-800'}
+                                        `}>
                                             <Pin className="w-3 h-3 animate-spin-slow" />
                                             Pinned
                                         </span>
@@ -161,13 +145,14 @@ export default function PostCard({ post, currentUserId, isDark }) {
 
                                     {/* Locked Badge */}
                                     {post.is_locked && (
-                                        <span className="
-                                            inline-flex items-center gap-1 px-2 py-1 
-                                            bg-red-500/20 border border-red-500/30
-                                            text-red-300 text-xs font-bold rounded-lg
-                                            shadow-lg shadow-red-500/20
+                                        <span className={`
+                                            inline-flex items-center gap-1 px-2 py-1
+                                            text-xs font-bold rounded-lg
                                             animate-pulse-slow
-                                        ">
+                                            ${resolvedIsDark
+                                                ? 'bg-red-500/20 border border-red-500/30 text-red-300 shadow-lg shadow-red-500/20'
+                                                : 'bg-red-100 border border-red-400 text-red-800'}
+                                        `}>
                                             <Lock className="w-3 h-3" />
                                             Locked
                                         </span>
