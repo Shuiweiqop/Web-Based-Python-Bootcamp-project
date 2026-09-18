@@ -22,19 +22,9 @@ class ForumController extends Controller
      */
     public function index(Request $request)
     {
-        // ✅ 确保用户已登录
-        if (! auth()->check()) {
-            return redirect()->route('login')->with('error', 'Please login to access the forum.');
-        }
+        $this->authorize('viewAny', ForumPost::class);
 
         $userId = auth()->user()->user_Id;
-
-        // 检查权限
-        if (! ForumHelper::canAccessForum()) {
-            Log::warning('Forum access denied', ['user_id' => $userId]);
-
-            return redirect()->route('dashboard')->with('error', 'You do not have permission to access the forum.');
-        }
 
         $query = ForumPost::query()
             ->with([
@@ -119,9 +109,7 @@ class ForumController extends Controller
      */
     public function create()
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            abort(403, 'You do not have permission to create posts.');
-        }
+        $this->authorize('create', ForumPost::class);
 
         $categories = ForumHelper::getCategories();
 
@@ -141,9 +129,7 @@ class ForumController extends Controller
      */
     public function store(Request $request)
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            abort(403);
-        }
+        $this->authorize('create', ForumPost::class);
 
         $validated = $request->validate([
             'title' => 'required|string|max:200',
@@ -179,9 +165,7 @@ class ForumController extends Controller
      */
     public function show($id)
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            return redirect()->route('login')->with('error', 'Please login to view this post.');
-        }
+        $this->authorize('viewAny', ForumPost::class);
 
         $userId = auth()->user()->user_Id;
 
@@ -247,29 +231,26 @@ class ForumController extends Controller
         $isFavorited = ForumFavorite::isFavorited($userId, $post->post_id);
         $hasReported = \App\Models\ForumReport::hasReported($userId, 'post', $post->post_id);
 
-        if (ForumHelper::isAdmin()) {
-            return Inertia::render('Admin/Forum/Show', [
-                'post' => $post,
-                'isLiked' => $isLiked,
-                'isFavorited' => $isFavorited,
-                'hasReported' => $hasReported,
-                'canEdit' => $post->canEdit($userId),
-                'canDelete' => true,
-                'canPin' => true,
-                'canLock' => true,
-            ]);
-        }
+        $currentUser = auth()->user();
 
-        return Inertia::render('Student/Forum/Show', [
+        // Both roles get the same prop shape; only the page differs. The
+        // permissions used to be hardcoded true for administrators, which was
+        // right by luck — the policy answers the same way but derives it.
+        $props = [
             'post' => $post,
             'isLiked' => $isLiked,
             'isFavorited' => $isFavorited,
             'hasReported' => $hasReported,
-            'canEdit' => $post->canEdit($userId),
-            'canDelete' => $post->canDelete($userId),
-            'canPin' => false,
-            'canLock' => false,
-        ]);
+            'canEdit' => $currentUser->can('update', $post),
+            'canDelete' => $currentUser->can('delete', $post),
+            'canPin' => $currentUser->can('pin', $post),
+            'canLock' => $currentUser->can('lock', $post),
+        ];
+
+        return Inertia::render(
+            ForumHelper::isAdmin() ? 'Admin/Forum/Show' : 'Student/Forum/Show',
+            $props
+        );
     }
 
     /**
@@ -277,15 +258,9 @@ class ForumController extends Controller
      */
     public function edit($id)
     {
-        if (! auth()->check()) {
-            abort(403, 'You must be logged in to edit posts.');
-        }
-
         $post = ForumPost::findOrFail($id);
 
-        if (! $post->canEdit(auth()->id())) {
-            abort(403, 'You do not have permission to edit this post.');
-        }
+        $this->authorize('update', $post);
 
         $categories = ForumHelper::getCategories();
 
@@ -307,15 +282,9 @@ class ForumController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if (! auth()->check()) {
-            abort(403);
-        }
-
         $post = ForumPost::findOrFail($id);
 
-        if (! $post->canEdit(auth()->id())) {
-            abort(403);
-        }
+        $this->authorize('update', $post);
 
         $validated = $request->validate([
             'title' => 'required|string|max:200',
@@ -344,18 +313,10 @@ class ForumController extends Controller
      */
     public function destroy($id)
     {
-        if (! auth()->check()) {
-            abort(403);
-        }
-
         $post = ForumPost::findOrFail($id);
         $userId = auth()->user()->user_Id;
 
-        $canDelete = $post->canDelete($userId);
-
-        if (! $canDelete) {
-            abort(403, 'You do not have permission to delete this post.');
-        }
+        $this->authorize('delete', $post);
 
         try {
             $post->delete();
@@ -383,11 +344,9 @@ class ForumController extends Controller
      */
     public function reply(Request $request, $id)
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            abort(403);
-        }
-
         $post = ForumPost::findOrFail($id);
+
+        $this->authorize('reply', $post);
 
         if ($post->is_locked && ! ForumHelper::isAdmin()) {
             return back()->withErrors(['error' => 'This post is locked and cannot be replied to.']);
@@ -435,63 +394,6 @@ class ForumController extends Controller
                 'post_id' => $post->post_id,
                 'user_id' => $userId,
             ]);
-
-            // ✅ 发送通知
-            if ($validated['parent_reply_id']) {
-                if ($parentReply && $parentReply->user_id !== $userId) {
-                    Notification::create([
-                        'user_Id' => $parentReply->user_id,
-                        'type' => 'community',
-                        'priority' => 'normal',
-                        'title' => '💬 New Reply',
-                        'message' => "{$currentUser->name} replied to your comment: ".\Illuminate\Support\Str::limit($validated['content'], 50),
-                        'icon' => 'message-square',
-                        'color' => 'green',
-                        'data' => [
-                            'post_id' => $post->post_id,
-                            'reply_id' => $reply->reply_id,
-                            'parent_reply_id' => $parentReply->reply_id,
-                            'replier_name' => $currentUser->name,
-                            'reply_preview' => \Illuminate\Support\Str::limit($validated['content'], 100),
-                        ],
-                        'action_url' => route('forum.show', $post->post_id).'#reply-'.$reply->reply_id,
-                        'action_text' => 'View Reply',
-                    ]);
-
-                    Log::info('📬 Reply notification sent', [
-                        'parent_reply_id' => $parentReply->reply_id,
-                        'replier' => $currentUser->name,
-                        'recipient' => $parentReply->user_id,
-                    ]);
-                }
-            } else {
-                if ($post->user_id !== $userId) {
-                    Notification::create([
-                        'user_Id' => $post->user_id,
-                        'type' => 'community',
-                        'priority' => 'normal',
-                        'title' => '💬 New Comment',
-                        'message' => "{$currentUser->name} commented on your post \"{$post->title}\"",
-                        'icon' => 'message-circle',
-                        'color' => 'blue',
-                        'data' => [
-                            'post_id' => $post->post_id,
-                            'reply_id' => $reply->reply_id,
-                            'commenter_name' => $currentUser->name,
-                            'comment_preview' => \Illuminate\Support\Str::limit($validated['content'], 100),
-                            'post_title' => $post->title,
-                        ],
-                        'action_url' => route('forum.show', $post->post_id).'#reply-'.$reply->reply_id,
-                        'action_text' => 'View Comment',
-                    ]);
-
-                    Log::info('📬 Post comment notification sent', [
-                        'post_id' => $post->post_id,
-                        'commenter' => $currentUser->name,
-                        'post_author' => $post->user_id,
-                    ]);
-                }
-            }
 
             // ✅ 更新学生活跃度
             $missionProgress = null;
@@ -590,15 +492,9 @@ class ForumController extends Controller
      */
     public function updateReply(Request $request, $replyId)
     {
-        if (! auth()->check()) {
-            abort(403);
-        }
-
         $reply = ForumReply::findOrFail($replyId);
 
-        if (! $reply->canEdit(auth()->id())) {
-            abort(403);
-        }
+        $this->authorize('update', $reply);
 
         $validated = $request->validate([
             'content' => 'required|string|min:5',
@@ -622,20 +518,14 @@ class ForumController extends Controller
      */
     public function destroyReply($replyId)
     {
-        if (! auth()->check()) {
-            abort(403, 'You must be logged in to delete replies.');
-        }
-
         $reply = ForumReply::findOrFail($replyId);
+
+        $this->authorize('delete', $reply);
 
         // 保存帖子ID用于重定向
         $postId = $reply->post_id;
 
         $userId = auth()->user()->user_Id;
-
-        if (! $reply->canDelete($userId)) {
-            abort(403, 'You do not have permission to delete this reply.');
-        }
 
         try {
             $reply->delete();
@@ -661,17 +551,12 @@ class ForumController extends Controller
      */
     public function markSolution($replyId)
     {
-        if (! auth()->check()) {
-            abort(403);
-        }
-
         $reply = ForumReply::findOrFail($replyId);
-        $currentUser = auth()->user();
-        $userId = $currentUser->user_Id; // ✅ 使用正确的主键
 
-        if (! $reply->canMarkAsSolution($userId)) { // ✅ 改用 $userId
-            abort(403, 'Only the post author can mark solutions.');
-        }
+        $this->authorize('markSolution', $reply);
+
+        $currentUser = auth()->user();
+        $userId = $currentUser->user_Id;
 
         try {
             if ($reply->is_solution) {
@@ -724,9 +609,9 @@ class ForumController extends Controller
      */
     public function toggleLike($id)
     {
-        if (! auth()->check()) {
-            return redirect()->route('login')->with('error', 'Please login to like posts.');
-        }
+        $post = ForumPost::findOrFail($id);
+
+        $this->authorize('like', $post);
 
         try {
             $currentUser = auth()->user();
@@ -840,13 +725,11 @@ class ForumController extends Controller
      */
     public function toggleReplyLike($replyId)
     {
-        if (! auth()->check()) {
-            return redirect()->route('login')->with('error', 'Please login to like replies.');
-        }
+        $this->authorize('like', ForumReply::findOrFail($replyId));
 
         try {
             $currentUser = auth()->user();
-            $userId = $currentUser->user_Id; // ✅ 改用 user_Id
+            $userId = $currentUser->user_Id;
 
             Log::info('=== Toggle Reply Like ===', [
                 'user_id' => $userId,
@@ -898,9 +781,7 @@ class ForumController extends Controller
      */
     public function toggleFavorite($id)
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            return redirect()->route('login')->with('error', 'Please login to favorite posts.');
-        }
+        $this->authorize('favorite', ForumPost::findOrFail($id));
 
         try {
             $post = ForumPost::with([
@@ -950,12 +831,11 @@ class ForumController extends Controller
      */
     public function togglePin($id)
     {
-        if (! ForumHelper::canPinPost()) {
-            abort(403, 'Only administrators can pin posts.');
-        }
+        $post = ForumPost::findOrFail($id);
+
+        $this->authorize('pin', $post);
 
         try {
-            $post = ForumPost::findOrFail($id);
             $post->update(['is_pinned' => ! $post->is_pinned]);
 
             $message = $post->is_pinned ? 'Post pinned successfully!' : 'Post unpinned successfully!';
@@ -973,12 +853,11 @@ class ForumController extends Controller
      */
     public function toggleLock($id)
     {
-        if (! ForumHelper::canLockPost()) {
-            abort(403, 'Only administrators can lock posts.');
-        }
+        $post = ForumPost::findOrFail($id);
+
+        $this->authorize('lock', $post);
 
         try {
-            $post = ForumPost::findOrFail($id);
             $post->update(['is_locked' => ! $post->is_locked]);
 
             $message = $post->is_locked ? 'Post locked successfully!' : 'Post unlocked successfully!';
@@ -996,9 +875,7 @@ class ForumController extends Controller
      */
     public function myPosts()
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            return redirect()->route('login');
-        }
+        $this->authorize('viewAny', ForumPost::class);
 
         $posts = ForumPost::where('user_id', auth()->id())
             ->withCount('replies')
@@ -1015,9 +892,7 @@ class ForumController extends Controller
      */
     public function myFavorites()
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            return redirect()->route('login');
-        }
+        $this->authorize('viewAny', ForumPost::class);
 
         $favorites = ForumFavorite::where('user_id', auth()->id())
             ->with(['post.user', 'post.studentProfile'])
@@ -1040,15 +915,13 @@ class ForumController extends Controller
      */
     public function reportPost(Request $request, $id)
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            return redirect()->route('login')->with('error', 'Please login to report posts.');
-        }
-
         $post = ForumPost::findOrFail($id);
 
-        if ($post->user_id === auth()->id()) {
+        if ((int) $post->user_id === (int) auth()->user()->user_Id) {
             return back()->with('error', 'You cannot report your own post.');
         }
+
+        $this->authorize('report', $post);
 
         $validated = $request->validate([
             'reason' => 'required|in:spam,inappropriate,harassment,misinformation,off_topic,other',
@@ -1081,15 +954,13 @@ class ForumController extends Controller
      */
     public function reportReply(Request $request, $replyId)
     {
-        if (! auth()->check() || ! ForumHelper::canAccessForum()) {
-            return redirect()->route('login')->with('error', 'Please login to report replies.');
-        }
-
         $reply = ForumReply::findOrFail($replyId);
 
-        if ($reply->user_id === auth()->id()) {
+        if ((int) $reply->user_id === (int) auth()->user()->user_Id) {
             return back()->with('error', 'You cannot report your own reply.');
         }
+
+        $this->authorize('report', $reply);
 
         $validated = $request->validate([
             'reason' => 'required|in:spam,inappropriate,harassment,misinformation,off_topic,other',

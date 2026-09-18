@@ -9,18 +9,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Pins the CURRENT behaviour of forum report moderation.
+ * Forum report moderation.
  *
- * Two things are being held still here. First, access: every method in
- * ForumReportController repeats `if (! ForumHelper::isAdmin()) abort(403)`,
- * even though the whole route group already sits inside
- * `role:administrator` (routes/web.php). Those checks are redundant and will be
- * deleted — these tests prove the route group alone still keeps students out.
- *
- * Second, an audit bug: updateStatus(), batchUpdate() and deleteContent() all
- * write 'reviewed_by', but ForumReport::$fillable declares
- * 'reviewed_by_admin_id'. Mass assignment silently drops the unknown key, so no
- * report has ever recorded who resolved it. test_known_bug_* pins that.
+ * Every method in ForumReportController used to repeat
+ * `if (! ForumHelper::isAdmin()) abort(403)`, although the whole route group
+ * already sits inside `role:administrator` (routes/web.php). Those six checks
+ * are gone; these tests prove the route group alone still keeps students out.
  */
 class ForumReportAccessTest extends TestCase
 {
@@ -97,14 +91,12 @@ class ForumReportAccessTest extends TestCase
     }
 
     /**
-     * The controller writes 'reviewed_by', the model fills
-     * 'reviewed_by_admin_id'. The key is discarded, so the reviewer column stays
-     * null however many times a report is actioned.
-     *
-     * Once the controller writes the right column this assertion flips to
-     * assertSame($admin->user_Id, ...).
+     * Was test_known_bug_resolving_a_report_does_not_record_the_admin. The
+     * controller used to write 'reviewed_by', which is not in the model's
+     * fillable list, so mass assignment discarded it and the reviewer column
+     * stayed null however many times a report was actioned.
      */
-    public function test_known_bug_resolving_a_report_does_not_record_the_admin(): void
+    public function test_resolving_a_report_records_which_admin_did_it(): void
     {
         $admin = $this->createAdmin();
         $report = $this->createReport();
@@ -114,9 +106,10 @@ class ForumReportAccessTest extends TestCase
                 'status' => 'resolved',
             ]);
 
-        $this->assertNull(
-            $report->fresh()->reviewed_by_admin_id,
-            'KNOWN BUG: the controller writes reviewed_by, which is not fillable, so the reviewer is lost.'
+        $this->assertSame(
+            (int) $admin->user_Id,
+            (int) $report->fresh()->reviewed_by_admin_id,
+            'The moderator who resolved the report must be recorded.'
         );
     }
 

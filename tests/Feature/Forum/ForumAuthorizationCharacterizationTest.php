@@ -10,13 +10,11 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /**
- * Pins the forum's CURRENT authorization behaviour, before it moves into
- * Policies.
+ * The forum's authorization rules, end to end.
  *
- * These tests describe what the code does today, not what it ought to do. Two
- * of them assert behaviour that is wrong (see the test_known_bug_* methods) —
- * they are written to fail once the bug is fixed, so the fix shows up in the
- * diff rather than slipping past unnoticed.
+ * These were written against the pre-policy controller to describe what it did,
+ * then kept as the regression net once the rules moved into ForumPostPolicy and
+ * ForumReplyPolicy. Every assertion here held before and after that move.
  *
  * The asymmetry pinned by test_administrator_cannot_edit_another_users_post is
  * the important one: an administrator may delete, pin and lock any post but may
@@ -185,26 +183,30 @@ class ForumAuthorizationCharacterizationTest extends TestCase
     }
 
     /**
-     * ForumReply::canEdit() compares with === and no (int) cast, unlike
-     * ForumReply::canDelete() and ForumPost::canEdit() which both cast. Passing
-     * the id as a string therefore denies the legitimate author.
+     * Was test_known_bug_reply_can_edit_is_type_sensitive. The old
+     * ForumReply::canEdit() compared with === and no (int) cast, unlike
+     * canDelete() and ForumPost::canEdit(), so a user_id arriving from the
+     * driver as a string denied the legitimate author.
      *
-     * Once the cast is added this assertion flips to assertTrue.
+     * ForumReplyPolicy casts both sides, so the author is now recognised
+     * whatever the id's type. This asserts the fix rather than the bug.
      */
-    public function test_known_bug_reply_can_edit_is_type_sensitive(): void
+    public function test_reply_authorship_is_not_sensitive_to_the_id_type(): void
     {
         $author = $this->createStudent('author');
         $post = $this->createPost($author);
         $reply = $this->createReply($post, $author);
 
         $this->assertTrue(
-            $reply->canEdit($author->user_Id),
-            'Sanity check: the author passes when the id is an int.'
+            $author->can('update', $reply),
+            'The author may edit their own reply.'
         );
 
-        $this->assertFalse(
-            $reply->canEdit((string) $author->user_Id),
-            'KNOWN BUG: canEdit() has no (int) cast, so a string id denies the author.'
+        $reply->forceFill(['user_id' => (string) $author->user_Id]);
+
+        $this->assertTrue(
+            $author->can('update', $reply),
+            'A string user_id must still identify the author — this was the bug.'
         );
     }
 

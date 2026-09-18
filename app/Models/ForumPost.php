@@ -332,65 +332,6 @@ class ForumPost extends Model
     }
 
     /**
-     * Check if user can edit this post
-     * 只有作者本人可以编辑
-     */
-    public function canEdit($userId)
-    {
-        return (int) $this->user_id === (int) $userId;
-    }
-
-    /**
-     * Check if user can delete this post
-     * 作者本人或管理员可以删除
-     */
-    public function canDelete($userId)
-    {
-        // 🔥 添加日志用于调试
-        Log::debug('Checking canDelete permission', [
-            'post_user_id' => $this->user_id,
-            'current_user_id' => $userId,
-            'post_user_id_type' => gettype($this->user_id),
-            'current_user_id_type' => gettype($userId),
-        ]);
-
-        // 检查是否是作者本人
-        if ((int) $this->user_id === (int) $userId) {
-            return true;
-        }
-
-        // 检查是否是管理员
-        $user = User::find($userId);
-        if ($user && $user->role === 'administrator') {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if user can pin/unpin this post
-     * 只有管理员可以置顶
-     */
-    public function canPin($userId)
-    {
-        $user = User::find($userId);
-
-        return $user?->role === 'administrator';
-    }
-
-    /**
-     * Check if user can lock/unlock this post
-     * 只有管理员可以锁定
-     */
-    public function canLock($userId)
-    {
-        $user = User::find($userId);
-
-        return $user?->role === 'administrator';
-    }
-
-    /**
      * Get solution reply
      */
     public function getSolutionReply()
