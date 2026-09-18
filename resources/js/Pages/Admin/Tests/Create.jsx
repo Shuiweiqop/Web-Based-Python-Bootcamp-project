@@ -33,9 +33,6 @@ const handleSubmit = (e) => {
   // 使用 post 方法提交到 store 路由
   post(route('admin.lessons.tests.store', lesson.lesson_id), {
     preserveScroll: true,
-    onSuccess: () => {
-      console.log('Test created successfully');
-    },
     onError: (errors) => {
       console.error('Failed to create test:', errors);
     },

@@ -38,21 +38,6 @@ class ForumHelper
     }
 
     /**
-     * ✅ 检查当前用户是否可以使用论坛
-     * Admin 和 Student 都可以访问
-     */
-    public static function canAccessForum(): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        $user = Auth::user();
-
-        return in_array($user->role, ['administrator', 'student']);
-    }
-
-    /**
      * ✅ 检查当前用户是否是 Admin
      */
     public static function isAdmin(): bool
@@ -234,105 +219,6 @@ class ForumHelper
         }
 
         return mb_substr($content, 0, $length).'...';
-    }
-
-    /**
-     * ✅ 检查用户是否可以编辑帖子
-     * 只有作者可以编辑
-     */
-    public static function canEditPost(int $postUserId): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        return Auth::id() === $postUserId;
-    }
-
-    /**
-     * ✅ 检查用户是否可以删除帖子
-     * 作者或 Admin 可以删除
-     */
-    public static function canDeletePost(int $postUserId): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        $user = Auth::user();
-
-        // Admin 可以删除任何帖子
-        if ($user->role === 'administrator') {
-            return true;
-        }
-
-        // 帖子作者可以删除自己的帖子
-        return Auth::id() === $postUserId;
-    }
-
-    /**
-     * ✅ 检查用户是否可以置顶帖子
-     * 只有 Admin 可以置顶
-     */
-    public static function canPinPost(): bool
-    {
-        return self::isAdmin();
-    }
-
-    /**
-     * ✅ 检查用户是否可以锁定帖子
-     * 只有 Admin 可以锁定
-     */
-    public static function canLockPost(): bool
-    {
-        return self::isAdmin();
-    }
-
-    /**
-     * ✅ 检查用户是否可以编辑回复
-     * 只有作者可以编辑
-     */
-    public static function canEditReply(int $replyUserId): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        return Auth::id() === $replyUserId;
-    }
-
-    /**
-     * ✅ 检查用户是否可以删除回复
-     * 作者或 Admin 可以删除
-     */
-    public static function canDeleteReply(int $replyUserId): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        $user = Auth::user();
-
-        // Admin 可以删除任何回复
-        if ($user->role === 'administrator') {
-            return true;
-        }
-
-        // 回复作者可以删除自己的回复
-        return Auth::id() === $replyUserId;
-    }
-
-    /**
-     * ✅ 检查用户是否可以标记最佳答案
-     * 只有帖子作者可以标记
-     */
-    public static function canMarkSolution(int $postUserId): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        return Auth::id() === $postUserId;
     }
 
     /**

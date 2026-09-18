@@ -161,6 +161,48 @@ class ForumPost extends Model
         return $query->where('is_locked', false);
     }
 
+    /**
+     * Everything the post detail page needs: the author, the reply tree three
+     * levels deep, and each author's equipped avatar frame.
+     *
+     * This was copied out verbatim in three places — show(), reply() and
+     * toggleLike() — and had to be kept in step by hand. The frame constraint
+     * repeats per level because the relation is reached by a different path
+     * each time; that repetition is the query, not an oversight.
+     */
+    public function scopeWithForumDetail($query)
+    {
+        $equippedFrame = function ($query) {
+            $query->where('is_equipped', true)
+                ->whereHas('reward', function ($q) {
+                    $q->where('reward_type', 'avatar_frame');
+                })
+                ->with('reward');
+        };
+
+        return $query->with([
+            'user.studentProfile',
+            'studentProfile',
+            'user.studentProfile.rewardInventory' => $equippedFrame,
+            'replies' => function ($query) use ($equippedFrame) {
+                $query->topLevel()
+                    ->with([
+                        'user.studentProfile',
+                        'studentProfile',
+                        'user.studentProfile.rewardInventory' => $equippedFrame,
+                        'childReplies.user.studentProfile',
+                        'childReplies.studentProfile',
+                        'childReplies.user.studentProfile.rewardInventory' => $equippedFrame,
+                        'childReplies.childReplies.user.studentProfile',
+                        'childReplies.childReplies.studentProfile',
+                        'childReplies.childReplies.user.studentProfile.rewardInventory' => $equippedFrame,
+                    ])
+                    ->orderBy('is_solution', 'desc')
+                    ->orderBy('created_at', 'asc');
+            },
+        ]);
+    }
+
     /* -------------------------
        Accessors
        ------------------------- */
@@ -329,65 +371,6 @@ class ForumPost extends Model
     public function toggleLike($userId)
     {
         return ForumPostLike::toggle($userId, $this->post_id);
-    }
-
-    /**
-     * Check if user can edit this post
-     * 只有作者本人可以编辑
-     */
-    public function canEdit($userId)
-    {
-        return (int) $this->user_id === (int) $userId;
-    }
-
-    /**
-     * Check if user can delete this post
-     * 作者本人或管理员可以删除
-     */
-    public function canDelete($userId)
-    {
-        // 🔥 添加日志用于调试
-        Log::debug('Checking canDelete permission', [
-            'post_user_id' => $this->user_id,
-            'current_user_id' => $userId,
-            'post_user_id_type' => gettype($this->user_id),
-            'current_user_id_type' => gettype($userId),
-        ]);
-
-        // 检查是否是作者本人
-        if ((int) $this->user_id === (int) $userId) {
-            return true;
-        }
-
-        // 检查是否是管理员
-        $user = User::find($userId);
-        if ($user && $user->role === 'administrator') {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if user can pin/unpin this post
-     * 只有管理员可以置顶
-     */
-    public function canPin($userId)
-    {
-        $user = User::find($userId);
-
-        return $user?->role === 'administrator';
-    }
-
-    /**
-     * Check if user can lock/unlock this post
-     * 只有管理员可以锁定
-     */
-    public function canLock($userId)
-    {
-        $user = User::find($userId);
-
-        return $user?->role === 'administrator';
     }
 
     /**

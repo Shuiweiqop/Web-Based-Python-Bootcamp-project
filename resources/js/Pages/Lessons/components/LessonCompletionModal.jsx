@@ -42,7 +42,6 @@ export default function LessonCompletionModal({
    * 3. 刷新页面数据
    */
   const handleCompleteLesson = () => {
-    console.log('🎯 Starting lesson completion flow...');
     setIsCompleting(true);
     setShowTransition(true);
     
@@ -53,10 +52,7 @@ export default function LessonCompletionModal({
         {},
         {
           preserveScroll: true,
-          onSuccess: (page) => {
-            console.log('✅ Lesson completed successfully!');
-            console.log('📦 Returned data:', page.props);
-            
+          onSuccess: () => {
             // 🔥 延迟关闭模态框，让用户看到完成动画
             setTimeout(() => {
               onClose();
@@ -64,14 +60,10 @@ export default function LessonCompletionModal({
               setShowTransition(false);
               
               // 🔥 强制刷新页面以获取最新的 lesson 数据
-              console.log('🔄 Refreshing page data...');
               router.visit(window.location.href, {
                 preserveScroll: true,
                 preserveState: false,
                 replace: true,
-                onSuccess: () => {
-                  console.log('✅ Page data refreshed');
-                }
               });
             }, 1000);
           },
@@ -86,9 +78,6 @@ export default function LessonCompletionModal({
               : errors.toString();
             alert(errorMessage || 'Failed to complete lesson. Please try again.');
           },
-          onFinish: () => {
-            console.log('🏁 Request completed');
-          }
         }
       );
     }, 1500);
