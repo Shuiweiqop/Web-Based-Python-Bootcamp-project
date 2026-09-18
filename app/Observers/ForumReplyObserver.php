@@ -23,14 +23,14 @@ class ForumReplyObserver
             }
 
             // 1️⃣ Notify the post author (if the replier is not the author)
-            if ($reply->user_id !== $post->user_id) {
+            if ((int) $reply->user_id !== (int) $post->user_id) {
                 $this->notifyPostAuthor($reply, $post, $replyAuthor);
             }
 
             // 2️⃣ If this is a nested reply, notify the parent reply author
             if ($reply->parent_reply_id) {
                 $parentReply = $reply->parentReply;
-                if ($parentReply && $reply->user_id !== $parentReply->user_id) {
+                if ($parentReply && (int) $reply->user_id !== (int) $parentReply->user_id) {
                     $this->notifyParentReplyAuthor($reply, $parentReply, $replyAuthor);
                 }
             }
@@ -75,10 +75,11 @@ class ForumReplyObserver
             'data' => [
                 'post_id' => $post->post_id,
                 'reply_id' => $reply->reply_id,
+                'post_title' => $post->title,
                 'author_name' => $replyAuthor->name,
                 'reply_preview' => mb_substr(strip_tags($reply->content), 0, 100),
             ],
-            'action_url' => route('forum.show', $post->post_id),
+            'action_url' => route('forum.show', $post->post_id).'#reply-'.$reply->reply_id,
             'action_text' => 'View Reply',
         ]);
     }
@@ -114,10 +115,11 @@ class ForumReplyObserver
                 'post_id' => $post->post_id,
                 'reply_id' => $reply->reply_id,
                 'parent_reply_id' => $parentReply->reply_id,
+                'post_title' => $post->title,
                 'author_name' => $replyAuthor->name,
                 'reply_preview' => mb_substr(strip_tags($reply->content), 0, 100),
             ],
-            'action_url' => route('forum.show', $post->post_id),
+            'action_url' => route('forum.show', $post->post_id).'#reply-'.$reply->reply_id,
             'action_text' => 'View Reply',
         ]);
     }

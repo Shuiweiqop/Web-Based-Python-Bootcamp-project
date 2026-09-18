@@ -11,30 +11,22 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Pins the CURRENT notification behaviour for forum replies, which is wrong:
- * every reply produces TWO notifications for the same recipient.
+ * Forum reply notifications.
  *
- * ForumReplyObserver::created() sends one (type 'social') and
- * ForumController::reply() sends another inline (type 'community') for the same
- * event. Neither knows about the other.
+ * A reply used to notify its recipient twice: ForumReplyObserver::created()
+ * sent one and ForumController::reply() sent another inline for the same event,
+ * with a different type and title. The inline block is gone and the observer
+ * owns this now — it fires on the model event, so a reply created anywhere
+ * still notifies, which is why it was the copy worth keeping.
  *
- * These requests all send parent_reply_id explicitly, because that is what the
- * real client does: ReplyForm.jsx builds its useForm state with
- * `parent_reply_id: parentReplyId` (defaulting to null), so the key is always
- * present in the payload. It matters — ForumController::reply() branches on
- * `$validated['parent_reply_id']`, and Laravel drops a nullable key from the
- * validated array when it is absent, which would raise an undefined-key warning
- * and skip the inline block entirely. Omitting the key here would hide the bug.
- *
- * The test_known_bug_* methods assert the duplicate, so fixing it turns them
- * red and the fix has to be deliberate. When the inline block is removed, the
- * expected counts drop from 2 to 1 and the 'community' assertions go away.
+ * The requests still send parent_reply_id explicitly, matching ReplyForm.jsx,
+ * which always includes the key.
  */
 class ForumReplyNotificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_known_bug_a_reply_notifies_the_post_author_twice(): void
+    public function test_a_reply_notifies_the_post_author_once(): void
     {
         $author = $this->createStudent('author');
         $responder = $this->createStudent('responder');
@@ -49,19 +41,19 @@ class ForumReplyNotificationTest extends TestCase
         $notifications = $this->replyNotificationsFor($author);
 
         $this->assertCount(
-            2,
+            1,
             $notifications,
-            'KNOWN BUG: the observer and the controller each send one notification.'
+            'The observer is the only sender; the controller no longer duplicates it.'
         );
 
-        $this->assertEqualsCanonicalizing(
-            ['community', 'social'],
-            $notifications->pluck('type')->all(),
-            'KNOWN BUG: one duplicate comes from the controller, one from the observer.'
+        $this->assertSame(
+            'social',
+            $notifications->first()->type,
+            'The surviving notification is the one sent by the observer.'
         );
     }
 
-    public function test_known_bug_a_nested_reply_notifies_the_parent_author_twice(): void
+    public function test_a_nested_reply_notifies_the_parent_author_once(): void
     {
         $author = $this->createStudent('author');
         $firstResponder = $this->createStudent('first');
@@ -83,9 +75,9 @@ class ForumReplyNotificationTest extends TestCase
             ]);
 
         $this->assertCount(
-            2,
+            1,
             $this->replyNotificationsFor($firstResponder),
-            'KNOWN BUG: the parent reply author is notified twice.'
+            'The parent reply author is notified exactly once.'
         );
     }
 
@@ -108,9 +100,9 @@ class ForumReplyNotificationTest extends TestCase
     }
 
     /**
-     * The notification carries a deep link to the reply. The controller's copy
-     * includes the #reply-{id} anchor; the observer's does not. Whichever
-     * survives must keep the anchor, so pin that at least one has it today.
+     * The anchor came from the controller's copy, which is gone, so it was
+     * ported onto the observer's. Without it the notification lands at the top
+     * of a long thread instead of at the reply.
      */
     public function test_at_least_one_notification_deep_links_to_the_reply_anchor(): void
     {
@@ -134,16 +126,13 @@ class ForumReplyNotificationTest extends TestCase
     }
 
     /**
-     * ForumController::reply() reads $validated['parent_reply_id'] directly.
-     * Laravel omits a nullable key from the validated array when the request
-     * did not send it, so a client that leaves the field out silently skips the
-     * inline notification block instead of treating it as a top-level reply.
-     *
-     * The current UI always sends the key, so this is latent rather than
-     * broken. It is pinned because the extraction must not depend on the key's
-     * presence — the fix is to read it with ?? null.
+     * reply() used to branch on $validated['parent_reply_id'], which Laravel
+     * omits entirely when the request did not send it — so a client leaving the
+     * field out skipped notifications instead of being treated as a top-level
+     * reply. Notifications now come from the observer, which reads the model
+     * rather than the request, so the payload shape no longer decides.
      */
-    public function test_known_bug_omitting_parent_reply_id_skips_the_inline_notification(): void
+    public function test_omitting_parent_reply_id_still_notifies_the_post_author(): void
     {
         $author = $this->createStudent('author');
         $responder = $this->createStudent('responder');
@@ -162,14 +151,15 @@ class ForumReplyNotificationTest extends TestCase
         $this->assertSame(
             1,
             $this->replyNotificationsFor($author)->count(),
-            'KNOWN BUG: with the key omitted only the observer notifies, so the count drops to 1.'
+            'A reply notifies once whether or not the client sent parent_reply_id.'
         );
     }
 
     /**
      * Reply notifications only. Posting a reply also awards points, which sends
      * its own unrelated notification, so counting every row would conflate the
-     * two. 'community' is the controller's inline copy, 'social' the observer's.
+     * two. 'social' is the observer's; 'community' was the removed inline copy
+     * and is still matched so a regression that resurrects it would be caught.
      */
     private function replyNotificationsFor(User $user): Collection
     {
