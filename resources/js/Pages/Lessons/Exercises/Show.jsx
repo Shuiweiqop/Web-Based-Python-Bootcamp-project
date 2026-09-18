@@ -43,12 +43,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   const configuredTimeLimit = Number(exercise.time_limit_sec || exercise.time_limit || 0);
   const timer = useTimer(configuredTimeLimit, gameStarted);
 
-  const score = useScore(
-    exercise.max_score,
-    (newScore) => {
-      console.log('Score updated:', newScore);
-    }
-  );
+  const score = useScore(exercise.max_score);
 
   useEffect(() => {
     if (isFillBlankExercise && !gameStarted) {
@@ -59,8 +54,6 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
   }, [isFillBlankExercise, gameStarted]);
 
   const handleGameStart = () => {
-    console.log('🎮 Starting exercise:', exercise.title);
-    
     setGameStarted(true);
     setGameCompleted(false);
     setCompletionSummary(null);
@@ -81,8 +74,6 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     
     // 🔥 Use provided score if available, otherwise use hook's score
     const achievedScore = providedScore !== undefined ? providedScore : score.currentScore;
-    
-    console.log('🏆 Completing with score:', achievedScore, '(provided:', providedScore, ', current:', score.currentScore, ')');
 
     setFinalScore(achievedScore);
     setCompletionSummary({
@@ -109,7 +100,6 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
         }
       );
 
-      console.log('✅ Submission successful:', data);
       setSubmissionResult(data);
       setMissionProgress(data.mission_progress ?? null);
 

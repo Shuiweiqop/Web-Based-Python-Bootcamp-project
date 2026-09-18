@@ -84,7 +84,6 @@ class GlobalAudioPlayer {
       });
       
       GlobalAudioPlayer.instance = this;
-      console.log('🎵 Global Audio Player initialized');
     }
     return GlobalAudioPlayer.instance;
   }

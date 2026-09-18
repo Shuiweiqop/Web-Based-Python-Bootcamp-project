@@ -4,11 +4,12 @@ import { Clock, Mail, ArrowRight, Play } from 'lucide-react';
 export default function HeroSection() {
   const [email, setEmail] = useState('');
 
-  const handleEmailSignup = () => {
+  // TODO: not implemented — the form below is wired up but there is no signup
+  // endpoint yet, so submitting only clears the field.
+  const handleEmailSignup = (e) => {
+    e.preventDefault();
     if (email) {
-      console.log('Email signup:', email);
       setEmail('');
-      // Add email signup logic here
     }
   };
 

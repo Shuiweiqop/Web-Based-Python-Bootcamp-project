@@ -183,7 +183,6 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
         setIsChatLoading(true);
 
         try {
-            console.log('Sending message:', messageToSend);
             
             const response = await axios.post('/api/gemini/chat', {
                 message: messageToSend,
@@ -195,7 +194,6 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
                 }
             });
 
-            console.log('Response received:', response.data);
 
             if (response.data.success) {
                 const aiMessage = { role: 'assistant', content: response.data.message };

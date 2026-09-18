@@ -34,9 +34,6 @@ export default function Edit({ auth, lesson, test, statusOptions }) {
   // 使用你从 useForm 解构出来的 put 方法（文件顶部你已有 put）
   put(route('admin.lessons.tests.update', [lesson.lesson_id, test.test_id]), {
     preserveScroll: true,
-    onSuccess: () => {
-      console.log('Update successful');
-    },
     onError: (errors) => {
       console.error('Update failed:', errors);
     },
