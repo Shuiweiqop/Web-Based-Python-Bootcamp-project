@@ -7,9 +7,8 @@ use App\Models\ForumFavorite;
 use App\Models\ForumPost;
 use App\Models\ForumPostLike;
 use App\Models\ForumReply;
-use App\Models\ForumReplyLike;
-use App\Models\Notification;
-use App\Services\DailyChallengeService;
+use App\Models\ForumReport;
+use App\Services\ForumService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +16,10 @@ use Inertia\Inertia;
 
 class ForumController extends Controller
 {
+    public function __construct(
+        private readonly ForumService $forum,
+    ) {}
+
     /**
      * 显示论坛首页 - 帖子列表
      */
@@ -169,51 +172,7 @@ class ForumController extends Controller
 
         $userId = auth()->user()->user_Id;
 
-        $post = ForumPost::with([
-            'user.studentProfile',
-            'studentProfile',
-            'user.studentProfile.rewardInventory' => function ($query) {
-                $query->where('is_equipped', true)
-                    ->whereHas('reward', function ($q) {
-                        $q->where('reward_type', 'avatar_frame');
-                    })
-                    ->with('reward');
-            },
-            'replies' => function ($query) {
-                $query->topLevel()
-                    ->with([
-                        'user.studentProfile',
-                        'studentProfile',
-                        'user.studentProfile.rewardInventory' => function ($q) {
-                            $q->where('is_equipped', true)
-                                ->whereHas('reward', function ($r) {
-                                    $r->where('reward_type', 'avatar_frame');
-                                })
-                                ->with('reward');
-                        },
-                        'childReplies.user.studentProfile',
-                        'childReplies.studentProfile',
-                        'childReplies.user.studentProfile.rewardInventory' => function ($q) {
-                            $q->where('is_equipped', true)
-                                ->whereHas('reward', function ($r) {
-                                    $r->where('reward_type', 'avatar_frame');
-                                })
-                                ->with('reward');
-                        },
-                        'childReplies.childReplies.user.studentProfile',
-                        'childReplies.childReplies.studentProfile',
-                        'childReplies.childReplies.user.studentProfile.rewardInventory' => function ($q) {
-                            $q->where('is_equipped', true)
-                                ->whereHas('reward', function ($r) {
-                                    $r->where('reward_type', 'avatar_frame');
-                                })
-                                ->with('reward');
-                        },
-                    ])
-                    ->orderBy('is_solution', 'desc')
-                    ->orderBy('created_at', 'asc');
-            },
-        ])->findOrFail($id);
+        $post = ForumPost::withForumDetail()->findOrFail($id);
 
         // ✅ 增加浏览量（带防刷机制）
         $viewCounted = $post->incrementViews($userId);
@@ -229,7 +188,7 @@ class ForumController extends Controller
         // 检查当前用户的互动状态
         $isLiked = ForumPostLike::isLiked($userId, $post->post_id);
         $isFavorited = ForumFavorite::isFavorited($userId, $post->post_id);
-        $hasReported = \App\Models\ForumReport::hasReported($userId, 'post', $post->post_id);
+        $hasReported = ForumReport::hasReported($userId, 'post', $post->post_id);
 
         $currentUser = auth()->user();
 
@@ -357,133 +316,30 @@ class ForumController extends Controller
             'parent_reply_id' => 'nullable|exists:forum_replies,reply_id',
         ]);
 
-        $parentReply = null;
-        if (! empty($validated['parent_reply_id'])) {
-            $parentReply = ForumReply::where('reply_id', $validated['parent_reply_id'])
-                ->where('post_id', $post->post_id)
-                ->first();
-
-            if (! $parentReply) {
-                return back()->withErrors([
-                    'parent_reply_id' => 'The parent reply does not belong to this post.',
-                ]);
-            }
+        try {
+            // Validation proves the parent exists, not that it belongs to this
+            // thread; the service rejects one from another post.
+            $this->forum->resolveParentReply($post, $validated['parent_reply_id'] ?? null);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['parent_reply_id' => $e->getMessage()]);
         }
 
         try {
-            $currentUser = auth()->user();
-            $userId = $currentUser->user_Id; // ✅ 使用正确的主键
-
-            Log::info('=== Creating Reply ===', [
-                'user_id' => $userId,
-                'post_id' => $post->post_id,
-                'parent_reply_id' => $validated['parent_reply_id'] ?? null,
-                'content_length' => strlen($validated['content']),
-            ]);
-
-            // ✅ 创建回复，使用正确的 user_id 字段
-            $reply = ForumReply::create([
-                'post_id' => $post->post_id,
-                'user_id' => $userId, // ✅ 改用 user_Id
-                'parent_reply_id' => $validated['parent_reply_id'] ?? null,
-                'content' => ForumHelper::sanitizeContent($validated['content']),
-            ]);
-
-            Log::info('✅ Reply created successfully', [
-                'reply_id' => $reply->reply_id,
-                'post_id' => $post->post_id,
-                'user_id' => $userId,
-            ]);
-
-            // ✅ 更新学生活跃度
-            $missionProgress = null;
-
-            if (ForumHelper::isStudent()) {
-                $student = ForumHelper::getCurrentStudentProfile();
-                $student?->updateStreak();
-
-                if ($student) {
-                    try {
-                        $missionProgress = app(DailyChallengeService::class)->recordForumReplyCreated(
-                            (int) $student->student_id,
-                            (int) $reply->reply_id
-                        );
-                    } catch (\Throwable $challengeException) {
-                        Log::warning('Failed to record forum-reply daily challenge event', [
-                            'student_id' => $student->student_id,
-                            'reply_id' => $reply->reply_id,
-                            'error' => $challengeException->getMessage(),
-                        ]);
-                    }
-                }
-            }
-
-            // ✅ 重新加载完整的帖子数据（包括新回复）
-            $post = ForumPost::with([
-                'user.studentProfile',
-                'studentProfile',
-                'user.studentProfile.rewardInventory' => function ($query) {
-                    $query->where('is_equipped', true)
-                        ->whereHas('reward', function ($q) {
-                            $q->where('reward_type', 'avatar_frame');
-                        })
-                        ->with('reward');
-                },
-                'replies' => function ($query) {
-                    $query->topLevel()
-                        ->with([
-                            'user.studentProfile',
-                            'studentProfile',
-                            'user.studentProfile.rewardInventory' => function ($q) {
-                                $q->where('is_equipped', true)
-                                    ->whereHas('reward', function ($r) {
-                                        $r->where('reward_type', 'avatar_frame');
-                                    })
-                                    ->with('reward');
-                            },
-                            'childReplies.user.studentProfile',
-                            'childReplies.studentProfile',
-                            'childReplies.user.studentProfile.rewardInventory' => function ($q) {
-                                $q->where('is_equipped', true)
-                                    ->whereHas('reward', function ($r) {
-                                        $r->where('reward_type', 'avatar_frame');
-                                    })
-                                    ->with('reward');
-                            },
-                            'childReplies.childReplies.user.studentProfile',
-                            'childReplies.childReplies.studentProfile',
-                            'childReplies.childReplies.user.studentProfile.rewardInventory' => function ($q) {
-                                $q->where('is_equipped', true)
-                                    ->whereHas('reward', function ($r) {
-                                        $r->where('reward_type', 'avatar_frame');
-                                    })
-                                    ->with('reward');
-                            },
-                        ])
-                        ->orderBy('is_solution', 'desc')
-                        ->orderBy('created_at', 'asc');
-                },
-            ])->findOrFail($id);
-
-            Log::info('✅ Reply process completed', [
-                'reply_id' => $reply->reply_id,
-                'total_replies' => $post->replies->count(),
-            ]);
+            $result = $this->forum->createReply($post, $request->user(), $validated);
 
             return back()->with([
                 'success' => 'Reply posted successfully!',
-                'missionProgress' => $missionProgress,
-                'post' => $post, // ✅ 返回更新后的帖子数据
+                'missionProgress' => $result['missionProgress'],
+                'post' => ForumPost::withForumDetail()->findOrFail($id),
             ]);
         } catch (\Exception $e) {
-            Log::error('=== Forum reply creation FAILED ===', [
+            Log::error('Forum reply creation failed', [
                 'post_id' => $id,
-                'user_id' => $currentUser->user_Id ?? null,
+                'user_id' => $request->user()->user_Id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to post reply: '.$e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to post reply. Please try again.']);
         }
     }
 
@@ -501,13 +357,11 @@ class ForumController extends Controller
         ]);
 
         try {
-            $reply->update([
-                'content' => ForumHelper::sanitizeContent($validated['content']),
-            ]);
+            $this->forum->updateReply($reply, $validated['content']);
 
             return back()->with('success', 'Reply updated successfully!');
         } catch (\Exception $e) {
-            Log::error('Forum reply update failed: '.$e->getMessage());
+            Log::error('Forum reply update failed: '.$e->getMessage(), ['reply_id' => $replyId]);
 
             return back()->withErrors(['error' => 'Failed to update reply.']);
         }
@@ -549,56 +403,18 @@ class ForumController extends Controller
     /**
      * 标记/取消标记最佳答案
      */
-    public function markSolution($replyId)
+    public function markSolution(Request $request, $replyId)
     {
         $reply = ForumReply::findOrFail($replyId);
 
         $this->authorize('markSolution', $reply);
 
-        $currentUser = auth()->user();
-        $userId = $currentUser->user_Id;
-
         try {
-            if ($reply->is_solution) {
-                $reply->unmarkAsSolution();
-                $message = 'Solution unmarked successfully!';
-            } else {
-                $reply->markAsSolution();
+            $result = $this->forum->toggleSolution($reply, $request->user());
 
-                if ($reply->user_id !== $userId) { // ✅ 改用 $userId
-                    $post = ForumPost::find($reply->post_id);
-
-                    Notification::create([
-                        'user_Id' => $reply->user_id,
-                        'type' => 'community',
-                        'priority' => 'high',
-                        'title' => '⭐ Best Answer',
-                        'message' => "{$currentUser->name} marked your reply as the best answer!",
-                        'icon' => 'star',
-                        'color' => 'yellow',
-                        'data' => [
-                            'post_id' => $reply->post_id,
-                            'reply_id' => $reply->reply_id,
-                            'post_title' => $post ? $post->title : '',
-                            'post_author' => $currentUser->name,
-                        ],
-                        'action_url' => route('forum.show', $reply->post_id).'#reply-'.$reply->reply_id,
-                        'action_text' => 'View Post',
-                    ]);
-
-                    Log::info('📬 Best answer notification sent', [
-                        'reply_id' => $reply->reply_id,
-                        'post_author' => $currentUser->name,
-                        'answer_author' => $reply->user_id,
-                    ]);
-                }
-
-                $message = 'Reply marked as solution!';
-            }
-
-            return back()->with('success', $message);
+            return back()->with('success', $result['message']);
         } catch (\Exception $e) {
-            Log::error('Mark solution failed: '.$e->getMessage());
+            Log::error('Mark solution failed: '.$e->getMessage(), ['reply_id' => $replyId]);
 
             return back()->withErrors(['error' => 'Failed to mark solution.']);
         }
@@ -607,113 +423,29 @@ class ForumController extends Controller
     /**
      * 点赞/取消点赞帖子 (AJAX)
      */
-    public function toggleLike($id)
+    public function toggleLike(Request $request, $id)
     {
         $post = ForumPost::findOrFail($id);
 
         $this->authorize('like', $post);
 
         try {
-            $currentUser = auth()->user();
+            $isLiked = $this->forum->togglePostLike($post, $request->user());
 
-            // ✅ 使用正确的主键名称
-            $userId = $currentUser->user_Id; // 改用 user_Id（大写 I）
-
-            Log::info('=== Toggle Like Request ===', [
-                'user_id' => $userId,
-                'user_role' => $currentUser->role,
-                'post_id' => $id,
-                'primary_key' => $currentUser->getKeyName(), // 查看主键名称
-            ]);
-
-            // ✅ Toggle like
-            $isLiked = ForumPostLike::toggle($userId, $id);
-
-            Log::info('Toggle like result', [
-                'is_liked' => $isLiked,
-                'post_id' => $id,
-            ]);
-
-            // ✅ 重新加载帖子数据
-            $post = ForumPost::with([
-                'user.studentProfile',
-                'studentProfile',
-                'user.studentProfile.rewardInventory' => function ($query) {
-                    $query->where('is_equipped', true)
-                        ->whereHas('reward', function ($q) {
-                            $q->where('reward_type', 'avatar_frame');
-                        })
-                        ->with('reward');
-                },
-                'replies' => function ($query) {
-                    $query->topLevel()
-                        ->with([
-                            'user.studentProfile',
-                            'studentProfile',
-                            'user.studentProfile.rewardInventory' => function ($q) {
-                                $q->where('is_equipped', true)
-                                    ->whereHas('reward', function ($r) {
-                                        $r->where('reward_type', 'avatar_frame');
-                                    })
-                                    ->with('reward');
-                            },
-                            'childReplies.user.studentProfile',
-                            'childReplies.studentProfile',
-                            'childReplies.user.studentProfile.rewardInventory' => function ($q) {
-                                $q->where('is_equipped', true)
-                                    ->whereHas('reward', function ($r) {
-                                        $r->where('reward_type', 'avatar_frame');
-                                    })
-                                    ->with('reward');
-                            },
-                            'childReplies.childReplies.user.studentProfile',
-                            'childReplies.childReplies.studentProfile',
-                            'childReplies.childReplies.user.studentProfile.rewardInventory' => function ($q) {
-                                $q->where('is_equipped', true)
-                                    ->whereHas('reward', function ($r) {
-                                        $r->where('reward_type', 'avatar_frame');
-                                    })
-                                    ->with('reward');
-                            },
-                        ])
-                        ->orderBy('is_solution', 'desc')
-                        ->orderBy('created_at', 'asc');
-                },
-            ])->findOrFail($id);
-
-            // ✅ 发送通知（如果是点赞且不是自己的帖子）
-            if ($isLiked && $post->user_id !== $userId) {
-                $this->sendOrUpdatePostLikeNotification(
-                    $post->user_id,
-                    $currentUser->name,
-                    $post->post_id,
-                    $post->title
-                );
-            }
-
-            // ✅ 获取用户互动状态
-            $isFavorited = ForumFavorite::isFavorited($userId, $post->post_id);
-            $hasReported = \App\Models\ForumReport::hasReported($userId, 'post', $post->post_id);
-
-            Log::info('✅ Like toggled successfully', [
-                'post_id' => $id,
-                'is_liked' => $isLiked,
-                'current_likes' => $post->fresh()->likes,
-            ]);
+            $userId = $request->user()->user_Id;
+            $post = ForumPost::withForumDetail()->findOrFail($id);
 
             return back()->with([
                 'success' => $isLiked ? 'Post liked!' : 'Post unliked!',
-                'post' => $post->fresh(),
+                'post' => $post,
                 'isLiked' => $isLiked,
-                'isFavorited' => $isFavorited,
-                'hasReported' => $hasReported,
+                'isFavorited' => ForumFavorite::isFavorited($userId, $post->post_id),
+                'hasReported' => ForumReport::hasReported($userId, 'post', $post->post_id),
             ]);
         } catch (\Exception $e) {
-            Log::error('=== Toggle post like FAILED ===', [
+            Log::error('Toggle post like failed', [
                 'post_id' => $id,
-                'user_id' => auth()->user()->user_Id ?? null,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return back()->with('error', 'Failed to like post. Please try again.');
@@ -723,51 +455,18 @@ class ForumController extends Controller
     /**
      * 点赞/取消点赞回复 (AJAX)
      */
-    public function toggleReplyLike($replyId)
+    public function toggleReplyLike(Request $request, $replyId)
     {
-        $this->authorize('like', ForumReply::findOrFail($replyId));
+        $reply = ForumReply::findOrFail($replyId);
+
+        $this->authorize('like', $reply);
 
         try {
-            $currentUser = auth()->user();
-            $userId = $currentUser->user_Id;
-
-            Log::info('=== Toggle Reply Like ===', [
-                'user_id' => $userId,
-                'reply_id' => $replyId,
-            ]);
-
-            $reply = ForumReply::findOrFail($replyId);
-            $isLiked = ForumReplyLike::toggle($userId, $reply->reply_id);
-
-            Log::info('✅ Reply like toggled', [
-                'reply_id' => $replyId,
-                'is_liked' => $isLiked,
-            ]);
-
-            // 发送通知
-            if ($isLiked && $reply->user_id !== $userId) {
-                Notification::create([
-                    'user_Id' => $reply->user_id,
-                    'type' => 'community',
-                    'priority' => 'low',
-                    'title' => '👍 Reply Liked',
-                    'message' => "{$currentUser->name} liked your reply",
-                    'icon' => 'thumbs-up',
-                    'color' => 'purple',
-                    'data' => [
-                        'post_id' => $reply->post_id,
-                        'reply_id' => $reply->reply_id,
-                        'liker_name' => $currentUser->name,
-                        'reply_preview' => \Illuminate\Support\Str::limit($reply->content, 100),
-                    ],
-                    'action_url' => route('forum.show', $reply->post_id).'#reply-'.$reply->reply_id,
-                    'action_text' => 'View Reply',
-                ]);
-            }
+            $isLiked = $this->forum->toggleReplyLike($reply, $request->user());
 
             return back()->with('success', $isLiked ? 'Reply liked!' : 'Reply unliked!');
         } catch (\Exception $e) {
-            Log::error('=== Toggle reply like FAILED ===', [
+            Log::error('Toggle reply like failed', [
                 'reply_id' => $replyId,
                 'error' => $e->getMessage(),
             ]);
@@ -779,48 +478,31 @@ class ForumController extends Controller
     /**
      * 收藏/取消收藏帖子 (AJAX)
      */
-    public function toggleFavorite($id)
+    public function toggleFavorite(Request $request, $id)
     {
-        $this->authorize('favorite', ForumPost::findOrFail($id));
+        $post = ForumPost::findOrFail($id);
+
+        $this->authorize('favorite', $post);
 
         try {
-            $post = ForumPost::with([
-                'user',
-                'studentProfile',
-                'replies' => function ($query) {
-                    $query->topLevel()
-                        ->with([
-                            'user',
-                            'studentProfile',
-                            'childReplies.user',
-                            'childReplies.studentProfile',
-                            'childReplies.childReplies.user',
-                            'childReplies.childReplies.studentProfile',
-                        ])
-                        ->orderBy('is_solution', 'desc')
-                        ->orderBy('created_at', 'asc');
-                },
-            ])->findOrFail($id);
+            $isFavorited = $this->forum->toggleFavorite($post, $request->user());
 
-            $isFavorited = ForumFavorite::toggle(auth()->id(), $post->post_id);
+            $userId = $request->user()->user_Id;
 
-            $userId = auth()->user()->user_Id;
-
-            // 重新获取用户的互动状态
-            $isLiked = ForumPostLike::isLiked($userId, $post->post_id);
-            $hasReported = \App\Models\ForumReport::hasReported($userId, 'post', $post->post_id);
-
-            $message = $isFavorited ? 'Post favorited!' : 'Post unfavorited!';
+            // withForumDetail(), not the thinner eager-load this used to build:
+            // that one omitted equipped avatar frames, so favouriting stripped
+            // them from the page until the next full load.
+            $post = ForumPost::withForumDetail()->findOrFail($id);
 
             return back()->with([
-                'success' => $message,
+                'success' => $isFavorited ? 'Post favorited!' : 'Post unfavorited!',
                 'post' => $post,
-                'isLiked' => $isLiked,
+                'isLiked' => ForumPostLike::isLiked($userId, $post->post_id),
                 'isFavorited' => $isFavorited,
-                'hasReported' => $hasReported,
+                'hasReported' => ForumReport::hasReported($userId, 'post', $post->post_id),
             ]);
         } catch (\Exception $e) {
-            Log::error('Toggle favorite failed: '.$e->getMessage());
+            Log::error('Toggle favorite failed: '.$e->getMessage(), ['post_id' => $id]);
 
             return back()->with('error', 'Failed to favorite post. Please try again.');
         }
@@ -985,72 +667,6 @@ class ForumController extends Controller
             Log::error('Report reply failed: '.$e->getMessage());
 
             return back()->with('error', 'Failed to submit report. Please try again.');
-        }
-    }
-
-    private function sendOrUpdatePostLikeNotification($postAuthorId, $likerName, $postId, $postTitle)
-    {
-        try {
-            // 查找最近 5 分钟内的同类型通知
-            $recentNotification = Notification::where('user_Id', $postAuthorId)
-                ->where('type', 'community')
-                ->where('title', '❤️ Post Liked')
-                ->where('created_at', '>=', now()->subMinutes(5))
-                ->whereJsonContains('data->post_id', (string) $postId)
-                ->first();
-
-            if ($recentNotification) {
-                // 更新现有通知
-                $data = $recentNotification->data ?? [];
-                $likers = $data['likers'] ?? [];
-                $likers[] = $likerName;
-                $likers = array_unique($likers);
-
-                $count = count($likers);
-                $message = $count > 1
-                    ? "{$likers[0]} and ".($count - 1).' others liked your post'
-                    : "{$likerName} liked your post";
-
-                $recentNotification->update([
-                    'message' => $message,
-                    'is_read' => false,  // 重置为未读
-                    'data' => array_merge($data, [
-                        'likers' => $likers,
-                        'likers_count' => $count,
-                    ]),
-                ]);
-
-                Log::info('📬 Updated existing like notification', [
-                    'notification_id' => $recentNotification->notification_id,
-                    'total_likers' => $count,
-                ]);
-            } else {
-                // 创建新通知
-                Notification::create([
-                    'user_Id' => $postAuthorId,
-                    'type' => 'community',
-                    'priority' => 'low',
-                    'title' => '❤️ Post Liked',
-                    'message' => "{$likerName} liked your post",
-                    'icon' => 'heart',
-                    'color' => 'red',
-                    'data' => [
-                        'post_id' => $postId,
-                        'likers' => [$likerName],
-                        'likers_count' => 1,
-                        'post_title' => \Illuminate\Support\Str::limit($postTitle, 50),
-                    ],
-                    'action_url' => route('forum.show', $postId),
-                    'action_text' => 'View Post',
-                ]);
-
-                Log::info('📬 Created new like notification', [
-                    'post_id' => $postId,
-                    'liker' => $likerName,
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('Failed to send like notification: '.$e->getMessage());
         }
     }
 }
