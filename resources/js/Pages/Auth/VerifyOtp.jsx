@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useForm, Head } from '@inertiajs/react';
-import { Mail, Lock, Sparkles, AlertCircle, CheckCircle, ArrowRight, Send, ShieldCheck } from 'lucide-react';
+import { useForm, Head, Link } from '@inertiajs/react';
+import { Mail, Lock, Sparkles, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, Send, ShieldCheck } from 'lucide-react';
 
 export default function VerifyOtp({ email }) {
     const [step, setStep] = useState('send'); // 'send' or 'verify'
@@ -56,6 +56,18 @@ export default function VerifyOtp({ email }) {
                 <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
                     <div className="w-full max-w-lg">
                         
+                        {/* Exit route. This page has no layout chrome, so
+                            without it a user who lands here is stuck. Back to
+                            login rather than home: this is a login step, and
+                            login is where they were heading. */}
+                        <Link
+                            href={route('login')}
+                            className="inline-flex items-center gap-1.5 mb-6 text-sm font-medium text-gray-200 hover:text-white transition-colors drop-shadow-lg"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Back to login
+                        </Link>
+
                         {/* Logo/Brand */}
                         <div className="text-center mb-8">
                             <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-2xl animate-float">

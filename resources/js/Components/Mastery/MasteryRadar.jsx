@@ -36,7 +36,8 @@ function polygon(values) {
         .join(' ');
 }
 
-export default function MasteryRadar({ concepts }) {
+export default function MasteryRadar({ concepts, theme = 'light' }) {
+    const isDark = theme === 'dark';
     // Below three axes a radar degenerates into a line or a point.
     if (!concepts || concepts.length < 3) {
         return null;
@@ -59,7 +60,7 @@ export default function MasteryRadar({ concepts }) {
                     <polygon
                         key={ring}
                         points={polygon(concepts.map(() => ring))}
-                        className="fill-none stroke-slate-200 dark:stroke-slate-700"
+                        className={isDark ? "fill-none stroke-white/15" : "fill-none stroke-slate-200"}
                         strokeWidth="1"
                     />
                 ))}
@@ -75,7 +76,7 @@ export default function MasteryRadar({ concepts }) {
                             y1={CENTER}
                             x2={p.x}
                             y2={p.y}
-                            className="stroke-slate-200 dark:stroke-slate-700"
+                            className={isDark ? "stroke-white/15" : "stroke-slate-200"}
                             strokeWidth="1"
                         />
                     );
@@ -86,7 +87,7 @@ export default function MasteryRadar({ concepts }) {
                 {hasBaseline && (
                     <polygon
                         points={polygon(baseline)}
-                        className="fill-none stroke-slate-400 dark:stroke-slate-500"
+                        className={isDark ? "fill-none stroke-white/50" : "fill-none stroke-slate-400"}
                         strokeWidth="1.5"
                         strokeDasharray="4 3"
                     />
@@ -95,7 +96,7 @@ export default function MasteryRadar({ concepts }) {
                 {/* Current mastery */}
                 <polygon
                     points={polygon(current)}
-                    className="fill-indigo-500/25 stroke-indigo-500 dark:fill-indigo-400/25 dark:stroke-indigo-400"
+                    className={isDark ? "fill-indigo-400/30 stroke-indigo-300" : "fill-indigo-500/25 stroke-indigo-500"}
                     strokeWidth="2"
                 />
 
@@ -109,7 +110,7 @@ export default function MasteryRadar({ concepts }) {
                             cx={p.x}
                             cy={p.y}
                             r="3"
-                            className="fill-indigo-500 dark:fill-indigo-400"
+                            className={isDark ? "fill-indigo-300" : "fill-indigo-500"}
                         />
                     );
                 })}
@@ -128,7 +129,7 @@ export default function MasteryRadar({ concepts }) {
                             y={p.y}
                             textAnchor={isRight ? 'start' : isLeft ? 'end' : 'middle'}
                             dominantBaseline="middle"
-                            className="fill-slate-500 text-[9px] dark:fill-slate-400"
+                            className={isDark ? "fill-white/80 text-[9px]" : "fill-slate-500 text-[9px]"}
                         >
                             {concept.short_name ?? concept.name}
                         </text>

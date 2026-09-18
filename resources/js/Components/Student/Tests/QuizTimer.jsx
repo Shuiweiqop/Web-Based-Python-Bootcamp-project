@@ -77,8 +77,17 @@ export default function QuizTimer({ startedAt, timeLimit, onTimeUp }) {
         return (timeRemaining / totalSeconds) * 100;
     };
 
+    /*
+     * Positioned below the fixed navbar rather than at top-4. StudentLayout's
+     * navbar is `fixed top-0 w-full z-50` and 64px tall, so a timer at top-4
+     * sits inside it — which is why it appeared clipped. The layout reserves
+     * pt-24 of content offset for the same reason.
+     *
+     * z-40 rather than z-50 keeps the timer under the navbar's dropdown menus
+     * instead of covering them.
+     */
     return (
-        <div className={`fixed top-4 right-4 z-50 ${getColorClass()} rounded-lg border-2 shadow-lg overflow-hidden transition-all duration-300`}>
+        <div className={`fixed top-20 right-4 z-40 ${getColorClass()} rounded-lg border-2 shadow-lg overflow-hidden transition-all duration-300`}>
             {/* Progress Bar */}
             <div className="h-1 bg-gray-200">
                 <div 

@@ -1,14 +1,19 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { 
-    RocketLaunchIcon, 
-    AcademicCapIcon, 
+import {
+    RocketLaunchIcon,
+    AcademicCapIcon,
     ChartBarIcon,
     SparklesIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
-export default function Welcome({ student }) {
+export default function Welcome({ student, flash }) {
+    // "Already completed" is the common refusal and has a useful next step,
+    // so it gets a link to the results rather than just an error message.
+    const alreadyCompleted = /already completed/i.test(flash?.error ?? '');
+
     const features = [
         {
             icon: AcademicCapIcon,
@@ -54,7 +59,34 @@ export default function Welcome({ student }) {
             
             <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                    
+
+                    {/* Flash messages. startTest() refuses with back()->with('error')
+                        in several cases (already completed, no questions, no test);
+                        without rendering them the button looks like it does nothing. */}
+                    {flash?.error && (
+                        <div className="mb-8 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+                            <ExclamationTriangleIcon className="h-5 w-5 shrink-0 text-red-600" />
+                            <div>
+                                <p className="text-sm font-medium text-red-800">{flash.error}</p>
+                                {alreadyCompleted && (
+                                    <Link
+                                        href={route('student.onboarding.index')}
+                                        className="mt-1 inline-block text-sm font-medium text-red-700 underline hover:text-red-900"
+                                    >
+                                        View your results
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {flash?.success && (
+                        <div className="mb-8 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                            <CheckCircleIcon className="h-5 w-5 shrink-0 text-emerald-600" />
+                            <p className="text-sm font-medium text-emerald-800">{flash.success}</p>
+                        </div>
+                    )}
+
                     {/* Hero Section */}
                     <div className="text-center mb-16">
                         <div className="flex justify-center mb-6">

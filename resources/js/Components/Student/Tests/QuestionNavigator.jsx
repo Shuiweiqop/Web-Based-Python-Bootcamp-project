@@ -1,119 +1,78 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, AlertTriangle } from 'lucide-react';
+import React from 'react';
+import { CheckCircle2 } from 'lucide-react';
 
-export default function QuizTimer({ startedAt, timeLimit, onTimeUp }) {
-    const [timeRemaining, setTimeRemaining] = useState(null);
-    const [isWarning, setIsWarning] = useState(false);
-
-    useEffect(() => {
-        if (!timeLimit || !startedAt) return;
-
-        const calculateTimeRemaining = () => {
-            const started = new Date(startedAt);
-            const expires = new Date(started.getTime() + timeLimit * 60 * 1000);
-            const now = new Date();
-            const remaining = Math.max(0, Math.floor((expires - now) / 1000));
-            
-            return remaining;
-        };
-
-        const updateTimer = () => {
-            const remaining = calculateTimeRemaining();
-            setTimeRemaining(remaining);
-
-            // Show warning when 5 minutes left
-            if (remaining <= 300 && remaining > 0) {
-                setIsWarning(true);
-            }
-
-            // Time's up
-            if (remaining === 0) {
-                if (onTimeUp) {
-                    onTimeUp();
-                }
-            }
-        };
-
-        // Initial update
-        updateTimer();
-
-        // Update every second
-        const interval = setInterval(updateTimer, 1000);
-
-        return () => clearInterval(interval);
-    }, [startedAt, timeLimit, onTimeUp]);
-
-    if (!timeLimit || timeRemaining === null) {
+/**
+ * Jump-to-question strip for a test in progress.
+ *
+ * This file previously held a copy-pasted duplicate of QuizTimer — same timer
+ * code under the wrong name, positioned at the identical `fixed top-4 right-4
+ * z-50` as the real one. It rendered nothing only because Taking.jsx passes it
+ * navigator props and no timeLimit, so its null-guard fired. Any future caller
+ * passing timer props would have got two overlapping timers.
+ *
+ * Replaced with the component the props actually describe: which question the
+ * student is on, which ones are answered, and a way to move between them.
+ */
+export default function QuestionNavigator({
+    currentIndex = 0,
+    totalQuestions = 0,
+    answeredQuestions = [],
+    onNavigate,
+}) {
+    if (!totalQuestions) {
         return null;
     }
 
-    const hours = Math.floor(timeRemaining / 3600);
-    const minutes = Math.floor((timeRemaining % 3600) / 60);
-    const seconds = timeRemaining % 60;
+    // answeredQuestions may arrive as an array of indices or a Set; normalise so
+    // callers are not forced into one shape.
+    const answered =
+        answeredQuestions instanceof Set
+            ? answeredQuestions
+            : new Set(Array.isArray(answeredQuestions) ? answeredQuestions : []);
 
-    const formatTime = () => {
-        if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    };
-
-    const getColorClass = () => {
-        if (timeRemaining === 0) {
-            return 'bg-red-100 text-red-800 border-red-300';
-        }
-        if (isWarning) {
-            return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-        }
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-    };
-
-    const getProgressPercentage = () => {
-        const totalSeconds = timeLimit * 60;
-        return (timeRemaining / totalSeconds) * 100;
-    };
+    const answeredCount = answered.size;
 
     return (
-        <div className={`fixed top-4 right-4 z-50 ${getColorClass()} rounded-lg border-2 shadow-lg overflow-hidden transition-all duration-300`}>
-            {/* Progress Bar */}
-            <div className="h-1 bg-gray-200">
-                <div 
-                    className={`h-full transition-all duration-1000 ${
-                        timeRemaining === 0 ? 'bg-red-500' :
-                        isWarning ? 'bg-yellow-500' : 'bg-blue-500'
-                    }`}
-                    style={{ width: `${getProgressPercentage()}%` }}
-                />
-            </div>
-
-            <div className="p-4">
-                <div className="flex items-center space-x-3">
-                    {isWarning ? (
-                        <AlertTriangle className="w-6 h-6" />
-                    ) : (
-                        <Clock className="w-6 h-6" />
-                    )}
-                    <div>
-                        <div className="text-xs font-medium opacity-75 mb-1">
-                            {timeRemaining === 0 ? 'Time\'s Up!' : 'Time Remaining'}
-                        </div>
-                        <div className="text-2xl font-bold font-mono">
-                            {formatTime()}
-                        </div>
-                    </div>
+        <div className="mx-auto mt-4 max-w-4xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-xl border border-white/20 bg-black/60 p-4 shadow-lg backdrop-blur-xl">
+                <div className="mb-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-white">
+                        Question {currentIndex + 1} of {totalQuestions}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-xs text-gray-300">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        {answeredCount} answered
+                    </span>
                 </div>
 
-                {isWarning && timeRemaining > 0 && (
-                    <div className="mt-2 text-xs font-medium">
-                        ⚠️ Less than 5 minutes left!
-                    </div>
-                )}
+                <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: totalQuestions }, (_, index) => {
+                        const isCurrent = index === currentIndex;
+                        const isAnswered = answered.has(index);
 
-                {timeRemaining === 0 && (
-                    <div className="mt-2 text-xs font-medium">
-                        Submitting automatically...
-                    </div>
-                )}
+                        return (
+                            <button
+                                key={index}
+                                type="button"
+                                onClick={() => onNavigate?.(index)}
+                                aria-label={`Go to question ${index + 1}${isAnswered ? ' (answered)' : ''}`}
+                                aria-current={isCurrent ? 'true' : undefined}
+                                className={[
+                                    // 40px keeps this a comfortable thumb target
+                                    // on the phone viewport the audit checks.
+                                    'flex h-10 w-10 items-center justify-center rounded-lg text-sm font-semibold transition-all',
+                                    isCurrent
+                                        ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-2 ring-offset-black/60'
+                                        : isAnswered
+                                          ? 'bg-emerald-500/25 text-emerald-200 hover:bg-emerald-500/40'
+                                          : 'bg-white/10 text-gray-300 hover:bg-white/20',
+                                ].join(' ')}
+                            >
+                                {index + 1}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
