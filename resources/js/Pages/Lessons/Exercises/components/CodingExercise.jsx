@@ -67,6 +67,12 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
         monaco.editor.setTheme('codingTheme');
     };
 
+    // The column is authoritative; older exercises kept these under content,
+    // and an exercise with neither is graded on running cleanly instead.
+    const testCases = exercise.test_cases?.length
+        ? exercise.test_cases
+        : exercise.content?.test_cases || [];
+
     // 运行代码（测试，不提交）
     const handleRunCode = async () => {
         setIsRunning(true);
@@ -76,7 +82,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
             const response = await axios.post('/api/code/execute', {
                 code: code,
                 language: 'python',
-                test_cases: exercise.test_cases || [],
+                test_cases: testCases,
             });
 
             setOutput(response.data.output || '✅ Code executed successfully!');
@@ -109,7 +115,7 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
             const executeResponse = await axios.post('/api/code/execute', {
                 code: code,
                 language: 'python',
-                test_cases: exercise.test_cases || [],
+                test_cases: testCases,
             });
 
             const testResults = executeResponse.data.test_results || [];
@@ -295,7 +301,6 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
 
     // 🔥 安全获取数据
     const maxScore = exercise.max_score || exercise.points || 100;
-    const testCases = exercise.test_cases || [];
     const passedTests = testResults.filter(t => t.passed).length;
     const totalTests = testResults.length;
     const allTestsPassed = totalTests > 0 && passedTests === totalTests;

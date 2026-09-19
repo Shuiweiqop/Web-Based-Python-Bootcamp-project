@@ -123,6 +123,49 @@ class InteractiveExercise extends Model
         $this->attributes['content'] = $value === null ? null : json_encode($value);
     }
 
+    /**
+     * Normalise test cases to one shape on the way in.
+     *
+     * The authoring form wrote 'expected_output' while the grader read
+     * 'expected', so anything saved through the form was graded against an
+     * empty string. Both spellings still exist in stored data; this collapses
+     * them to 'expected' so the grader has a single key to read.
+     */
+    public function setTestCasesAttribute($value): void
+    {
+        if (is_string($value)) {
+            $value = json_decode($value, true);
+        }
+
+        if (! is_array($value)) {
+            $this->attributes['test_cases'] = $value === null ? null : json_encode($value);
+
+            return;
+        }
+
+        $normalised = [];
+
+        foreach ($value as $case) {
+            if (! is_array($case)) {
+                continue;
+            }
+
+            $expected = $case['expected'] ?? $case['expected_output'] ?? '';
+            unset($case['expected_output']);
+
+            // A row with neither an input nor an expectation is an empty slot
+            // left by the form, not a test.
+            if (trim((string) $expected) === '' && trim((string) ($case['input'] ?? '')) === '') {
+                continue;
+            }
+
+            $case['expected'] = (string) $expected;
+            $normalised[] = $case;
+        }
+
+        $this->attributes['test_cases'] = json_encode($normalised);
+    }
+
     public function getFormattedDurationAttribute(): string
     {
         $duration = $this->duration ?? 0;
