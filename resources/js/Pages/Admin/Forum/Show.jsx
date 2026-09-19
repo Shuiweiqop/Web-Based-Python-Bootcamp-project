@@ -336,7 +336,6 @@ const getAuthorInfo = (post) => {
                                             reply={reply}
                                             postId={post.post_id}
                                             postAuthorId={post.user_id}
-                                            currentUserId={auth.user.user_Id || auth.user.id}
                                             isPostLocked={post.is_locked}
                                         />
                                         {index < post.replies.length - 1 && (
