@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Log;
 
 class CodeExecutionController extends Controller
 {
+    /** Judge0 verdict for a program that ran to completion. */
+    private const JUDGE0_STATUS_ACCEPTED = 3;
+
     private $client;
 
     private $judge0BaseUrl = 'https://judge0-ce.p.rapidapi.com';
@@ -110,10 +113,18 @@ class CodeExecutionController extends Controller
 
             $result = json_decode($response->getBody());
 
-            $output = $result->stdout ?? $result->stderr ?? 'No output';
+            $stdout = trim((string) ($result->stdout ?? ''));
+            $stderr = trim((string) ($result->stderr ?? ''));
+            $compile = trim((string) ($result->compile_output ?? ''));
+            $ranCleanly = (int) ($result->status->id ?? 0) === self::JUDGE0_STATUS_ACCEPTED;
+
+            $output = $ranCleanly
+                ? ($stdout !== '' ? $stdout : 'No output')
+                : ($compile ?: $stderr ?: ($result->status->description ?? 'Execution failed'));
 
             return response()->json([
                 'success' => true,
+                'ran_cleanly' => $ranCleanly,
                 'output' => $output,
                 'test_results' => [],
             ]);
@@ -133,7 +144,10 @@ class CodeExecutionController extends Controller
 
         foreach ($testCases as $testCase) {
             $input = $testCase['input'] ?? '';
-            $expected = trim($testCase['expected'] ?? '');
+            // expected_output is what the authoring form used to write; both
+            // spellings exist in the data, and reading only one graded those
+            // exercises against an empty string.
+            $expected = trim($testCase['expected'] ?? $testCase['expected_output'] ?? '');
 
             try {
                 // Submit code with test input
@@ -152,11 +166,22 @@ class CodeExecutionController extends Controller
 
                 $result = json_decode($response->getBody());
 
-                // Get output
-                $actual = trim($result->stdout ?? $result->stderr ?? '');
+                // Judge0 status 3 is "Accepted" — the program ran to
+                // completion. Anything else (compile error, runtime error,
+                // timeout) is a failure whatever landed on the streams.
+                $statusId = (int) ($result->status->id ?? 0);
+                $ranCleanly = $statusId === self::JUDGE0_STATUS_ACCEPTED;
 
-                // Compare results
-                $passed = $this->compareOutputs($expected, $actual);
+                // stdout must be read on its own: Judge0 returns "" rather than
+                // null for a program with no output, so ?? never falls through
+                // and a warning on stderr used to be compared as the answer.
+                $stdout = trim((string) ($result->stdout ?? ''));
+                $stderr = trim((string) ($result->stderr ?? ''));
+                $compile = trim((string) ($result->compile_output ?? ''));
+
+                $actual = $ranCleanly ? $stdout : ($stderr ?: $compile ?: $stdout);
+
+                $passed = $ranCleanly && $this->compareOutputs($expected, $actual);
 
                 if (! $passed) {
                     $allPassed = false;

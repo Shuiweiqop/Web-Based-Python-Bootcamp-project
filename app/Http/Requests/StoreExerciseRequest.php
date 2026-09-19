@@ -30,7 +30,10 @@ class StoreExerciseRequest extends FormRequest
             'coding_instructions' => 'nullable|string',
             'test_cases' => 'nullable|array',
             'test_cases.*.input' => 'nullable|string',
-            'test_cases.*.expected' => 'required_with:test_cases|string',
+            // Either spelling is accepted because both exist in the data. The
+            // model normalises them to 'expected' on the way in.
+            'test_cases.*.expected' => 'nullable|string',
+            'test_cases.*.expected_output' => 'nullable|string',
             'test_cases.*.description' => 'nullable|string',
         ];
     }
