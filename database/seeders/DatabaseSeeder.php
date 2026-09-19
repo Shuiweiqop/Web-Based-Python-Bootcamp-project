@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             StudentProfileSeeder::class,       // profiles for the student users
             LessonsTableSeeder::class,         // lessons + sections
             InteractiveExerciseSeeder::class,  // exercises attached to lessons
+            CodingExerciseContentSeeder::class, // real tasks + test cases for the coding ones
             TestSeeder::class,                 // per-lesson quizzes
             PlacementTestSeeder::class,        // standalone placement test
             LearningPathSeeder::class,         // paths referencing lessons
