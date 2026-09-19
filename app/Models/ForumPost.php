@@ -187,6 +187,12 @@ class ForumPost extends Model
             'replies' => function ($query) use ($equippedFrame) {
                 $query->topLevel()
                     ->with([
+                        // Each reply serialises a can_mark_solution flag, which
+                        // asks who wrote the post. Without the post loaded that
+                        // is one query per reply, at every nesting level.
+                        'post:post_id,user_id',
+                        'childReplies.post:post_id,user_id',
+                        'childReplies.childReplies.post:post_id,user_id',
                         'user.studentProfile',
                         'studentProfile',
                         'user.studentProfile.rewardInventory' => $equippedFrame,

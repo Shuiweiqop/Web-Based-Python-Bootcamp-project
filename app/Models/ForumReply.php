@@ -24,7 +24,20 @@ class ForumReply extends Model
         'equipped_snapshot', // ✅ 添加
     ];
 
+    /**
+     * Serialised with every reply so the client does not have to re-derive
+     * authorization from raw ids. See getCanEditAttribute().
+     */
+    protected $appends = ['can_edit', 'can_delete', 'can_mark_solution'];
+
     protected $casts = [
+        // user_id and post_id are cast because the client compares them and
+        // because MySQL can hand back an integer column as a string, where a
+        // strict comparison would silently deny the real author. sqlite does
+        // not, which is why this only bites in production.
+        'user_id' => 'integer',
+        'post_id' => 'integer',
+        'parent_reply_id' => 'integer',
         'is_solution' => 'boolean',
         'likes' => 'integer',
         'equipped_snapshot' => 'array', // ✅ 添加
@@ -177,6 +190,31 @@ class ForumReply extends Model
         }
 
         return ForumReplyLike::isLiked(auth()->id(), $this->reply_id);
+    }
+
+    /**
+     * Whether the viewer may edit this reply.
+     *
+     * These three delegate to ForumReplyPolicy rather than comparing ids here,
+     * so the buttons the client renders and the rules the server enforces
+     * cannot drift apart. The client used to derive them itself from raw ids,
+     * which both duplicated the rules and got them wrong: it compared with ===
+     * against values MySQL can return as strings, and it never granted an
+     * administrator the delete the policy allows them.
+     */
+    public function getCanEditAttribute(): bool
+    {
+        return auth()->check() && auth()->user()->can('update', $this);
+    }
+
+    public function getCanDeleteAttribute(): bool
+    {
+        return auth()->check() && auth()->user()->can('delete', $this);
+    }
+
+    public function getCanMarkSolutionAttribute(): bool
+    {
+        return auth()->check() && auth()->user()->can('markSolution', $this);
     }
 
     /* -------------------------

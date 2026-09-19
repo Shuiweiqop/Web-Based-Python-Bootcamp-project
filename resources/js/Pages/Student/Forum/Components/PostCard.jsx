@@ -89,7 +89,9 @@ export default function PostCard({ post, currentUserId, isDark }) {
     };
 
     const author = getAuthorInfo(post);
-    const isAuthor = currentUserId === post.user_id;
+    // Only drives a "You" label, not a permission. Coerced because the two ids
+    // reach here from different places and need not share a type.
+    const isAuthor = Number(currentUserId) === Number(post.user_id);
     const timeAgo = getTimeAgo(post.created_at);
 
     return (

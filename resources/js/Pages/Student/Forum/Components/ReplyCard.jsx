@@ -6,11 +6,10 @@ import SafeContentRenderer from '@/Components/SafeContentRenderer';
 import { formatDistanceToNow } from 'date-fns';
 import { avatarUrl } from '@/utils/avatar';
 
-export default function ReplyCard({ reply, postId, postAuthorId, currentUserId, isPostLocked, depth = 0 }) {
+export default function ReplyCard({ reply, postId, postAuthorId, isPostLocked, depth = 0 }) {
     const [isLiked, setIsLiked] = useState(reply.is_liked || false);
     const [likesCount, setLikesCount] = useState(reply.likes || 0);
     const [showReplyForm, setShowReplyForm] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
 
     // ✅ 辅助函数：获取作者信息
     const getAuthorInfo = (post) => {
@@ -62,9 +61,18 @@ export default function ReplyCard({ reply, postId, postAuthorId, currentUserId, 
     const author = getAuthorInfo(reply);
 
     const timeAgo = reply.created_at ? formatDistanceToNow(new Date(reply.created_at), { addSuffix: true }) : '';
-    const isAuthor = currentUserId === reply.user_id;
-    const isPostAuthor = postAuthorId === reply.user_id;
-    const canToggleSolution = postAuthorId === currentUserId;
+
+    // Permissions come from the server, where ForumReplyPolicy decides them.
+    // They used to be re-derived here by comparing raw ids, which duplicated
+    // the rules and got them wrong: an administrator never saw the delete they
+    // are allowed, and the strict comparison broke whenever the driver returned
+    // an id as a string.
+    const canDelete = reply.can_delete ?? false;
+    const canToggleSolution = reply.can_mark_solution ?? false;
+
+    // Not a permission — a badge marking which replies came from the person who
+    // asked. Numeric coercion because these ids arrive from props, not a policy.
+    const isPostAuthor = Number(postAuthorId) === Number(reply.user_id);
     const maxDepth = 3; // Maximum nesting level
 
     // Handle Like
@@ -223,7 +231,7 @@ export default function ReplyCard({ reply, postId, postAuthorId, currentUserId, 
                     )}
 
                     {/* Delete Button */}
-                    {isAuthor && (
+                    {canDelete && (
                         <button
                             onClick={handleDelete}
                             className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-medium transition-colors ml-auto"
@@ -258,7 +266,6 @@ export default function ReplyCard({ reply, postId, postAuthorId, currentUserId, 
                             reply={childReply}
                             postId={postId}
                             postAuthorId={postAuthorId}
-                            currentUserId={currentUserId}
                             isPostLocked={isPostLocked}
                             depth={depth + 1}
                         />
