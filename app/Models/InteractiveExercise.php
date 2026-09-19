@@ -24,10 +24,7 @@ class InteractiveExercise extends Model
         'description',
         'exercise_type',
         'difficulty',
-        'duration',
-        'points_value',
         'content',
-        'status',
         'created_by',
         'asset_url',
         'max_score',
@@ -42,8 +39,6 @@ class InteractiveExercise extends Model
 
     protected $casts = [
         'content' => 'array',
-        'duration' => 'integer',
-        'points_value' => 'integer',
         'lesson_id' => 'integer',
         'created_by' => 'integer',
         'max_score' => 'integer',
@@ -166,19 +161,17 @@ class InteractiveExercise extends Model
         $this->attributes['test_cases'] = json_encode($normalised);
     }
 
+    /**
+     * Kept for the exercise list payload, which asks for formatted_duration.
+     *
+     * It used to read a 'duration' column that does not exist, so it answered
+     * "No time limit" for every exercise however long the limit was. The real
+     * column is time_limit_sec, which getFormattedTimeLimitAttribute already
+     * formats — this defers to it rather than keeping a second, wrong copy.
+     */
     public function getFormattedDurationAttribute(): string
     {
-        $duration = $this->duration ?? 0;
-        if ($duration <= 0) {
-            return 'No time limit';
-        }
-        if ($duration < 60) {
-            return $duration.' min';
-        }
-        $hours = floor($duration / 60);
-        $minutes = $duration % 60;
-
-        return $hours.'h'.($minutes ? ' '.$minutes.'m' : '');
+        return $this->formatted_time_limit;
     }
 
     /**

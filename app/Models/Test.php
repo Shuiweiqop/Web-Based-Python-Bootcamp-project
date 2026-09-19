@@ -28,7 +28,6 @@ class Test extends Model
         'order',
         'test_type',
         'skill_tags',
-        'created_by',
     ];
 
     protected $casts = [
@@ -68,11 +67,6 @@ class Test extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(TestSubmission::class, 'test_id', 'test_id');
-    }
-
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by', 'user_Id');
     }
 
     // ==================== Scopes ====================

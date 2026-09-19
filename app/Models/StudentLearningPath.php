@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class StudentLearningPath extends Model
@@ -35,7 +36,6 @@ class StudentLearningPath extends Model
         'notes',
         'student_notes',
         'completion_reward_granted',
-        'last_activity_at',
     ];
 
     protected $casts = [
@@ -49,9 +49,16 @@ class StudentLearningPath extends Model
         'is_primary' => 'boolean',
         'initial_skill_assessment' => 'array',
         'completion_reward_granted' => 'boolean',
-        'last_activity_at' => 'datetime',
     ];
 
+    /**
+     * student_notes is an alias for the notes column, not a column of its own.
+     *
+     * The admin and student pages both speak student_notes, so the pair below
+     * maps it onto notes. It is listed in $fillable for that reason and will
+     * look like a missing column to anything comparing $fillable against the
+     * schema — it is not.
+     */
     public function getStudentNotesAttribute(): ?string
     {
         return $this->attributes['notes'] ?? null;
@@ -318,7 +325,7 @@ class StudentLearningPath extends Model
             return 0;
         }
 
-        $activeDays = \DB::table('lesson_progress')
+        $activeDays = DB::table('lesson_progress')
             ->join('learning_path_lessons', 'lesson_progress.lesson_id', '=', 'learning_path_lessons.lesson_id')
             ->where('lesson_progress.student_id', $this->student_id)
             ->where('learning_path_lessons.path_id', $this->path_id)

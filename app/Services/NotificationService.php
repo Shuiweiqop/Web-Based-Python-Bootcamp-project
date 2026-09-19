@@ -18,7 +18,7 @@ class NotificationService
      */
     public function getUnreadCount(int $userId): int
     {
-        return Notification::where('user_id', $userId)
+        return Notification::where('user_Id', $userId)
             ->unread()
             ->count();
     }
@@ -28,7 +28,7 @@ class NotificationService
      */
     public function getUnreadNotifications(int $userId, int $limit = 10): Collection
     {
-        return Notification::where('user_id', $userId)
+        return Notification::where('user_Id', $userId)
             ->unread()
             ->latest()
             ->limit($limit)
@@ -40,7 +40,7 @@ class NotificationService
      */
     public function getUserNotifications(int $userId, int $perPage = 20)
     {
-        return Notification::where('user_id', $userId)
+        return Notification::where('user_Id', $userId)
             ->latest()
             ->paginate($perPage);
     }
@@ -64,7 +64,7 @@ class NotificationService
      */
     public function markAllAsRead(int $userId): int
     {
-        return Notification::where('user_id', $userId)
+        return Notification::where('user_Id', $userId)
             ->unread()
             ->update([
                 'is_read' => true,
@@ -100,7 +100,7 @@ class NotificationService
      */
     public function deleteReadNotifications(int $userId): int
     {
-        return Notification::where('user_id', $userId)
+        return Notification::where('user_Id', $userId)
             ->read()
             ->delete();
     }
@@ -172,7 +172,7 @@ class NotificationService
 
         foreach ($userIds as $userId) {
             $notification = Notification::create([
-                'user_id' => $userId,
+                'user_Id' => $userId,
                 'type' => $type,
                 ...$data,
             ]);
@@ -191,7 +191,7 @@ class NotificationService
         $userIds = User::pluck('user_Id')->toArray();
 
         $insertData = array_map(fn ($userId) => [
-            'user_id' => $userId,
+            'user_Id' => $userId,
             'type' => 'announcement',
             'priority' => $priority,
             'title' => $title,
@@ -217,15 +217,15 @@ class NotificationService
     {
         // ✅ 方法 1：每次创建新查询（推荐）
         return [
-            'total' => Notification::where('user_id', $userId)->count(),
-            'unread' => Notification::where('user_id', $userId)->unread()->count(),
-            'read' => Notification::where('user_id', $userId)->read()->count(),
-            'by_type' => Notification::where('user_id', $userId)
+            'total' => Notification::where('user_Id', $userId)->count(),
+            'unread' => Notification::where('user_Id', $userId)->unread()->count(),
+            'read' => Notification::where('user_Id', $userId)->read()->count(),
+            'by_type' => Notification::where('user_Id', $userId)
                 ->selectRaw('type, COUNT(*) as count')
                 ->groupBy('type')
                 ->pluck('count', 'type')
                 ->toArray(),
-            'high_priority' => Notification::where('user_id', $userId)->highPriority()->count(),
+            'high_priority' => Notification::where('user_Id', $userId)->highPriority()->count(),
         ];
     }
 
@@ -237,7 +237,7 @@ class NotificationService
     public function getNotificationStatsOptimized(int $userId): array
     {
         // 一次性获取所有通知
-        $notifications = Notification::where('user_id', $userId)
+        $notifications = Notification::where('user_Id', $userId)
             ->select('type', 'is_read', 'priority')
             ->get();
 
@@ -260,7 +260,7 @@ class NotificationService
      */
     public function getDetailedStats(int $userId): array
     {
-        $notifications = Notification::where('user_id', $userId)->get();
+        $notifications = Notification::where('user_Id', $userId)->get();
 
         return [
             'total' => $notifications->count(),
