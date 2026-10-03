@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -87,13 +89,17 @@ class Judge0Service
      */
     public function runTestCases(string $code, int $languageId, array $testCases): array
     {
+        $testCases = array_values($testCases);
+        $inputs = array_map(fn ($case) => (string) ($case['input'] ?? ''), $testCases);
+        $submissions = $this->submitAll($code, $languageId, $inputs);
+
         $results = [];
 
-        foreach ($testCases as $testCase) {
-            $input = (string) ($testCase['input'] ?? '');
+        foreach ($testCases as $i => $testCase) {
+            $input = $inputs[$i];
             $expected = trim((string) ($testCase['expected'] ?? $testCase['expected_output'] ?? ''));
 
-            $result = $this->submit($code, $languageId, $input);
+            $result = $submissions[$i];
 
             if ($result === null) {
                 $results[] = [
@@ -123,52 +129,51 @@ class Judge0Service
         return $results;
     }
 
-    /**
-     * One submission. Returns the trimmed streams, or null if Judge0 could
-     * not be reached, is not configured, or answered with an error.
-     */
     private function submit(string $code, int $languageId, string $stdin): ?array
     {
+        return $this->submitAll($code, $languageId, [$stdin])[0];
+    }
+
+    /**
+     * One submission per stdin, sent concurrently: with wait=true each call
+     * blocks until its run finishes, so sending them one after another made
+     * a five-case exercise wait out five round trips. Now it waits for the
+     * slowest one.
+     *
+     * Returns, in the same order as $stdins, the trimmed streams of each run,
+     * or null for a run Judge0 could not take (unreachable, not configured,
+     * or an error response).
+     *
+     * @param  list<string>  $stdins
+     * @return list<array|null>
+     */
+    private function submitAll(string $code, int $languageId, array $stdins): array
+    {
+        if ($stdins === []) {
+            return [];
+        }
+
         if (! $this->apiKey) {
             Log::error('judge0.submit.not_configured', ['action' => 'submit']);
 
-            return null;
+            return array_fill(0, count($stdins), null);
         }
 
         try {
-            $response = Http::withHeaders([
-                'x-rapidapi-key' => $this->apiKey,
-                'x-rapidapi-host' => $this->apiHost,
-            ])
-                ->timeout(self::TIMEOUT_SECONDS)
-                ->post($this->apiUrl.'/submissions?base64_encoded=false&wait=true', [
-                    'source_code' => $code,
-                    'language_id' => $languageId,
-                    'stdin' => $stdin,
-                ]);
-
-            if (! $response->successful()) {
-                Log::error('judge0.submit.failed', [
-                    'action' => 'submit',
-                    'language_id' => $languageId,
-                    'status' => $response->status(),
-                ]);
-
-                return null;
-            }
-
-            $body = $response->json();
-
-            // stdout is read on its own: Judge0 returns "" rather than null
-            // for a program with no output, so a ?? chain would never fall
-            // through, and stderr must not be mistaken for the answer.
-            return [
-                'ran_cleanly' => (int) ($body['status']['id'] ?? 0) === self::STATUS_ACCEPTED,
-                'stdout' => trim((string) ($body['stdout'] ?? '')),
-                'stderr' => trim((string) ($body['stderr'] ?? '')),
-                'compile_output' => trim((string) ($body['compile_output'] ?? '')),
-                'status' => (string) ($body['status']['description'] ?? 'Execution failed'),
-            ];
+            $responses = Http::pool(fn (Pool $pool) => array_map(
+                fn (string $stdin) => $pool
+                    ->withHeaders([
+                        'x-rapidapi-key' => $this->apiKey,
+                        'x-rapidapi-host' => $this->apiHost,
+                    ])
+                    ->timeout(self::TIMEOUT_SECONDS)
+                    ->post($this->apiUrl.'/submissions?base64_encoded=false&wait=true', [
+                        'source_code' => $code,
+                        'language_id' => $languageId,
+                        'stdin' => $stdin,
+                    ]),
+                $stdins
+            ));
         } catch (\Throwable $e) {
             Log::error('judge0.submit.failed', [
                 'action' => 'submit',
@@ -176,8 +181,53 @@ class Judge0Service
                 'error' => $e->getMessage(),
             ]);
 
+            return array_fill(0, count($stdins), null);
+        }
+
+        return array_map(
+            fn (int $i) => $this->parse($responses[$i] ?? null, $languageId),
+            array_keys($stdins)
+        );
+    }
+
+    /**
+     * A pool hands back a connection failure as a value rather than throwing
+     * it, so each slot is either a Response or the exception that replaced it.
+     */
+    private function parse(mixed $response, int $languageId): ?array
+    {
+        if (! $response instanceof Response) {
+            Log::error('judge0.submit.failed', [
+                'action' => 'submit',
+                'language_id' => $languageId,
+                'error' => $response instanceof \Throwable ? $response->getMessage() : 'no response',
+            ]);
+
             return null;
         }
+
+        if (! $response->successful()) {
+            Log::error('judge0.submit.failed', [
+                'action' => 'submit',
+                'language_id' => $languageId,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        }
+
+        $body = $response->json();
+
+        // stdout is read on its own: Judge0 returns "" rather than null
+        // for a program with no output, so a ?? chain would never fall
+        // through, and stderr must not be mistaken for the answer.
+        return [
+            'ran_cleanly' => (int) ($body['status']['id'] ?? 0) === self::STATUS_ACCEPTED,
+            'stdout' => trim((string) ($body['stdout'] ?? '')),
+            'stderr' => trim((string) ($body['stderr'] ?? '')),
+            'compile_output' => trim((string) ($body['compile_output'] ?? '')),
+            'status' => (string) ($body['status']['description'] ?? 'Execution failed'),
+        ];
     }
 
     private function outputsMatch(string $expected, string $actual): bool

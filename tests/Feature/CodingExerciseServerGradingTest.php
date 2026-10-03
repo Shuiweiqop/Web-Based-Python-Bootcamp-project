@@ -185,6 +185,57 @@ class CodingExerciseServerGradingTest extends TestCase
             && $request['source_code'] === 'print(4)');
     }
 
+    public function test_concurrent_runs_keep_each_result_with_its_own_case(): void
+    {
+        $this->fakeJudge0(fn (string $stdin) => $this->accepted((string) ((int) $stdin * 2)));
+
+        $this->actingAs($this->user)
+            ->postJson('/api/code/execute', [
+                'code' => 'print(int(input()) * 2)',
+                'language' => 'python',
+                'test_cases' => [
+                    ['input' => '3', 'expected' => '6'],
+                    ['input' => '1', 'expected' => '2'],
+                    ['input' => '7', 'expected' => '14'],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('test_results.0.input', '3')
+            ->assertJsonPath('test_results.0.actual', '6')
+            ->assertJsonPath('test_results.1.actual', '2')
+            ->assertJsonPath('test_results.2.actual', '14')
+            ->assertJsonPath('test_results.2.passed', true);
+
+        Http::assertSentCount(3);
+    }
+
+    public function test_one_failed_run_is_marked_without_failing_the_others(): void
+    {
+        Http::fake(fn (Request $request) => $request['stdin'] === '5'
+            ? Http::response('upstream down', 502)
+            : Http::response($this->accepted('4')));
+
+        $this->actingAs($this->user)
+            ->postJson('/api/code/execute', [
+                'code' => 'print(4)',
+                'language' => 'python',
+                'test_cases' => [
+                    ['input' => '2', 'expected' => '4'],
+                    ['input' => '5', 'expected' => '10'],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('test_results.0.passed', true)
+            ->assertJsonPath('test_results.0.error', false)
+            ->assertJsonPath('test_results.1.passed', false)
+            ->assertJsonPath('test_results.1.error', true);
+
+        // When grading, any such case means the run was not judged at all.
+        $this->submit(['code' => 'print(4)', 'completed' => true, 'score' => 100])
+            ->assertStatus(503);
+        $this->assertSame(0, ExerciseSubmission::count());
+    }
+
     public function test_runtime_error_is_not_compared_as_the_answer(): void
     {
         // A crash whose stderr happens to equal the expected output must
