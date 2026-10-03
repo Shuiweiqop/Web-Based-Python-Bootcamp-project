@@ -630,8 +630,8 @@ Large numbers
               <span>Solution Code (Admin Reference Only)</span>
             </label>
             <textarea
-              value={data.solution_code || ''}
-              onChange={(e) => setData('solution_code', e.target.value)}
+              value={data.solution || ''}
+              onChange={(e) => setData('solution', e.target.value)}
               className="w-full px-4 py-3 border-2 border-amber-300 rounded-lg focus:border-amber-500 focus:outline-none font-mono text-sm bg-slate-900 text-green-400"
               rows="8"
               placeholder="# Your solution (students won't see this)&#10;def solution():&#10;    return 'correct answer'"
