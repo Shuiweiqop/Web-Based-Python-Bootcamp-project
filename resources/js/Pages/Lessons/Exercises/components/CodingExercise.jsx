@@ -111,18 +111,6 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
         setIsRunning(true);
         
         try {
-            // 先运行测试
-            const executeResponse = await axios.post('/api/code/execute', {
-                code: code,
-                language: 'python',
-                test_cases: testCases,
-            });
-
-            const testResults = executeResponse.data.test_results || [];
-            const passed = testResults.filter(t => t.passed).length;
-            const total = testResults.length;
-            const finalScore = total > 0 ? Math.round((passed / total) * (exercise.max_score || 100)) : 0;
-            const isCompleted = total > 0 && passed === total;
             const timeSpent = Math.floor((Date.now() - startTime) / 1000);
 
             // 🔥 安全获取 exercise ID
@@ -132,20 +120,22 @@ export default function CodingExercise({ exercise, lessonId, auth }) {
                 throw new Error('Missing exercise or lesson ID');
             }
 
-            // 提交到后端
+            // 提交到后端 —— 服务端会自己在 Judge0 上跑测试用例并判分，
+            // score / completed 只是请求格式要求的占位值，不会被采信
             const submitResponse = await axios.post(
                 route('lessons.exercises.api.submit', { lesson: lessonId, exercise: exerciseId }),
                 {
                     answer: {
                         code: code,
-                        test_results: testResults,
-                        output: executeResponse.data.output,
-                        completed: isCompleted,
-                        score: finalScore,
+                        completed: false,
+                        score: 0,
                     },
                     time_spent: timeSpent,
                 }
             );
+
+            const testResults = submitResponse.data.test_results || [];
+            const finalScore = submitResponse.data.submission?.score ?? 0;
 
             setScore(finalScore);
             setTestResults(testResults);

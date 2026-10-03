@@ -5,49 +5,25 @@ namespace Tests\Unit;
 use App\Models\InteractiveExercise;
 use App\Services\DailyChallengeService;
 use App\Services\ExerciseSubmissionService;
+use App\Services\Judge0Service;
 use Tests\TestCase;
 
 class ExerciseControllerCompletionTest extends TestCase
 {
     private function invokeDetermineCompletionStatus(InteractiveExercise $exercise, array $answer, int $score): bool
     {
-        $service = new ExerciseSubmissionService($this->createMock(DailyChallengeService::class));
+        $service = new ExerciseSubmissionService(
+            $this->createMock(DailyChallengeService::class),
+            $this->createMock(Judge0Service::class),
+        );
         $method = new \ReflectionMethod(ExerciseSubmissionService::class, 'determineCompletionStatus');
         $method->setAccessible(true);
 
         return $method->invoke($service, $exercise, $answer, $score);
     }
 
-    public function test_coding_exercise_with_no_test_results_is_not_completed(): void
-    {
-        $exercise = new InteractiveExercise;
-        $exercise->exercise_type = 'coding';
-
-        $result = $this->invokeDetermineCompletionStatus($exercise, [
-            'completed' => true,
-            'score' => 100,
-            'test_results' => [],
-        ], 100);
-
-        $this->assertFalse($result);
-    }
-
-    public function test_coding_exercise_with_all_tests_passed_is_completed(): void
-    {
-        $exercise = new InteractiveExercise;
-        $exercise->exercise_type = 'coding';
-
-        $result = $this->invokeDetermineCompletionStatus($exercise, [
-            'completed' => false,
-            'score' => 100,
-            'test_results' => [
-                ['passed' => true],
-                ['passed' => true],
-            ],
-        ], 100);
-
-        $this->assertTrue($result);
-    }
+    // Coding exercises are graded by running the code on the server; see
+    // tests/Feature/CodingExerciseServerGradingTest.
 
     public function test_non_coding_exercise_requires_passing_score(): void
     {

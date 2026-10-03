@@ -17,6 +17,9 @@ class SubmitExerciseRequest extends FormRequest
             'answer' => 'required|array',
             'answer.completed' => 'required|boolean',
             'answer.score' => 'required|numeric|min:0',
+            // Coding submissions are re-run on Judge0; cap the payload as the
+            // Run endpoint does.
+            'answer.code' => 'sometimes|string|max:50000',
             'time_spent' => 'nullable|numeric|min:0',
         ];
     }

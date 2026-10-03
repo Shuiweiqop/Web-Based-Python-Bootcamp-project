@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CodeGradingUnavailableException;
 use App\Http\Requests\SubmitExerciseRequest;
 use App\Models\InteractiveExercise;
 use App\Models\Lesson;
@@ -57,6 +58,8 @@ class ExerciseController extends Controller
                 'message' => 'Exercise completed successfully!',
                 ...$result,
             ]);
+        } catch (CodeGradingUnavailableException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 503);
         } catch (\Exception $e) {
             Log::error('Error submitting exercise', [
                 'message' => $e->getMessage(),
