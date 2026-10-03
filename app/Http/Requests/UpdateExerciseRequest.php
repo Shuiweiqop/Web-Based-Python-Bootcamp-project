@@ -29,6 +29,12 @@ class UpdateExerciseRequest extends FormRequest
             'enable_live_editor' => 'nullable|boolean',
             'coding_instructions' => 'nullable|string',
             'test_cases' => 'nullable|array',
+            'test_cases.*.input' => 'nullable|string',
+            // Either spelling is accepted because both exist in the data. The
+            // model normalises them to 'expected' on the way in.
+            'test_cases.*.expected' => 'nullable|string',
+            'test_cases.*.expected_output' => 'nullable|string',
+            'test_cases.*.description' => 'nullable|string',
         ];
     }
 }

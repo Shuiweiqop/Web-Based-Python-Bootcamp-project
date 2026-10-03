@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\ForumPost;
 use App\Models\ForumReply;
 use App\Models\User;
 
@@ -42,10 +43,20 @@ class ForumReplyPolicy
 
     /**
      * Only the author of the post may accept an answer to it.
+     *
+     * The post is read from an already-loaded relation when there is one. This
+     * ability is evaluated once per reply while serialising a thread, and
+     * reaching through $reply->post unconditionally would lazy-load the same
+     * post once per reply.
      */
     public function markSolution(User $user, ForumReply $reply): bool
     {
-        return (int) $reply->post->user_id === (int) $user->user_Id;
+        $post = $reply->relationLoaded('post')
+            ? $reply->post
+            : ForumPost::select('post_id', 'user_id')->find($reply->post_id);
+
+        return $post !== null
+            && (int) $post->user_id === (int) $user->user_Id;
     }
 
     public function report(User $user, ForumReply $reply): bool

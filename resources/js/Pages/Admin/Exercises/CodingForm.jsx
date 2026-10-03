@@ -11,9 +11,13 @@ const AdminCodingExerciseForm = ({ lesson, exercise = null }) => {
     language: 'python',
     starter_code: exercise?.content?.starter_code || '# Write your solution here\ndef solution():\n    pass\n',
     instructions: exercise?.content?.instructions || '',
-    test_cases: exercise?.content?.test_cases || [
-      { input: '', expected_output: '', description: 'Test case 1' }
-    ],
+    // The column is the source of truth; content.test_cases is where older
+    // exercises kept them, before the runtime started reading the column.
+    test_cases: exercise?.test_cases?.length
+      ? exercise.test_cases
+      : exercise?.content?.test_cases?.length
+        ? exercise.content.test_cases
+        : [{ input: '', expected: '', description: 'Test case 1' }],
     is_active: exercise?.is_active ?? true,
   });
 
@@ -22,11 +26,13 @@ const AdminCodingExerciseForm = ({ lesson, exercise = null }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // test_cases is NOT part of content: it has its own column, which is what
+    // the runtime reads when grading. Keeping a second copy in content is what
+    // let the two drift apart.
     const content = {
       language: data.language,
       starter_code: data.starter_code,
       instructions: data.instructions,
-      test_cases: data.test_cases,
     };
 
     const formData = {
@@ -49,7 +55,7 @@ const AdminCodingExerciseForm = ({ lesson, exercise = null }) => {
   const addTestCase = () => {
     setData('test_cases', [
       ...data.test_cases,
-      { input: '', expected_output: '', description: `Test case ${data.test_cases.length + 1}` }
+      { input: '', expected: '', description: `Test case ${data.test_cases.length + 1}` }
     ]);
     setActiveTestCase(data.test_cases.length);
   };
@@ -276,8 +282,8 @@ const AdminCodingExerciseForm = ({ lesson, exercise = null }) => {
                     Expected Output *
                   </label>
                   <textarea
-                    value={data.test_cases[activeTestCase].expected_output}
-                    onChange={(e) => updateTestCase(activeTestCase, 'expected_output', e.target.value)}
+                    value={data.test_cases[activeTestCase].expected}
+                    onChange={(e) => updateTestCase(activeTestCase, 'expected', e.target.value)}
                     className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none font-mono text-sm"
                     rows="3"
                     placeholder="Expected output"
