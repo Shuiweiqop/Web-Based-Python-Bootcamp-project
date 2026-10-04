@@ -9,7 +9,7 @@ use App\Models\LessonRegistration;
 use App\Models\Notification;
 use App\Models\StudentProfile;
 use App\Models\User;
-use App\Services\Grading\QuizGrader;
+use App\Services\Grading\ExerciseGraders;
 use App\Services\LearningPathProgressService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -535,13 +535,16 @@ class LessonController extends Controller
     }
 
     /**
-     * Exercise content as a student may see it: quiz answer keys removed, so
-     * the page cannot read the answers before the student submits.
+     * Exercise content as a student may see it: for a server-graded type the
+     * answer key is removed, so the page cannot read the answers before the
+     * student submits.
      */
     private function contentForStudent(InteractiveExercise $exercise): mixed
     {
-        if ($exercise->exercise_type === 'quiz' && is_array($exercise->content)) {
-            return app(QuizGrader::class)->forStudent($exercise->content);
+        $grader = app(ExerciseGraders::class)->for($exercise->exercise_type);
+
+        if ($grader && is_array($exercise->content)) {
+            return $grader->forStudent($exercise->content);
         }
 
         return $exercise->content;

@@ -63,7 +63,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     score.resetScore();
   };
 
-  // answerPayload: extra fields for a server-graded type, e.g. a quiz's selections
+  // answerPayload: what a server-graded type submits, e.g. a quiz's selections
   const handleGameComplete = async (providedScore, extraSummary = null, answerPayload = null) => {
     if (gameCompleted || isSubmitting) return;
 
@@ -111,11 +111,11 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
       if (data?.submission?.score !== undefined) {
         setFinalScore(Number(data.submission.score));
       }
-      if (Array.isArray(data?.quiz_results)) {
+      if (Array.isArray(data?.review)) {
         setCompletionSummary((prev) => ({
           ...(prev || {}),
-          correctCount: data.quiz_results.filter((r) => r.is_correct).length,
-          totalItems: data.quiz_results.length,
+          correctCount: data.review.filter((r) => r.is_correct).length,
+          totalItems: data.review.length,
         }));
       }
 
@@ -428,35 +428,32 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
               </div>
             </div>
 
-            {Array.isArray(submissionResult?.quiz_results) && (
+            {/* Server-graded types send back how each item went */}
+            {Array.isArray(submissionResult?.review) && submissionResult.review.length > 0 && (
               <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5">
                 <div className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Answer Review</div>
                 <ol className="space-y-3">
-                  {submissionResult.quiz_results.map((result, i) => {
-                    const question = exercise.content?.questions?.[i] || {};
-                    const options = question.options || [];
-                    return (
-                      <li
-                        key={i}
-                        className={`rounded-2xl border p-4 ${result.is_correct ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'}`}
-                      >
-                        <div className="font-semibold text-slate-900">
-                          {result.is_correct ? '✓' : '✗'} {i + 1}. {question.question}
+                  {submissionResult.review.map((item, i) => (
+                    <li
+                      key={i}
+                      className={`rounded-2xl border p-4 ${item.is_correct ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'}`}
+                    >
+                      <div className="font-semibold text-slate-900">
+                        {item.is_correct ? '✓' : '✗'} {i + 1}. {item.prompt}
+                      </div>
+                      <div className="mt-1 text-sm text-slate-700">
+                        Your answer: <span className="font-mono">{item.answer ?? '—'}</span>
+                      </div>
+                      {!item.is_correct && item.correct_answer && (
+                        <div className="text-sm text-slate-700">
+                          Correct answer: <span className="font-mono font-semibold">{item.correct_answer}</span>
                         </div>
-                        <div className="mt-1 text-sm text-slate-700">
-                          Your answer: <span className="font-mono">{result.selected !== null ? options[result.selected] : '—'}</span>
-                        </div>
-                        {!result.is_correct && result.correct !== null && (
-                          <div className="text-sm text-slate-700">
-                            Correct answer: <span className="font-mono font-semibold">{options[result.correct]}</span>
-                          </div>
-                        )}
-                        {result.explanation && (
-                          <div className="mt-1 text-sm text-slate-600">{result.explanation}</div>
-                        )}
-                      </li>
-                    );
-                  })}
+                      )}
+                      {item.explanation && (
+                        <div className="mt-1 text-sm text-slate-600">{item.explanation}</div>
+                      )}
+                    </li>
+                  ))}
                 </ol>
               </div>
             )}

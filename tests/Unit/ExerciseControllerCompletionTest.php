@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use App\Models\InteractiveExercise;
 use App\Services\DailyChallengeService;
 use App\Services\ExerciseSubmissionService;
-use App\Services\Grading\QuizGrader;
+use App\Services\Grading\ExerciseGraders;
 use App\Services\Judge0Service;
 use Tests\TestCase;
 
@@ -16,7 +16,7 @@ class ExerciseControllerCompletionTest extends TestCase
         $service = new ExerciseSubmissionService(
             $this->createMock(DailyChallengeService::class),
             $this->createMock(Judge0Service::class),
-            new QuizGrader,
+            new ExerciseGraders,
         );
         $method = new \ReflectionMethod(ExerciseSubmissionService::class, 'determineCompletionStatus');
         $method->setAccessible(true);

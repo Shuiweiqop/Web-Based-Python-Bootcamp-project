@@ -14,7 +14,7 @@ namespace App\Services\Grading;
  * it from what the page receives, and the grade is worked out here from the
  * student's selections, not from a score the page reports.
  */
-class QuizGrader
+class QuizGrader implements ExerciseGrader
 {
     /** Keys that give the answer away, removed before content reaches a student. */
     private const ANSWER_KEYS = ['correct', 'explanation'];
@@ -32,16 +32,16 @@ class QuizGrader
     }
 
     /**
-     * @param  array  $selections  the chosen option index per question, in
-     *                             question order; null or missing = unanswered
-     * @return array{score: int, results: list<array>}
+     * Reads $answer['selections']: the chosen option index per question, in
+     * question order; null or missing = unanswered.
      */
-    public function grade(array $content, array $selections, int $maxScore): array
+    public function grade(array $content, array $answer, int $maxScore): array
     {
         $questions = $this->questions($content);
+        $selections = is_array($answer['selections'] ?? null) ? array_values($answer['selections']) : [];
 
         if ($questions === [] || $maxScore <= 0) {
-            return ['score' => 0, 'results' => []];
+            return ['score' => 0, 'results' => [], 'review' => []];
         }
 
         // Questions without points share the score equally.
@@ -51,6 +51,7 @@ class QuizGrader
         $total = 0.0;
         $earned = 0.0;
         $results = [];
+        $review = [];
 
         foreach ($questions as $i => $question) {
             $selected = $selections[$i] ?? null;
@@ -69,11 +70,20 @@ class QuizGrader
                 'is_correct' => $isCorrect,
                 'explanation' => $question['explanation'] ?? null,
             ];
+
+            $options = is_array($question['options'] ?? null) ? $question['options'] : [];
+            $review[] = [
+                'prompt' => (string) ($question['question'] ?? ''),
+                'answer' => $selected !== null && isset($options[$selected]) ? (string) $options[$selected] : null,
+                'correct_answer' => $correct !== null && isset($options[$correct]) ? (string) $options[$correct] : null,
+                'is_correct' => $isCorrect,
+                'explanation' => $question['explanation'] ?? null,
+            ];
         }
 
         $score = $total > 0 ? (int) round($earned / $total * $maxScore) : 0;
 
-        return ['score' => min($score, $maxScore), 'results' => $results];
+        return ['score' => min($score, $maxScore), 'results' => $results, 'review' => $review];
     }
 
     private function questions(array $content): array
