@@ -70,7 +70,7 @@ class ExerciseSubmissionService
                 try {
                     $missionProgress = $this->challengeService->recordExerciseCompletion(
                         (int) $student->student_id,
-                        (int) $submission->submission_id
+                        (int) $exercise->exercise_id
                     );
                 } catch (\Throwable $e) {
                     Log::warning('Failed to record exercise daily challenge event', [
