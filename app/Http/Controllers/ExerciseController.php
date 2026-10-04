@@ -47,15 +47,21 @@ class ExerciseController extends Controller
         } catch (CodeGradingUnavailableException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 503);
         } catch (\Exception $e) {
-            Log::error('Error submitting exercise', [
-                'message' => $e->getMessage(),
+            Log::error('exercise.submit.failed', [
+                'action' => 'submit',
+                'student_id' => $student->student_id,
+                'lesson_id' => $lesson->lesson_id,
+                'exercise_id' => $exercise->exercise_id,
+                'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
 
+            // The exception's message stays in the log: it can carry SQL,
+            // file paths or other internals the student should not see.
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to submit exercise: '.$e->getMessage(),
+                'message' => 'Something went wrong saving your answer. Please try again.',
             ], 500);
         }
     }
