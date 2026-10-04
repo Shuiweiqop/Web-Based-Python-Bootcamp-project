@@ -10,6 +10,7 @@ use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\LessonRegistration;
 use App\Models\StudentProfile;
+use App\Services\Grading\QuizGrader;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -18,6 +19,7 @@ class ExerciseSubmissionService
     public function __construct(
         private DailyChallengeService $challengeService,
         private Judge0Service $judge0,
+        private QuizGrader $quizGrader,
     ) {}
 
     /**
@@ -35,6 +37,8 @@ class ExerciseSubmissionService
         // test case, and a transaction should not stay open across them.
         if ($exercise->exercise_type === 'coding') {
             [$score, $completed, $answer] = $this->gradeCoding($exercise, $answer);
+        } elseif ($exercise->exercise_type === 'quiz') {
+            [$score, $completed, $answer] = $this->gradeQuiz($exercise, $answer);
         } else {
             $score = (int) round(min(max($answer['score'], 0), $exercise->max_score));
             $completed = $this->determineCompletionStatus($exercise, $answer, $score);
@@ -101,6 +105,7 @@ class ExerciseSubmissionService
                 ],
                 // The server's own run, so the page shows what was graded.
                 'test_results' => $exercise->exercise_type === 'coding' ? $answer['test_results'] : null,
+                'quiz_results' => $exercise->exercise_type === 'quiz' ? $answer['quiz_results'] : null,
                 'mission_progress' => $missionProgress,
                 'lesson_progress' => $registration ? [
                     'exercises_completed' => $registration->exercises_completed,
@@ -175,6 +180,33 @@ class ExerciseSubmissionService
         $completed = $total > 0 && $passed === $total;
 
         return [$score, $completed, array_merge($answer, ['test_results' => $testResults])];
+    }
+
+    /**
+     * Quiz exercises are graded here from the options the student picked,
+     * against the answer key stored on the exercise. The page never receives
+     * the key, and the score it reports is ignored.
+     *
+     * @return array{0: int, 1: bool, 2: array} score, completed, answer to store
+     */
+    private function gradeQuiz(InteractiveExercise $exercise, array $answer): array
+    {
+        $selections = is_array($answer['selections'] ?? null) ? array_values($answer['selections']) : [];
+        $maxScore = (int) $exercise->max_score;
+
+        $graded = $this->quizGrader->grade(
+            is_array($exercise->content) ? $exercise->content : [],
+            $selections,
+            $maxScore
+        );
+
+        $completed = $maxScore > 0 && $graded['score'] / $maxScore >= 0.7;
+
+        return [
+            $graded['score'],
+            $completed,
+            array_merge($answer, ['selections' => $selections, 'quiz_results' => $graded['results']]),
+        ];
     }
 
     private function updateLessonProgress(LessonRegistration $registration, Lesson $lesson, StudentProfile $student): void

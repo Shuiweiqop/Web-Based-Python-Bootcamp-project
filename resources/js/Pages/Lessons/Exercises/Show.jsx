@@ -20,6 +20,7 @@ import SortingExercise from './components/SortingExercise';
 import CodingExercise from './components/CodingExercise';
 import FillBlankExercise from './components/FillBlankExercise';
 import MemoryMatchGame from './components/MemoryMatchGame';
+import QuizExercise from './components/QuizExercise';
 import DefaultGamePlaceholder from './components/DefaultGamePlaceholder';
 
 // 导入 hooks
@@ -62,7 +63,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
     score.resetScore();
   };
 
-  const handleGameComplete = async (providedScore, extraSummary = null) => {
+  // answerPayload: extra fields for a server-graded type, e.g. a quiz's selections
+  const handleGameComplete = async (providedScore, extraSummary = null, answerPayload = null) => {
     if (gameCompleted || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -94,6 +96,7 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
           answer: {
             completed: achievedScore >= (Number(exercise.max_score || 0) * 0.7),
             score: achievedScore,  // 🔥 确保分数在 answer 里
+            ...(answerPayload || {}),
           },
           score: achievedScore,  // 🔥 也在顶层传递
           time_spent: timeTaken,
@@ -102,6 +105,19 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
 
       setSubmissionResult(data);
       setMissionProgress(data.mission_progress ?? null);
+
+      // Show the score the server recorded: for server-graded types the page
+      // cannot know it, and for the rest it is the same number, clamped.
+      if (data?.submission?.score !== undefined) {
+        setFinalScore(Number(data.submission.score));
+      }
+      if (Array.isArray(data?.quiz_results)) {
+        setCompletionSummary((prev) => ({
+          ...(prev || {}),
+          correctCount: data.quiz_results.filter((r) => r.is_correct).length,
+          totalItems: data.quiz_results.length,
+        }));
+      }
 
       // 🎉 课程完成提示
       if (data.lesson_progress?.lesson_completed) {
@@ -172,6 +188,8 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
         return <SortingExercise {...gameProps} />;
       case 'memory_match':
         return <MemoryMatchGame {...gameProps} />;
+      case 'quiz':
+        return <QuizExercise {...gameProps} />;
       default:
         return <DefaultGamePlaceholder exercise={exercise} />;
     }
@@ -409,6 +427,39 @@ export default function ExerciseShow({ auth, lesson, exercise }) {
                 </div>
               </div>
             </div>
+
+            {Array.isArray(submissionResult?.quiz_results) && (
+              <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5">
+                <div className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Answer Review</div>
+                <ol className="space-y-3">
+                  {submissionResult.quiz_results.map((result, i) => {
+                    const question = exercise.content?.questions?.[i] || {};
+                    const options = question.options || [];
+                    return (
+                      <li
+                        key={i}
+                        className={`rounded-2xl border p-4 ${result.is_correct ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'}`}
+                      >
+                        <div className="font-semibold text-slate-900">
+                          {result.is_correct ? '✓' : '✗'} {i + 1}. {question.question}
+                        </div>
+                        <div className="mt-1 text-sm text-slate-700">
+                          Your answer: <span className="font-mono">{result.selected !== null ? options[result.selected] : '—'}</span>
+                        </div>
+                        {!result.is_correct && result.correct !== null && (
+                          <div className="text-sm text-slate-700">
+                            Correct answer: <span className="font-mono font-semibold">{options[result.correct]}</span>
+                          </div>
+                        )}
+                        {result.explanation && (
+                          <div className="mt-1 text-sm text-slate-600">{result.explanation}</div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            )}
 
             {lessonCompleted && (
               <div className="mb-5 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4">

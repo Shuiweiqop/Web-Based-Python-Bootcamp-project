@@ -20,6 +20,9 @@ class SubmitExerciseRequest extends FormRequest
             // Coding submissions are re-run on Judge0; cap the payload as the
             // Run endpoint does.
             'answer.code' => 'sometimes|string|max:50000',
+            // Quiz submissions: the chosen option index per question.
+            'answer.selections' => 'sometimes|array|max:200',
+            'answer.selections.*' => 'nullable|integer|min:0',
             'time_spent' => 'nullable|numeric|min:0',
         ];
     }
