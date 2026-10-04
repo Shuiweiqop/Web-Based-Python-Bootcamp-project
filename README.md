@@ -234,7 +234,10 @@ resources/js/
     Student/Mastery/  # Skill report
   Components/
 routes/
-  web.php
+  web.php             # Public, lessons, exercises, forum; loads the two below
+  student.php         # /student/* (inside web.php's auth + verified group)
+  admin.php           # /admin/*, administrators only
+  auth.php
   api.php
 database/
   migrations/
