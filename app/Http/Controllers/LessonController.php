@@ -9,6 +9,7 @@ use App\Models\LessonRegistration;
 use App\Models\Notification;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Services\Grading\QuizGrader;
 use App\Services\LearningPathProgressService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -504,7 +505,7 @@ class LessonController extends Controller
             'description' => $exercise->description,
             'exercise_type' => $exercise->exercise_type,
             'type' => $exercise->exercise_type,
-            'content' => $exercise->content,
+            'content' => $this->contentForStudent($exercise),
             'max_score' => $exercise->max_score,
             'time_limit_sec' => $exercise->time_limit_sec,
             'time_limit' => $exercise->time_limit_sec,
@@ -533,6 +534,19 @@ class LessonController extends Controller
         ]);
     }
 
+    /**
+     * Exercise content as a student may see it: quiz answer keys removed, so
+     * the page cannot read the answers before the student submits.
+     */
+    private function contentForStudent(InteractiveExercise $exercise): mixed
+    {
+        if ($exercise->exercise_type === 'quiz' && is_array($exercise->content)) {
+            return app(QuizGrader::class)->forStudent($exercise->content);
+        }
+
+        return $exercise->content;
+    }
+
     public function getExercise(Lesson $lesson, InteractiveExercise $exercise)
     {
         // Ensure exercise belongs to the specified lesson
@@ -557,7 +571,7 @@ class LessonController extends Controller
             'description' => $exercise->description,
             'type' => $exercise->exercise_type,
             'exercise_type' => $exercise->exercise_type,
-            'content' => $exercise->content,
+            'content' => $this->contentForStudent($exercise),
             'max_score' => $exercise->max_score,
             'time_limit' => $exercise->time_limit_sec,
             'time_limit_sec' => $exercise->time_limit_sec,
