@@ -27,6 +27,9 @@ class SubmitExerciseRequest extends FormRequest
             'answer.answers' => 'sometimes|array|max:200',
             'answer.answers.*' => 'array|max:50',
             'answer.answers.*.*' => 'nullable|string|max:500',
+            // Sorting submissions: the items' ids, top to bottom.
+            'answer.order' => 'sometimes|array|max:200',
+            'answer.order.*' => 'nullable|string|max:100',
             'time_spent' => 'nullable|numeric|min:0',
         ];
     }
