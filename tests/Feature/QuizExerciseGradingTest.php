@@ -124,8 +124,8 @@ class QuizExerciseGradingTest extends TestCase
             ->assertOk()
             ->assertJsonPath('submission.score', 80)
             ->assertJsonPath('submission.completed', true)
-            ->assertJsonPath('quiz_results.3.is_correct', true)
-            ->assertJsonPath('quiz_results.3.explanation', 'No type keyword.')
+            ->assertJsonPath('review.3.is_correct', true)
+            ->assertJsonPath('review.3.explanation', 'No type keyword.')
             ->assertJsonPath('lesson_progress.lesson_completed', true);
 
         $registration = LessonRegistration::where('student_id', $this->user->studentProfile->student_id)
@@ -141,10 +141,11 @@ class QuizExerciseGradingTest extends TestCase
             // 2 of 4 equally weighted questions: 40 of 80, under the 70% bar.
             ->assertJsonPath('submission.score', 40)
             ->assertJsonPath('submission.completed', false)
-            ->assertJsonPath('quiz_results.2.selected', 1)
-            ->assertJsonPath('quiz_results.2.correct', 0)
-            ->assertJsonPath('quiz_results.2.is_correct', false)
-            ->assertJsonPath('quiz_results.3.selected', null);
+            ->assertJsonPath('review.2.prompt', 'Indentation matters?')
+            ->assertJsonPath('review.2.answer', 'No')
+            ->assertJsonPath('review.2.correct_answer', 'Yes')
+            ->assertJsonPath('review.2.is_correct', false)
+            ->assertJsonPath('review.3.answer', null);
 
         $stored = ExerciseSubmission::sole();
         $this->assertSame(40, (int) $stored->score);
@@ -159,7 +160,7 @@ class QuizExerciseGradingTest extends TestCase
             ['options' => ['a', 'b'], 'correct' => 0, 'points' => 30],
             ['options' => ['a', 'b'], 'correct' => 0, 'points' => 10],
         ]];
-        $this->assertSame(75, $grader->grade($weighted, [0, 1], 100)['score']);
+        $this->assertSame(75, $grader->grade($weighted, ['selections' => [0, 1]], 100)['score']);
 
         $unweighted = ['questions' => [
             ['options' => ['a', 'b'], 'correct' => 0],
@@ -167,8 +168,8 @@ class QuizExerciseGradingTest extends TestCase
             ['options' => ['a', 'b'], 'correct' => 0],
             ['options' => ['a', 'b'], 'correct' => 0],
         ]];
-        $this->assertSame(25, $grader->grade($unweighted, [0], 100)['score']);
-        $this->assertSame(0, $grader->grade(['questions' => []], [0], 100)['score']);
+        $this->assertSame(25, $grader->grade($unweighted, ['selections' => [0]], 100)['score']);
+        $this->assertSame(0, $grader->grade(['questions' => []], ['selections' => [0]], 100)['score']);
     }
 
     private function submit(array $answer)

@@ -23,6 +23,10 @@ class SubmitExerciseRequest extends FormRequest
             // Quiz submissions: the chosen option index per question.
             'answer.selections' => 'sometimes|array|max:200',
             'answer.selections.*' => 'nullable|integer|min:0',
+            // Fill-in-the-blank submissions: what was typed, per sentence then per blank.
+            'answer.answers' => 'sometimes|array|max:200',
+            'answer.answers.*' => 'array|max:50',
+            'answer.answers.*.*' => 'nullable|string|max:500',
             'time_spent' => 'nullable|numeric|min:0',
         ];
     }
