@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesQuizContent;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreExerciseRequest extends FormRequest
 {
+    use ValidatesQuizContent;
+
     public function authorize(): bool
     {
         return true;
@@ -35,6 +38,8 @@ class StoreExerciseRequest extends FormRequest
             'test_cases.*.expected' => 'nullable|string',
             'test_cases.*.expected_output' => 'nullable|string',
             'test_cases.*.description' => 'nullable|string',
+            // Last, so a quiz's stricter content rules replace 'nullable' above.
+            ...$this->quizContentRules(),
         ];
     }
 }
