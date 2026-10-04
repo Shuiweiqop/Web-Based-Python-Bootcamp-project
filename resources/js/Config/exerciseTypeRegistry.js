@@ -10,6 +10,7 @@ import FillBlankConfig from '@/Pages/Lessons/Exercises/components/FillBlankConfi
 import SortingConfig from '@/Pages/Lessons/Exercises/components/SortingConfig';
 import SimulationConfig from '@/Pages/Lessons/Exercises/components/SimulationConfig';
 import MemoryMatchConfig from '@/Pages/Lessons/Exercises/components/MemoryMatchConfig';
+import QuizConfig from '@/Pages/Lessons/Exercises/components/QuizConfig';
 
 /**
  * 🎮 练习类型注册中心
@@ -152,6 +153,24 @@ export const EXERCISE_TYPES = {
     },
     features: ['memory', 'matching', 'instant_feedback'],
     recommendedFor: ['vocabulary', 'concepts', 'data_types', 'syntax'],
+  },
+
+  // 📝 选择题
+  quiz: {
+    value: 'quiz',
+    label: 'Quiz',
+    icon: '📝',
+    emoji: '📝',
+    description: 'Multiple-choice questions, graded on submit',
+    color: 'indigo',
+    category: 'basic',
+    component: QuizConfig,
+    requiresSpecialConfig: true,
+    defaultContent: {
+      questions: [{ question: '', options: ['', ''], correct: 0, points: null, explanation: '' }],
+    },
+    features: ['multiple_choice', 'explanations', 'server_graded'],
+    recommendedFor: ['concept_checks', 'syntax', 'quick_review'],
   },
 
   simulation: {

@@ -191,6 +191,48 @@ test('admin can create and edit an exercise', async ({ page }) => {
   await expect(page.getByText(editedExerciseName)).toBeVisible();
 });
 
+test('admin can create and edit a quiz exercise', async ({ page }) => {
+  const quizName = `Smoke Quiz ${runId}`;
+
+  await page.goto('/admin/exercises/create');
+  await page.locator('select').first().selectOption({ index: 1 });
+  await page.getByPlaceholder('e.g., Python Variables Practice').fill(quizName);
+  await page.getByRole('button', { name: /^📝\s*Quiz/ }).click();
+
+  await page.getByLabel('Question', { exact: true }).fill('Which character starts a comment?');
+  await page.getByLabel('Question 1: option 1', { exact: true }).fill('//');
+  await page.getByLabel('Question 1: option 2', { exact: true }).fill('#');
+  await page.getByLabel('Question 1: option 2 is correct').check();
+  await expect(page.getByText('Ready')).toBeVisible();
+
+  await page.getByRole('button', { name: /add question/i }).click();
+  await page.locator('#quiz-q-1').fill('Which prints output?');
+  await page.getByLabel('Question 2: option 1', { exact: true }).fill('echo()');
+  await page.getByLabel('Question 2: option 2', { exact: true }).fill('print()');
+  await page.getByLabel('Question 2: option 2 is correct').check();
+
+  await page.getByRole('button', { name: /^create exercise$/i }).click();
+  await expect(page).toHaveURL(/\/admin\/exercises$/);
+  await expect(page.getByText(quizName)).toBeVisible();
+
+  await page
+    .locator('tr')
+    .filter({ hasText: quizName })
+    .locator('a[href*="/admin/exercises/"][href$="/edit"]')
+    .click();
+
+  // The saved quiz reads back into the form, and the answer can be changed.
+  await expect(page.locator('#quiz-q-0')).toHaveValue('Which character starts a comment?');
+  await expect(page.getByLabel('Question 1: option 2 is correct')).toBeChecked();
+  await page.getByLabel('Question 1: option 1 is correct').check();
+  await page.getByRole('button', { name: /save changes/i }).click();
+
+  await expect(page).toHaveURL(/\/admin\/exercises\/\d+$/);
+  await page.goto(page.url() + '/edit');
+  await expect(page.getByLabel('Question 1: option 1 is correct')).toBeChecked();
+  await expect(page.getByLabel('Question 2: option 2 is correct')).toBeChecked();
+});
+
 test('admin can create and edit a lesson test', async ({ page }) => {
   const testName = `Smoke Lesson Test ${runId}`;
   const editedTestName = `${testName} Edited`;
