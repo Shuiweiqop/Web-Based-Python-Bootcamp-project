@@ -113,9 +113,14 @@ class DailyChallengeService
         ];
     }
 
-    public function recordExerciseCompletion(int $studentId, int|string $submissionId): array
+    /**
+     * Counts an exercise once per challenge period, however many times it is
+     * completed. Keyed by submission it counted every resubmission, so
+     * "complete 3 exercises" was met by submitting one exercise three times.
+     */
+    public function recordExerciseCompletion(int $studentId, int|string $exerciseId): array
     {
-        return $this->recordAction($studentId, 'exercise_completed', 'exercise_submission', $submissionId);
+        return $this->recordAction($studentId, 'exercise_completed', 'exercise', $exerciseId);
     }
 
     public function recordTestPassed(int $studentId, int|string $submissionId): array
