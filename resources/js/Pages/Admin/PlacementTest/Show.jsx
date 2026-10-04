@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { 
@@ -19,10 +19,11 @@ import {
     AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Show({ test, questions, stats }) {
     const { props } = usePage();
-    const [isDark, setIsDark] = useState(false);
+    const isDark = useIsDark();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
     const [importFile, setImportFile] = useState(null);
@@ -31,15 +32,6 @@ export default function Show({ test, questions, stats }) {
     const [isImporting, setIsImporting] = useState(false);
     const [importError, setImportError] = useState(null);
     const [importSuccess, setImportSuccess] = useState(null);
-
-    useEffect(() => {
-        const checkDarkMode = () => {
-            setIsDark(document.documentElement.classList.contains('dark'));
-        };
-        checkDarkMode();
-        window.addEventListener('theme-changed', checkDarkMode);
-        return () => window.removeEventListener('theme-changed', checkDarkMode);
-    }, []);
 
     // 处理文件选择
     const handleFileSelect = (e) => {

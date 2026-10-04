@@ -1,20 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Create({ statusOptions }) {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    checkDarkMode();
-    window.addEventListener('theme-changed', checkDarkMode);
-    return () => window.removeEventListener('theme-changed', checkDarkMode);
-  }, []);
+  const isDark = useIsDark();
 
   const { data, setData, post, processing, errors } = useForm({
     title: '',

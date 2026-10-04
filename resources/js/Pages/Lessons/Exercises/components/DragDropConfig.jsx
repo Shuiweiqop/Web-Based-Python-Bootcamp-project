@@ -1,24 +1,14 @@
 // resources/js/Pages/Admin/Exercises/components/DragDropConfig.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Trash2, Target, Grip, ArrowRight, Lightbulb, X, BarChart3, Play } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function DragDropConfig({ data, setData, errors }) {
   const [items, setItems] = useState(data.content?.items || []);
   const [dropZones, setDropZones] = useState(data.content?.drop_zones || []);
   const [showQuickSetup, setShowQuickSetup] = useState(false);
-  const [isDark, setIsDark] = useState(true);
-
-  // 监听主题变化
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    
-    updateTheme();
-    window.addEventListener('theme-changed', updateTheme);
-    return () => window.removeEventListener('theme-changed', updateTheme);
-  }, []);
+  const isDark = useIsDark();
 
   const updateContent = (newItems, newDropZones, instructions = data.content?.instructions) => {
     setData('content', {

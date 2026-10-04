@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { safeRoute } from '@/utils/routeHelpers';
+import useIsDark from '@/Hooks/useIsDark';
 
 const steps = [
   {
@@ -57,7 +58,7 @@ export default function Edit({ auth, lesson: propLesson, sections: propSections 
   const lessonId = lesson?.lesson_id ?? lesson?.id ?? null;
   const [expandedSections, setExpandedSections] = useState(new Set());
   const [currentStep, setCurrentStep] = useState(1);
-  const [isDark, setIsDark] = useState(true);
+  const isDark = useIsDark();
 
   const { data, setData, put, processing, errors } = useForm({
     title: lesson?.title ?? '',
@@ -78,17 +79,6 @@ export default function Edit({ auth, lesson: propLesson, sections: propSections 
       order_index: section.order_index || index + 1,
     })),
   });
-
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-
-    updateTheme();
-    window.addEventListener('theme-changed', updateTheme);
-
-    return () => window.removeEventListener('theme-changed', updateTheme);
-  }, []);
 
   useEffect(() => {
     if (data.sections.length > 0) {

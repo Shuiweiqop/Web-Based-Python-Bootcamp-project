@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { 
@@ -8,6 +8,7 @@ import {
   Eye, User
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Index({ auth, progress, stats, lessons, students, filters = {} }) {
   const [search, setSearch] = useState(filters?.search || '');
@@ -15,34 +16,7 @@ export default function Index({ auth, progress, stats, lessons, students, filter
   const [statusFilter, setStatusFilter] = useState(filters?.status || '');
   const [studentFilter, setStudentFilter] = useState(filters?.student_id || '');
 
-  // 从 localStorage 读取主题
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      return saved ? saved === 'dark' : true;
-    }
-    return true;
-  });
-
-  // 监听主题变化（优化版：移除轮询）
-  useEffect(() => {
-    const handleThemeChange = () => {
-      const saved = localStorage.getItem('theme');
-      setIsDark(saved === 'dark');
-    };
-
-    window.addEventListener('theme-changed', handleThemeChange);
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'theme') {
-        setIsDark(e.newValue === 'dark');
-      }
-    });
-
-    return () => {
-      window.removeEventListener('theme-changed', handleThemeChange);
-      window.removeEventListener('storage', handleThemeChange);
-    };
-  }, []);
+  const isDark = useIsDark();
 
   const handleFilter = () => {
     router.get(route('admin.progress.index'), {

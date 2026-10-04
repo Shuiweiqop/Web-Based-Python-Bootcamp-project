@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ForumStats from '@/Pages/Student/Forum/Components/ForumStats';
 import ForumFilters from '@/Pages/Student/Forum/Components/ForumFilters';
@@ -7,6 +7,7 @@ import CategoryBadge from '@/Pages/Student/Forum/Components/CategoryBadge';
 import UserAvatar from '@/Pages/Student/Forum/Components/UserAvatar';
 import Pagination from '@/Components/Pagination';
 import { avatarUrl } from '@/utils/avatar';
+import useIsDark from '@/Hooks/useIsDark';
 import { 
     Shield, 
     Pin, 
@@ -27,41 +28,11 @@ import {
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
 export default function Index({ auth, posts, categoryStats, categories, filters }) {
-    const [isDark, setIsDark] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('theme');
-            return saved ? saved === 'dark' : true;
-        }
-        return true;
-    });
-    
+    const isDark = useIsDark();
+
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
     const [sortBy, setSortBy] = useState(filters.sort || 'recent');
-
-    useEffect(() => {
-        const handleThemeChange = () => {
-            const saved = localStorage.getItem('theme');
-            setIsDark(saved === 'dark');
-        };
-
-        window.addEventListener('theme-changed', handleThemeChange);
-        window.addEventListener('storage', handleThemeChange);
-        
-        const interval = setInterval(() => {
-            const saved = localStorage.getItem('theme');
-            const currentTheme = saved === 'dark';
-            if (currentTheme !== isDark) {
-                setIsDark(currentTheme);
-            }
-        }, 100);
-
-        return () => {
-            window.removeEventListener('theme-changed', handleThemeChange);
-            window.removeEventListener('storage', handleThemeChange);
-            clearInterval(interval);
-        };
-    }, [isDark]);
 
     // ✅ 获取作者信息，包含积分
     const getAuthorInfo = (post) => {
@@ -187,8 +158,8 @@ export default function Index({ auth, posts, categoryStats, categories, filters 
     };
 
     const toggleTheme = () => {
+        // The theme-changed event below is what updates isDark here.
         const newTheme = !isDark;
-        setIsDark(newTheme);
         localStorage.setItem('theme', newTheme ? 'dark' : 'light');
         
         if (newTheme) {

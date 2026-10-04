@@ -1,23 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { cn } from '@/utils/cn';
 import { ArrowLeft, Save, User } from 'lucide-react';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Edit({ student }) {
-  const [isDark, setIsDark] = useState(false);
+  const isDark = useIsDark();
   const { data, setData, put, processing, errors } = useForm({
     name: student?.name || '',
     email: student?.email || '',
     phone_number: student?.phone_number || '',
   });
-
-  useEffect(() => {
-    const syncTheme = () => setIsDark(document.documentElement.classList.contains('dark'));
-    syncTheme();
-    window.addEventListener('theme-changed', syncTheme);
-    return () => window.removeEventListener('theme-changed', syncTheme);
-  }, []);
 
   const submit = (event) => {
     event.preventDefault();

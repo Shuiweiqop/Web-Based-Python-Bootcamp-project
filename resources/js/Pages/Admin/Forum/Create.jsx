@@ -8,6 +8,7 @@ import {
     BookOpen, Lightbulb
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Create({ auth, categories }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -20,34 +21,7 @@ export default function Create({ auth, categories }) {
     const minChars = 10;
     const maxChars = 10000;
 
-    // 从 localStorage 读取主题
-    const [isDark, setIsDark] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('theme');
-            return saved ? saved === 'dark' : true;
-        }
-        return true;
-    });
-
-    // 监听主题变化（优化版）
-    useEffect(() => {
-        const handleThemeChange = () => {
-            const saved = localStorage.getItem('theme');
-            setIsDark(saved === 'dark');
-        };
-
-        window.addEventListener('theme-changed', handleThemeChange);
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'theme') {
-                setIsDark(e.newValue === 'dark');
-            }
-        });
-
-        return () => {
-            window.removeEventListener('theme-changed', handleThemeChange);
-            window.removeEventListener('storage', handleThemeChange);
-        };
-    }, []);
+    const isDark = useIsDark();
 
     const handleSubmit = (e) => {
         e.preventDefault();

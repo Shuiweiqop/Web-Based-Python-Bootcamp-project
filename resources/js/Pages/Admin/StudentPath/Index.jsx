@@ -16,6 +16,7 @@ import {
     User
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Index({ auth, assignments, stats, paths, filters, statusOptions, assignedByOptions }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -24,37 +25,7 @@ export default function Index({ auth, assignments, stats, paths, filters, status
     const [selectedAssignedBy, setSelectedAssignedBy] = useState(filters.assigned_by || '');
     const [overdueOnly, setOverdueOnly] = useState(filters.overdue_only || false);
     
-    // 从 localStorage 读取主题
-    const [isDark, setIsDark] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('theme');
-            return saved ? saved === 'dark' : true;
-        }
-        return true;
-    });
-
-    // 监听主题变化（优化版：移除轮询）
-    useEffect(() => {
-        const handleThemeChange = (e) => {
-            const saved = localStorage.getItem('theme');
-            setIsDark(saved === 'dark');
-        };
-
-        // 监听自定义事件
-        window.addEventListener('theme-changed', handleThemeChange);
-        
-        // 监听 storage 事件（跨标签页）
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'theme') {
-                setIsDark(e.newValue === 'dark');
-            }
-        });
-
-        return () => {
-            window.removeEventListener('theme-changed', handleThemeChange);
-            window.removeEventListener('storage', handleThemeChange);
-        };
-    }, []);
+    const isDark = useIsDark();
 
     const handleSearch = () => {
         router.get(route('admin.student-paths.index'), {

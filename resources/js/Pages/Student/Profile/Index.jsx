@@ -1,5 +1,5 @@
 // resources/js/Pages/Student/Profile/Index.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
 import StudentLayout from '@/Layouts/StudentLayout'; 
 import CharacterCard from './Components/Dashboard/CharacterCard';
@@ -8,6 +8,7 @@ import OverviewSection from './Components/Dashboard/OverviewSection';
 import RewardsSection from './Components/Dashboard/RewardsSection';
 import ActivitySection from './Components/Dashboard/ActivitySection';
 import LearningPathsSection from './Components/Dashboard/LearningPathsSection';
+import useIsDark from '@/Hooks/useIsDark';
 
 function Index({ 
   auth,
@@ -23,18 +24,7 @@ function Index({
   rewardTypes     // ✅ 接收后端传递的 rewardTypes 映射
 }) {
   const [activeSection, setActiveSection] = useState('overview');
-  const [isDark, setIsDark] = useState(true);
-
-  // 监听主题变化
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    
-    updateTheme();
-    window.addEventListener('theme-changed', updateTheme);
-    return () => window.removeEventListener('theme-changed', updateTheme);
-  }, []);
+  const isDark = useIsDark();
 
   const recentAchievements = achievements?.filter(a => a.unlocked)?.slice(0, 8) || [];
   const topActivities = [

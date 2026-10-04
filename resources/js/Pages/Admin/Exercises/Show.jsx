@@ -1,5 +1,5 @@
 // resources/js/Pages/Admin/Exercises/Show.jsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -21,22 +21,12 @@ import {
     Sparkles
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Show({ auth, exercise, lesson }) {
     const { props: pageProps } = usePage();
     const flash = pageProps?.flash ?? {};
-    const [isDark, setIsDark] = useState(true);
-
-    // 监听主题变化
-    useEffect(() => {
-        const updateTheme = () => {
-            setIsDark(document.documentElement.classList.contains('dark'));
-        };
-        
-        updateTheme();
-        window.addEventListener('theme-changed', updateTheme);
-        return () => window.removeEventListener('theme-changed', updateTheme);
-    }, []);
+    const isDark = useIsDark();
 
     // Safe route resolver
     const safeRoute = (name, params) => {
