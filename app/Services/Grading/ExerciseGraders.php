@@ -16,6 +16,7 @@ class ExerciseGraders
         'quiz' => QuizGrader::class,
         'fill_blank' => FillBlankGrader::class,
         'sorting' => SortingGrader::class,
+        'drag_drop' => DragDropGrader::class,
     ];
 
     public function for(?string $exerciseType): ?ExerciseGrader

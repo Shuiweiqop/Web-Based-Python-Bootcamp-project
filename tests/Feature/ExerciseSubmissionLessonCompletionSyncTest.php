@@ -38,7 +38,9 @@ class ExerciseSubmissionLessonCompletionSyncTest extends TestCase
             'lesson_id' => $lesson->lesson_id,
             'title' => 'Complete Me',
             'description' => 'Simple exercise',
-            'exercise_type' => 'drag_drop',
+            // A type that still reports its own score: this tests what
+            // happens after a completed submission, not how it is graded.
+            'exercise_type' => 'maze_game',
             'content' => ['prompt' => 'Match values'],
             'max_score' => 100,
             'is_active' => true,
@@ -124,7 +126,9 @@ class ExerciseSubmissionLessonCompletionSyncTest extends TestCase
             'lesson_id' => $lesson->lesson_id,
             'title' => 'Final Practice',
             'description' => 'Simple exercise',
-            'exercise_type' => 'drag_drop',
+            // A type that still reports its own score: this tests what
+            // happens after a completed submission, not how it is graded.
+            'exercise_type' => 'maze_game',
             'content' => ['prompt' => 'Match values'],
             'max_score' => 100,
             'is_active' => true,
