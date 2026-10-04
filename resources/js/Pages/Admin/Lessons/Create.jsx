@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { safeRoute } from '@/utils/routeHelpers';
+import useIsDark from '@/Hooks/useIsDark';
 
 const steps = [
   {
@@ -52,18 +53,8 @@ export default function Create({ auth }) {
 
   const [showPreview, setShowPreview] = useState(false);
   const [expandedSections, setExpandedSections] = useState(new Set());
-  const [isDark, setIsDark] = useState(true);
+  const isDark = useIsDark();
   const [currentStep, setCurrentStep] = useState(1);
-
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-
-    updateTheme();
-    window.addEventListener('theme-changed', updateTheme);
-    return () => window.removeEventListener('theme-changed', updateTheme);
-  }, []);
 
   const contentTypes = [
     { value: 'text', label: 'Plain Text', icon: 'DOC', description: 'Simple text without formatting' },

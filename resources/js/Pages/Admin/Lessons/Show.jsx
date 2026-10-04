@@ -19,47 +19,13 @@ import LessonVideo from './components/LessonVideo';
 import TestList from './components/TestList';
 import ExerciseList from './components/ExerciseList';
 import LessonSidebar from './components/LessonSidebar';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Show({ lesson: propLesson, sections: propSections = [], exercises = [], tests = [], buildChecklist = [], statistics = {} }) {
   const [expandedSections, setExpandedSections] = useState({});
   
-  // 从 localStorage 读取主题设置
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      return saved ? saved === 'dark' : true;
-    }
-    return true;
-  });
+  const isDark = useIsDark();
   
-  // 监听主题变化
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const saved = localStorage.getItem('theme');
-      setIsDark(saved === 'dark');
-    };
-
-    // 监听 storage 事件（跨标签页）
-    window.addEventListener('storage', handleStorageChange);
-    
-    // 监听自定义事件（同一页面内）
-    window.addEventListener('theme-changed', handleStorageChange);
-    
-    // 定期检查主题变化（作为备份方案）
-    const interval = setInterval(() => {
-      const saved = localStorage.getItem('theme');
-      const currentTheme = saved === 'dark';
-      if (currentTheme !== isDark) {
-        setIsDark(currentTheme);
-      }
-    }, 100);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('theme-changed', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [isDark]);
   
   // 确保 lesson 和 sections 正确更新
   const lesson = propLesson ?? null;

@@ -18,45 +18,14 @@ import {
     Target
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Index({ auth, paths, stats, filters, difficultyOptions }) {
     const [search, setSearch] = useState(filters.search || '');
     const [difficulty, setDifficulty] = useState(filters.difficulty || '');
     const [isActive, setIsActive] = useState(filters.is_active ?? '');
     
-    // 从 localStorage 读取主题
-    const [isDark, setIsDark] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('theme');
-            return saved ? saved === 'dark' : true;
-        }
-        return true;
-    });
-
-    // 监听主题变化
-    useEffect(() => {
-        const handleStorageChange = () => {
-            const saved = localStorage.getItem('theme');
-            setIsDark(saved === 'dark');
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener('theme-changed', handleStorageChange);
-        
-        const interval = setInterval(() => {
-            const saved = localStorage.getItem('theme');
-            const currentTheme = saved === 'dark';
-            if (currentTheme !== isDark) {
-                setIsDark(currentTheme);
-            }
-        }, 100);
-
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('theme-changed', handleStorageChange);
-            clearInterval(interval);
-        };
-    }, [isDark]);
+    const isDark = useIsDark();
 
     const handleSearch = () => {
         router.get(route('admin.learning-paths.index'), {

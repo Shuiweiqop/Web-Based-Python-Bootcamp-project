@@ -1,21 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Clock } from 'lucide-react';
 import ActivityCard from './Cards/ActivityCard';
+import useIsDark from '@/Hooks/useIsDark';
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
 export default function ActivitySection({ topActivities }) {
-  const [isDark, setIsDark] = useState(true);
-
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    
-    updateTheme();
-    window.addEventListener('theme-changed', updateTheme);
-    return () => window.removeEventListener('theme-changed', updateTheme);
-  }, []);
+  const isDark = useIsDark();
 
   return (
     <div className="relative">

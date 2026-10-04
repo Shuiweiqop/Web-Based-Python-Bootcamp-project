@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { ArrowLeft, Crown, Gift, Save, Sparkles, Zap } from 'lucide-react';
@@ -8,9 +8,10 @@ import BasicInfo from './Components/RewardForm/BasicInfo';
 import Economics from './Components/RewardForm/Economics';
 import TypeConfig from './Components/RewardForm/TypeConfig';
 import TemplateSelector from './Components/TemplateSelector/TemplateSelector';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function CreateReward({ auth, rewardTypes, rarities }) {
-  const [isDark, setIsDark] = useState(true);
+  const isDark = useIsDark();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -38,16 +39,6 @@ export default function CreateReward({ auth, rewardTypes, rarities }) {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-
-    updateTheme();
-    window.addEventListener('theme-changed', updateTheme);
-    return () => window.removeEventListener('theme-changed', updateTheme);
-  }, []);
 
   const handleFormChange = ({ name, value }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));

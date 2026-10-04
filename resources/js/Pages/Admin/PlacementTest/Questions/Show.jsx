@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
@@ -14,20 +14,12 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Show({ auth, test, question }) {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isDark, setIsDark] = useState(false);
-
-    useEffect(() => {
-        const checkDarkMode = () => {
-            setIsDark(document.documentElement.classList.contains('dark'));
-        };
-        checkDarkMode();
-        window.addEventListener('theme-changed', checkDarkMode);
-        return () => window.removeEventListener('theme-changed', checkDarkMode);
-    }, []);
+    const isDark = useIsDark();
 
     const handleDelete = () => {
         if (isDeleting) return;

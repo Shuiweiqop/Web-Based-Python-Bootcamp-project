@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { cn } from '@/utils/cn';
@@ -19,25 +19,16 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Show({ student }) {
-  const [isDark, setIsDark] = useState(false);
+  const isDark = useIsDark();
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    
-    checkDarkMode();
-    window.addEventListener('theme-changed', checkDarkMode);
-    
-    return () => window.removeEventListener('theme-changed', checkDarkMode);
-  }, []);
 
   const handleResetPassword = () => {
     if (newPassword !== confirmPassword) {

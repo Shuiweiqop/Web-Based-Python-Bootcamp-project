@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { cn } from '@/utils/cn';
@@ -18,6 +18,7 @@ import {
   Zap,
   Target,
 } from 'lucide-react';
+import useIsDark from '@/Hooks/useIsDark';
 
 export default function Index({ students = null, stats = null, filters = {} }) {
   const studentsData = students?.data || [];
@@ -35,18 +36,8 @@ export default function Index({ students = null, stats = null, filters = {} }) {
   const [pointsAmount, setPointsAmount] = useState('');
   const [pointsReason, setPointsReason] = useState('');
   
-  const [isDark, setIsDark] = useState(false);
+  const isDark = useIsDark();
   
-  useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    
-    checkDarkMode();
-    window.addEventListener('theme-changed', checkDarkMode);
-    
-    return () => window.removeEventListener('theme-changed', checkDarkMode);
-  }, []);
 
   const handleSearch = (value) => {
     setSearchQuery(value);

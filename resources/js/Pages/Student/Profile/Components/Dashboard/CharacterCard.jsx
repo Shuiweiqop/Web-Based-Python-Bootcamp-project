@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Target, Package } from 'lucide-react';
+import useIsDark from '@/Hooks/useIsDark';
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
@@ -10,17 +11,7 @@ export default function CharacterCard({
   inventoryItems,
   onEquipmentChange 
 }) {
-  const [isDark, setIsDark] = useState(true);
-
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    
-    updateTheme();
-    window.addEventListener('theme-changed', updateTheme);
-    return () => window.removeEventListener('theme-changed', updateTheme);
-  }, []);
+  const isDark = useIsDark();
 
   // 从 equipped 数据中获取装备的物品
   const equippedAvatar = equipped?.avatar_frame;
