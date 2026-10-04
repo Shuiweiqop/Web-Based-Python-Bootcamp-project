@@ -7,8 +7,11 @@ use App\Http\Requests\SubmitExerciseRequest;
 use App\Models\InteractiveExercise;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Models\StudentProfile;
 use App\Services\ExerciseSubmissionService;
+use App\Services\Grading\MemoryMatchGrader;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -23,25 +26,8 @@ class ExerciseController extends Controller
     {
         $student = Auth::user()->studentProfile;
 
-        if (! $student) {
-            Log::error('Student profile not found', ['user_id' => Auth::id()]);
-
-            return response()->json(['success' => false, 'message' => 'Student profile not found.'], 404);
-        }
-
-        if ($exercise->lesson_id !== $lesson->lesson_id) {
-            return response()->json(['success' => false, 'message' => 'Invalid exercise for this lesson.'], 400);
-        }
-
-        $progress = LessonProgress::where('student_id', $student->student_id)
-            ->where('lesson_id', $lesson->lesson_id)
-            ->first();
-
-        if (! $progress || ! $progress->content_completed) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Please review the lesson content before starting exercises.',
-            ], 403);
+        if ($refusal = $this->refuse($lesson, $exercise, $student)) {
+            return $refusal;
         }
 
         try {
@@ -72,5 +58,73 @@ class ExerciseController extends Controller
                 'message' => 'Failed to submit exercise: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Turn over two cards in a memory match game. The server says whether
+     * they match and keeps the run's tally, which grading scores.
+     */
+    public function flip(Request $request, Lesson $lesson, InteractiveExercise $exercise, MemoryMatchGrader $grader): JsonResponse
+    {
+        $validated = $request->validate([
+            'run' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9-]+$/'],
+            'first' => 'required|string|max:64',
+            'second' => 'required|string|max:64',
+        ]);
+
+        $student = Auth::user()->studentProfile;
+
+        if ($refusal = $this->refuse($lesson, $exercise, $student)) {
+            return $refusal;
+        }
+
+        if ($exercise->exercise_type !== 'memory_match') {
+            return response()->json(['success' => false, 'message' => 'This exercise has no cards.'], 400);
+        }
+
+        try {
+            $result = $grader->flip(
+                is_array($exercise->content) ? $exercise->content : [],
+                (int) $student->student_id,
+                (int) $exercise->exercise_id,
+                $validated['run'],
+                $validated['first'],
+                $validated['second']
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['success' => true, ...$result]);
+    }
+
+    /**
+     * Why this student may not answer this exercise yet, as a response; null
+     * when they may.
+     */
+    private function refuse(Lesson $lesson, InteractiveExercise $exercise, ?StudentProfile $student): ?JsonResponse
+    {
+        if (! $student) {
+            Log::error('Student profile not found', ['user_id' => Auth::id()]);
+
+            return response()->json(['success' => false, 'message' => 'Student profile not found.'], 404);
+        }
+
+        if ($exercise->lesson_id !== $lesson->lesson_id) {
+            return response()->json(['success' => false, 'message' => 'Invalid exercise for this lesson.'], 400);
+        }
+
+        $progress = LessonProgress::where('student_id', $student->student_id)
+            ->where('lesson_id', $lesson->lesson_id)
+            ->first();
+
+        if (! $progress || ! $progress->content_completed) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please review the lesson content before starting exercises.',
+            ], 403);
+        }
+
+        return null;
     }
 }

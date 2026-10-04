@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
 import { Brain, CheckCircle, RotateCcw, Sparkles, Trophy, Zap } from 'lucide-react';
 
 const shuffleCards = (cards) => {
@@ -12,35 +13,20 @@ const shuffleCards = (cards) => {
   return shuffled;
 };
 
-const buildCards = (pairs = []) => {
-  return pairs.flatMap((pair, index) => {
-    const pairId = pair.id || `pair-${index}`;
+// A run is one play-through. The server keeps its tally of turns under this
+// id, and Restart starts a new one.
+const newRunId = () =>
+  (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
-    return [
-      {
-        id: `${pairId}-prompt`,
-        pairId,
-        label: pair.prompt,
-        role: 'Concept',
-      },
-      {
-        id: `${pairId}-answer`,
-        pairId,
-        label: pair.answer,
-        role: 'Match',
-      },
-    ];
-  });
-};
-
-export default function MemoryMatchGame({ exercise, onScoreUpdate, onComplete, isTimeUp = false }) {
+// Memory match. The page gets a deck with no pairing — every card's text, under
+// an id that says nothing about its partner — and asks the server about each
+// pair of cards it turns over. The server keeps count of matches, misses and
+// streaks for the run, and scores that when the student submits.
+export default function MemoryMatchGame({ exercise, lesson, onScoreUpdate, onComplete, isTimeUp = false }) {
   const content = exercise.content || {};
-  const pairs = useMemo(
-    () => (Array.isArray(content.pairs) ? content.pairs.filter((pair) => pair.prompt && pair.answer) : []),
-    [content.pairs]
-  );
+  const deck = useMemo(() => (Array.isArray(content.cards) ? content.cards : []), [content.cards]);
 
-  const initialCards = useMemo(() => shuffleCards(buildCards(pairs)), [pairs]);
+  const initialCards = useMemo(() => shuffleCards(deck), [deck]);
 
   const [cards, setCards] = useState(initialCards);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -51,8 +37,10 @@ export default function MemoryMatchGame({ exercise, onScoreUpdate, onComplete, i
   const [lastResult, setLastResult] = useState(null);
   const [isChecking, setIsChecking] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [flipError, setFlipError] = useState(null);
+  const runRef = useRef(newRunId());
 
-  const totalPairs = pairs.length;
+  const totalPairs = deck.length / 2;
   const matchedPairs = matchedIds.length / 2;
   const attempts = matchedPairs + misses;
   const accuracy = attempts > 0 ? Math.round((matchedPairs / attempts) * 100) : 100;
@@ -77,7 +65,8 @@ export default function MemoryMatchGame({ exercise, onScoreUpdate, onComplete, i
       : 'sm:grid-cols-4 lg:grid-cols-5';
 
   const resetGame = () => {
-    const nextCards = shuffleCards(buildCards(pairs));
+    runRef.current = newRunId();
+    const nextCards = shuffleCards(deck);
     setCards(nextCards);
     setSelectedIds([]);
     setMatchedIds([]);
@@ -87,6 +76,7 @@ export default function MemoryMatchGame({ exercise, onScoreUpdate, onComplete, i
     setLastResult(null);
     setIsChecking(false);
     setIsComplete(false);
+    setFlipError(null);
     onScoreUpdate?.(0);
   };
 
@@ -96,8 +86,10 @@ export default function MemoryMatchGame({ exercise, onScoreUpdate, onComplete, i
     setIsComplete(true);
     onScoreUpdate?.(currentScore);
 
+    // The server scores the run from the turns it recorded; the number
+    // passed here is only what the page shows until that arrives.
     setTimeout(() => {
-      onComplete?.(currentScore);
+      onComplete?.(currentScore, { correctCount: matchedPairs, totalItems: totalPairs }, { run: runRef.current });
     }, 1100);
   };
 
@@ -122,32 +114,53 @@ export default function MemoryMatchGame({ exercise, onScoreUpdate, onComplete, i
   }, [currentScore]);
 
   useEffect(() => {
-    if (selectedIds.length !== 2) return;
+    if (selectedIds.length !== 2) return undefined;
 
-    const [firstCard, secondCard] = selectedIds.map((id) => cards.find((card) => card.id === id));
+    const [first, second] = selectedIds;
+    const run = runRef.current;
+    let cancelled = false;
     setIsChecking(true);
+    setFlipError(null);
 
-    const timeout = window.setTimeout(() => {
-      if (firstCard?.pairId && firstCard.pairId === secondCard?.pairId && firstCard.role !== secondCard.role) {
-        setMatchedIds((current) => [...current, firstCard.id, secondCard.id]);
-        setStreak((current) => {
-          const nextStreak = current + 1;
-          setBestStreak((best) => Math.max(best, nextStreak));
-          return nextStreak;
-        });
-        setLastResult('match');
-      } else {
-        setMisses((current) => current + 1);
-        setStreak(0);
-        setLastResult('miss');
-      }
+    const ask = axios.post(
+      route('lessons.exercises.api.flip', { lesson: lesson?.lesson_id, exercise: exercise.exercise_id || exercise.id }),
+      { run, first, second }
+    );
+    // Leave both cards face up for a moment either way.
+    const pause = new Promise((resolve) => window.setTimeout(resolve, 720));
 
-      setSelectedIds([]);
-      setIsChecking(false);
-    }, 720);
+    Promise.all([ask, pause])
+      .then(([response]) => {
+        if (cancelled || run !== runRef.current) return;
 
-    return () => window.clearTimeout(timeout);
-  }, [selectedIds, cards]);
+        if (response.data.match) {
+          setMatchedIds((current) => [...current, first, second]);
+          setStreak((current) => {
+            const nextStreak = current + 1;
+            setBestStreak((best) => Math.max(best, nextStreak));
+            return nextStreak;
+          });
+          setLastResult('match');
+        } else {
+          setMisses((current) => current + 1);
+          setStreak(0);
+          setLastResult('miss');
+        }
+      })
+      .catch(() => {
+        // Not counted either way; the student can turn the cards again.
+        if (!cancelled) setFlipError('Could not check those cards. Try them again.');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setSelectedIds([]);
+        setIsChecking(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedIds]);
 
   useEffect(() => {
     if (totalPairs > 0 && matchedIds.length === totalPairs * 2) {
@@ -238,6 +251,11 @@ export default function MemoryMatchGame({ exercise, onScoreUpdate, onComplete, i
                     Try another pair
                   </span>
                 )}
+                {flipError && (
+                  <span role="alert" className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-800">
+                    {flipError}
+                  </span>
+                )}
               </div>
 
               <button
@@ -275,6 +293,7 @@ export default function MemoryMatchGame({ exercise, onScoreUpdate, onComplete, i
                 type="button"
                 onClick={() => handleCardClick(card)}
                 disabled={isMatched || isComplete || isTimeUp}
+                aria-label={isFaceUp ? `${card.role}: ${card.label}` : 'Face-down card'}
                 className="group min-h-[142px] rounded-2xl text-left outline-none transition hover:-translate-y-1 focus-visible:ring-4 focus-visible:ring-violet-200 disabled:cursor-default sm:min-h-[156px]"
                 style={{ perspective: '900px' }}
               >

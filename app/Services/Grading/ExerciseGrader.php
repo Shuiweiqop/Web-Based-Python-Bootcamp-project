@@ -16,11 +16,13 @@ interface ExerciseGrader
 
     /**
      * @param  array  $answer  the submitted answer payload; each grader reads its own key
+     * @param  array{student_id?: int, exercise_id?: int}  $context  who is submitting what,
+     *                                                               for graders that keep state
      * @return array{
      *     score: int,
      *     results: list<array>,
      *     review: list<array{prompt: string, answer: ?string, correct_answer: ?string, is_correct: bool, explanation: ?string}>
      * } results are type-specific and stored; review is what the results screen shows
      */
-    public function grade(array $content, array $answer, int $maxScore): array;
+    public function grade(array $content, array $answer, int $maxScore, array $context = []): array;
 }

@@ -39,7 +39,7 @@ class SortingGrader implements ExerciseGrader
      * Reads $answer['order']: the items' public ids, top to bottom, as the
      * student left them.
      */
-    public function grade(array $content, array $answer, int $maxScore): array
+    public function grade(array $content, array $answer, int $maxScore, array $context = []): array
     {
         $order = is_array($answer['order'] ?? null) ? array_values($answer['order']) : [];
 

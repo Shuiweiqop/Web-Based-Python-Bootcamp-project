@@ -42,7 +42,7 @@ class FillBlankGrader implements ExerciseGrader
      * Reads $answer['answers']: what was typed, per sentence then per blank,
      * in order; null or missing = left empty.
      */
-    public function grade(array $content, array $answer, int $maxScore): array
+    public function grade(array $content, array $answer, int $maxScore, array $context = []): array
     {
         $typed = is_array($answer['answers'] ?? null) ? array_values($answer['answers']) : [];
 

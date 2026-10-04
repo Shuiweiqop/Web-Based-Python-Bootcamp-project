@@ -7,15 +7,16 @@ use App\Models\Lesson;
 use Illuminate\Database\Seeder;
 
 /**
- * A sorting and a fill-in-the-blank exercise, so both types exist to try.
+ * A sorting, a fill-in-the-blank and a memory match exercise, so each type
+ * exists to try.
  *
- * The lesson seeders never created either type, so neither could be opened
+ * The lesson seeders never created these types, so none could be opened
  * from a seeded database — not by a developer checking the student page, not
- * by anyone demoing it. Both are graded on the server, which is worth being
+ * by anyone demoing it. All are graded on the server, which is worth being
  * able to see working.
  *
  * Found by lesson title and exercise title, so running this again updates the
- * two exercises in place rather than adding copies. A lesson that does not
+ * exercises in place rather than adding copies. A lesson that does not
  * exist is skipped.
  */
 class GradedPracticeExerciseSeeder extends Seeder
@@ -83,6 +84,23 @@ class GradedPracticeExerciseSeeder extends Seeder
                             'caseSensitive' => true,
                             'blanks' => [['correctAnswer' => 'False', 'hint' => 'Capital letter matters']],
                         ],
+                    ],
+                ],
+            ],
+            'Working with Strings in Python' => [
+                'title' => 'String Method Pairs',
+                'description' => 'Match each string method with what it does.',
+                'exercise_type' => 'memory_match',
+                'difficulty' => 'beginner',
+                'max_score' => 100,
+                'time_limit_sec' => 300,
+                'content' => [
+                    'instructions' => 'Flip two cards at a time and match each method with what it does.',
+                    'pairs' => [
+                        ['id' => 'upper', 'prompt' => '.upper()', 'answer' => 'Every letter in capitals'],
+                        ['id' => 'strip', 'prompt' => '.strip()', 'answer' => 'Spaces removed from both ends'],
+                        ['id' => 'split', 'prompt' => '.split()', 'answer' => 'A list of the words'],
+                        ['id' => 'replace', 'prompt' => '.replace(a, b)', 'answer' => 'Every a swapped for b'],
                     ],
                 ],
             ],
