@@ -33,6 +33,8 @@ class SubmitExerciseRequest extends FormRequest
             // Drag-and-drop submissions: {item id: zone id} for each placed item.
             'answer.placements' => 'sometimes|array|max:200',
             'answer.placements.*' => 'nullable|string|max:100',
+            // Memory match submissions: the run whose turns the server recorded.
+            'answer.run' => 'sometimes|string|max:64',
             'time_spent' => 'nullable|numeric|min:0',
         ];
     }

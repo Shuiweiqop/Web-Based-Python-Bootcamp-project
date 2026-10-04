@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             LessonsTableSeeder::class,         // lessons + sections
             InteractiveExerciseSeeder::class,  // exercises attached to lessons
             CodingExerciseContentSeeder::class, // real tasks + test cases for the coding ones
-            GradedPracticeExerciseSeeder::class, // a sorting and a fill-in-the-blank exercise
+            GradedPracticeExerciseSeeder::class, // sorting, fill-in-the-blank and memory match exercises
             TestSeeder::class,                 // per-lesson quizzes
             PlacementTestSeeder::class,        // standalone placement test
             LearningPathSeeder::class,         // paths referencing lessons

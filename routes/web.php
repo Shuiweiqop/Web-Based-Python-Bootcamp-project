@@ -45,6 +45,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{exercise}/submit', [ExerciseController::class, 'submit'])
                 ->middleware('throttle:20,1')
                 ->name('submit');
+            // Memory match: one call per pair of cards turned over.
+            Route::post('/{exercise}/flip', [ExerciseController::class, 'flip'])
+                ->middleware('throttle:120,1')
+                ->name('flip');
         });
     });
 

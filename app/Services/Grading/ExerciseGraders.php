@@ -17,6 +17,7 @@ class ExerciseGraders
         'fill_blank' => FillBlankGrader::class,
         'sorting' => SortingGrader::class,
         'drag_drop' => DragDropGrader::class,
+        'memory_match' => MemoryMatchGrader::class,
     ];
 
     public function for(?string $exerciseType): ?ExerciseGrader

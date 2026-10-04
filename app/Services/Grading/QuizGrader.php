@@ -35,7 +35,7 @@ class QuizGrader implements ExerciseGrader
      * Reads $answer['selections']: the chosen option index per question, in
      * question order; null or missing = unanswered.
      */
-    public function grade(array $content, array $answer, int $maxScore): array
+    public function grade(array $content, array $answer, int $maxScore, array $context = []): array
     {
         $questions = $this->questions($content);
         $selections = is_array($answer['selections'] ?? null) ? array_values($answer['selections']) : [];

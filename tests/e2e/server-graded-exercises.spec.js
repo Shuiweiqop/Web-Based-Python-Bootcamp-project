@@ -4,7 +4,8 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { expectNoBrowserFailures, installBrowserFailureGuards } from './support/browser-failure-guards.js';
 
-// Quiz, fill-in-the-blank, sorting and drag-and-drop are graded on the server: the page gets
+// Quiz, fill-in-the-blank, sorting, drag-and-drop and memory match are graded
+// on the server: the page gets
 // the exercise without its answer key, submits what the student did, and
 // shows the score and review the server sends back. These play each one
 // through the real UI.
@@ -94,7 +95,7 @@ test.beforeAll(() => {
     "'estimated_duration' => 20,",
     "'status' => 'active',",
     "'completion_reward_points' => 30,",
-    "'required_exercises' => 4,",
+    "'required_exercises' => 5,",
     "'required_tests' => 0,",
     "]);",
     "$quiz = App\\Models\\InteractiveExercise::create(['lesson_id' => $lesson->lesson_id, 'title' => 'Graded Quiz', 'exercise_type' => 'quiz', 'max_score' => 100, 'is_active' => true, 'content' => ['questions' => [",
@@ -116,7 +117,10 @@ test.beforeAll(() => {
     "'items' => [['id' => 1, 'text' => 'int', 'correct_zone' => 'zone_1'], ['id' => 2, 'text' => 'float', 'correct_zone' => 'zone_2'], ['id' => 3, 'text' => 'str', 'correct_zone' => 'zone_3']],",
     "'drop_zones' => [['id' => 'zone_1', 'name' => '42', 'max_items' => 1], ['id' => 'zone_2', 'name' => '3.14', 'max_items' => 1], ['id' => 'zone_3', 'name' => 'hello', 'max_items' => 1]],",
     "]]);",
-    "echo json_encode(['lesson' => $lesson->lesson_id, 'quiz' => $quiz->exercise_id, 'blank' => $blank->exercise_id, 'sort' => $sort->exercise_id, 'drag' => $drag->exercise_id]);",
+    "$memory = App\\Models\\InteractiveExercise::create(['lesson_id' => $lesson->lesson_id, 'title' => 'Graded Memory', 'exercise_type' => 'memory_match', 'max_score' => 100, 'is_active' => true, 'content' => [",
+    "'pairs' => [['id' => 'p1', 'prompt' => 'len()', 'answer' => 'Length of a sequence'], ['id' => 'p2', 'prompt' => 'print()', 'answer' => 'Write to the screen']],",
+    "]]);",
+    "echo json_encode(['lesson' => $lesson->lesson_id, 'quiz' => $quiz->exercise_id, 'blank' => $blank->exercise_id, 'sort' => $sort->exercise_id, 'drag' => $drag->exercise_id, 'memory' => $memory->exercise_id]);",
   ], { capture: true }).toString();
 
   ids = JSON.parse(output.slice(output.indexOf('{')));
@@ -246,4 +250,38 @@ test('drag and drop: no hints while placing, and the review shows where each ite
   await expectFinalScore(page, 33);
   await expect(page.getByText('Answer Review')).toBeVisible();
   await expect(page.getByText('Correct answer:').first()).toBeVisible();
+});
+
+test('memory match: the deck has no pairing, and the server scores the turns it saw', async ({ page }) => {
+  await page.goto(`/lessons/${ids.lesson}/exercises/${ids.memory}`);
+
+  const props = await pageProps(page);
+  expect(props.exercise.content).not.toHaveProperty('pairs');
+  for (const card of props.exercise.content.cards) {
+    expect(Object.keys(card).sort()).toEqual(['id', 'label', 'role']);
+    expect(card.id).not.toMatch(/p1|p2|prompt|answer/);
+  }
+
+  await page.getByRole('button', { name: /start game/i }).click();
+
+  const turn = async (a, b) => {
+    const flipped = page.waitForResponse((r) => r.url().includes('/flip'));
+    await page.locator('button', { hasText: a }).click();
+    await page.locator('button', { hasText: b }).click();
+    await flipped;
+  };
+
+  // One miss, then both pairs in a row. The game keeps both cards up for a
+  // moment after the server answers, so wait for its counters before the
+  // next turn — clicks during that pause are ignored.
+  await turn('len()', 'Write to the screen');
+  await expect(page.getByText('Misses: 1')).toBeVisible();
+  await turn('len()', 'Length of a sequence');
+  await expect(page.getByText('1/2', { exact: true })).toBeVisible();
+  await turn('print()', 'Write to the screen');
+
+  // 2 of 3 attempts right (67%, floored to 70%), best streak 2:
+  // round(100 * 1 * 0.7 + 4) = 74.
+  await expectFinalScore(page, 74);
+  await expect(page.getByText('Answer Review')).toBeVisible();
 });

@@ -41,7 +41,7 @@ class ExerciseSubmissionService
         if ($exercise->exercise_type === 'coding') {
             [$score, $completed, $answer] = $this->gradeCoding($exercise, $answer);
         } elseif ($grader) {
-            [$score, $completed, $answer] = $this->gradeWith($grader, $exercise, $answer);
+            [$score, $completed, $answer] = $this->gradeWith($grader, $student, $exercise, $answer);
         } else {
             $score = (int) round(min(max($answer['score'], 0), $exercise->max_score));
             $completed = $this->determineCompletionStatus($exercise, $answer, $score);
@@ -193,14 +193,15 @@ class ExerciseSubmissionService
      *
      * @return array{0: int, 1: bool, 2: array} score, completed, answer to store
      */
-    private function gradeWith(ExerciseGrader $grader, InteractiveExercise $exercise, array $answer): array
+    private function gradeWith(ExerciseGrader $grader, StudentProfile $student, InteractiveExercise $exercise, array $answer): array
     {
         $maxScore = (int) $exercise->max_score;
 
         $graded = $grader->grade(
             is_array($exercise->content) ? $exercise->content : [],
             $answer,
-            $maxScore
+            $maxScore,
+            ['student_id' => (int) $student->student_id, 'exercise_id' => (int) $exercise->exercise_id]
         );
 
         $score = min(max($graded['score'], 0), $maxScore);

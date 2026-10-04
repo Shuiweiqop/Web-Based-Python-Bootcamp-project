@@ -41,7 +41,7 @@ class DragDropGrader implements ExerciseGrader
      * Reads $answer['placements']: {public item id: zone id} for each item
      * the student placed.
      */
-    public function grade(array $content, array $answer, int $maxScore): array
+    public function grade(array $content, array $answer, int $maxScore, array $context = []): array
     {
         $placements = is_array($answer['placements'] ?? null) ? $answer['placements'] : [];
         $zoneNames = [];

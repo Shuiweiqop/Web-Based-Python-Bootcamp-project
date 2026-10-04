@@ -18,7 +18,7 @@ class GradedPracticeExerciseSeederTest extends TestCase
     {
         parent::setUp();
 
-        foreach (['Introduction to Python Programming', 'Python Variables and Data Types'] as $title) {
+        foreach (['Introduction to Python Programming', 'Python Variables and Data Types', 'Working with Strings in Python'] as $title) {
             Lesson::create(['title' => $title, 'content' => 'Body', 'difficulty' => 'beginner', 'status' => 'active']);
         }
     }
@@ -30,6 +30,7 @@ class GradedPracticeExerciseSeederTest extends TestCase
 
         $this->assertSame(1, InteractiveExercise::where('exercise_type', 'sorting')->count());
         $this->assertSame(1, InteractiveExercise::where('exercise_type', 'fill_blank')->count());
+        $this->assertSame(1, InteractiveExercise::where('exercise_type', 'memory_match')->count());
     }
 
     public function test_the_seeded_exercises_grade_full_marks_for_the_right_answers(): void
@@ -56,6 +57,6 @@ class GradedPracticeExerciseSeederTest extends TestCase
 
         $this->seed(GradedPracticeExerciseSeeder::class);
 
-        $this->assertSame(1, InteractiveExercise::count());
+        $this->assertSame(2, InteractiveExercise::count());
     }
 }
