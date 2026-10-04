@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\CodeGradingUnavailableException;
 use App\Jobs\UpdateConceptMastery;
 use App\Models\ExerciseSubmission;
 use App\Models\InteractiveExercise;
@@ -14,8 +15,15 @@ use Illuminate\Support\Facades\Log;
 
 class ExerciseSubmissionService
 {
-    public function __construct(private DailyChallengeService $challengeService) {}
+    public function __construct(
+        private DailyChallengeService $challengeService,
+        private Judge0Service $judge0,
+    ) {}
 
+    /**
+     * @throws CodeGradingUnavailableException when a coding exercise cannot
+     *                                         be graded because Judge0 is down
+     */
     public function submit(
         StudentProfile $student,
         Lesson $lesson,
@@ -23,9 +31,16 @@ class ExerciseSubmissionService
         array $answer,
         int $timeSpent
     ): array {
-        return DB::transaction(function () use ($student, $lesson, $exercise, $answer, $timeSpent) {
+        // Graded before the transaction opens: it makes one Judge0 call per
+        // test case, and a transaction should not stay open across them.
+        if ($exercise->exercise_type === 'coding') {
+            [$score, $completed, $answer] = $this->gradeCoding($exercise, $answer);
+        } else {
             $score = (int) round(min(max($answer['score'], 0), $exercise->max_score));
             $completed = $this->determineCompletionStatus($exercise, $answer, $score);
+        }
+
+        return DB::transaction(function () use ($student, $lesson, $exercise, $answer, $timeSpent, $score, $completed) {
 
             $submission = ExerciseSubmission::create([
                 'exercise_id' => $exercise->exercise_id,
@@ -82,7 +97,10 @@ class ExerciseSubmissionService
                     'percentage' => $submission->percentage,
                     'is_passing' => $submission->is_passing,
                     'grade' => $submission->grade,
+                    'completed' => (bool) $submission->completed,
                 ],
+                // The server's own run, so the page shows what was graded.
+                'test_results' => $exercise->exercise_type === 'coding' ? $answer['test_results'] : null,
                 'mission_progress' => $missionProgress,
                 'lesson_progress' => $registration ? [
                     'exercises_completed' => $registration->exercises_completed,
@@ -100,31 +118,63 @@ class ExerciseSubmissionService
     }
 
     /**
-     * For coding exercises, all test cases must pass.
-     * For other types, trust the client-reported completed flag.
+     * Non-coding exercises: trust the client-reported completed flag, but
+     * require a passing score.
      */
     private function determineCompletionStatus(InteractiveExercise $exercise, array $answer, int $score): bool
     {
-        if ($exercise->exercise_type !== 'coding') {
-            if (($answer['completed'] ?? true) === false) {
-                return false;
-            }
-
-            if ((int) $exercise->max_score <= 0) {
-                return false;
-            }
-
-            return ($score / (int) $exercise->max_score) >= 0.7;
-        }
-
-        $testResults = $answer['test_results'] ?? null;
-        if (! is_array($testResults) || count($testResults) === 0) {
+        if (($answer['completed'] ?? true) === false) {
             return false;
         }
 
-        $passed = collect($testResults)->filter(fn ($r) => is_array($r) && ($r['passed'] ?? false) === true)->count();
+        if ((int) $exercise->max_score <= 0) {
+            return false;
+        }
 
-        return $passed === count($testResults);
+        return ($score / (int) $exercise->max_score) >= 0.7;
+    }
+
+    /**
+     * Coding exercises are graded here, by running the submitted code against
+     * the test cases stored on the exercise. Nothing the client reports —
+     * score, completed, test_results — is trusted: those decide lesson
+     * completion and points, and a forged request could set them freely.
+     *
+     * @return array{0: int, 1: bool, 2: array} score, completed, answer to store
+     */
+    private function gradeCoding(InteractiveExercise $exercise, array $answer): array
+    {
+        $code = is_string($answer['code'] ?? null) ? $answer['code'] : '';
+        $testCases = is_array($exercise->test_cases) ? $exercise->test_cases : [];
+
+        $testResults = [];
+        if ($code !== '' && $testCases !== []) {
+            $testResults = $this->judge0->runTestCases(
+                $code,
+                (int) $this->judge0->languageId('python'),
+                $testCases
+            );
+        }
+
+        // An outage is not a wrong answer. Recording it as a zero would cost
+        // the student a submission they never really made.
+        if (collect($testResults)->contains(fn ($r) => $r['error'])) {
+            Log::warning('exercise.grade.judge0_unavailable', [
+                'action' => 'gradeCoding',
+                'exercise_id' => $exercise->exercise_id,
+            ]);
+
+            throw new CodeGradingUnavailableException;
+        }
+
+        $total = count($testResults);
+        $passed = collect($testResults)->where('passed', true)->count();
+        $maxScore = (int) $exercise->max_score;
+
+        $score = $total > 0 ? (int) round($passed / $total * $maxScore) : 0;
+        $completed = $total > 0 && $passed === $total;
+
+        return [$score, $completed, array_merge($answer, ['test_results' => $testResults])];
     }
 
     private function updateLessonProgress(LessonRegistration $registration, Lesson $lesson, StudentProfile $student): void

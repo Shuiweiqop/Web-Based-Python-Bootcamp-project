@@ -66,7 +66,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::prefix('api')->name('api.')->group(function () {
             Route::get('/{exercise}', [LessonController::class, 'getExercise'])->name('get');
-            Route::post('/{exercise}/submit', [ExerciseController::class, 'submit'])->name('submit');
+            // Throttled like code.execute: a coding submission is graded by
+            // running every test case on Judge0.
+            Route::post('/{exercise}/submit', [ExerciseController::class, 'submit'])
+                ->middleware('throttle:20,1')
+                ->name('submit');
         });
     });
 

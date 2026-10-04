@@ -3,43 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
+use App\Services\Judge0Service;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class CodeExecutionController extends Controller
 {
-    /** Judge0 verdict for a program that ran to completion. */
-    private const JUDGE0_STATUS_ACCEPTED = 3;
-
-    private $client;
-
-    private $judge0BaseUrl = 'https://judge0-ce.p.rapidapi.com';
-
-    private $judge0ApiKey;
-
-    private $judge0ApiHost = 'judge0-ce.p.rapidapi.com';
-
-    public function __construct()
-    {
-        $this->judge0BaseUrl = config('services.judge0.url', 'https://judge0-ce.p.rapidapi.com');
-        $this->judge0ApiKey = config('services.judge0.key');
-
-        if (! $this->judge0ApiKey) {
-            throw new \Exception('Judge0 API key not configured. Please set JUDGE0_API_KEY in .env');
-        }
-
-        $this->client = new Client([
-            'base_uri' => $this->judge0BaseUrl,
-            'timeout' => 30,
-        ]);
-    }
+    public function __construct(private Judge0Service $judge0) {}
 
     /**
      * Execute code using Judge0 API
      *
      * POST /api/code/execute
+     *
+     * This is the student's "Run" button. Its results are for display only —
+     * grading re-runs the code on the server (ExerciseSubmissionService).
      */
     public function execute(Request $request)
     {
@@ -54,162 +31,42 @@ class CodeExecutionController extends Controller
         ]);
 
         $code = $validated['code'];
-        $language = $validated['language'];
         $testCases = $validated['test_cases'] ?? [];
+        $languageId = $this->judge0->languageId($validated['language']);
 
-        try {
-            // Get language ID
-            $languageId = $this->getLanguageId($language);
-
-            if (! $languageId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unsupported language: '.$language,
-                ], 400);
-            }
-
-            if (! empty($testCases)) {
-                // Run with test cases
-                return $this->executeWithTestCases($code, $languageId, $testCases);
-            } else {
-                // Just run the code
-                return $this->executeCode($code, $languageId);
-            }
-        } catch (\Exception $e) {
-            Log::error('code.execute.failed', [
-                'action' => 'execute',
-                'language' => $language,
-                'error' => $e->getMessage(),
-            ]);
-
-            // Do not leak internal error details to the client.
+        if (! $languageId) {
             return response()->json([
                 'success' => false,
-                'message' => 'Code execution failed. Please try again later.',
-                'output' => '',
-                'test_results' => [],
-            ], 500);
+                'message' => 'Unsupported language: '.$validated['language'],
+            ], 400);
         }
-    }
 
-    /**
-     * Execute code without test cases
-     */
-    private function executeCode(string $code, int $languageId)
-    {
-        try {
-            $response = $this->client->post('/submissions', [
-                'headers' => $this->getHeaders(),
-                'json' => [
-                    'source_code' => $code,
-                    'language_id' => $languageId,
-                    'stdin' => '',
-                ],
-                'query' => [
-                    'base64_encoded' => 'false',
-                    'wait' => 'true',
-                ],
-            ]);
+        if (empty($testCases)) {
+            $result = $this->judge0->run($code, $languageId);
 
-            $result = json_decode($response->getBody());
-
-            $stdout = trim((string) ($result->stdout ?? ''));
-            $stderr = trim((string) ($result->stderr ?? ''));
-            $compile = trim((string) ($result->compile_output ?? ''));
-            $ranCleanly = (int) ($result->status->id ?? 0) === self::JUDGE0_STATUS_ACCEPTED;
-
-            $output = $ranCleanly
-                ? ($stdout !== '' ? $stdout : 'No output')
-                : ($compile ?: $stderr ?: ($result->status->description ?? 'Execution failed'));
+            if (! $result['success']) {
+                return $this->unavailable($result['message']);
+            }
 
             return response()->json([
                 'success' => true,
-                'ran_cleanly' => $ranCleanly,
-                'output' => $output,
+                'ran_cleanly' => $result['ran_cleanly'],
+                'output' => $result['output'],
                 'test_results' => [],
             ]);
-        } catch (RequestException $e) {
-            Log::error('Judge0 API error: '.$e->getMessage());
-            throw $e;
         }
+
+        $testResults = $this->judge0->runTestCases($code, $languageId, $testCases);
+
+        return response()->json([
+            'success' => true,
+            'output' => $this->summarise($testResults),
+            'test_results' => $testResults,
+        ]);
     }
 
-    /**
-     * Execute code with test cases
-     */
-    private function executeWithTestCases(string $code, int $languageId, array $testCases)
+    private function summarise(array $testResults): string
     {
-        $testResults = [];
-        $allPassed = true;
-
-        foreach ($testCases as $testCase) {
-            $input = $testCase['input'] ?? '';
-            // expected_output is what the authoring form used to write; both
-            // spellings exist in the data, and reading only one graded those
-            // exercises against an empty string.
-            $expected = trim($testCase['expected'] ?? $testCase['expected_output'] ?? '');
-
-            try {
-                // Submit code with test input
-                $response = $this->client->post('/submissions', [
-                    'headers' => $this->getHeaders(),
-                    'json' => [
-                        'source_code' => $code,
-                        'language_id' => $languageId,
-                        'stdin' => $input,
-                    ],
-                    'query' => [
-                        'base64_encoded' => 'false',
-                        'wait' => 'true',
-                    ],
-                ]);
-
-                $result = json_decode($response->getBody());
-
-                // Judge0 status 3 is "Accepted" — the program ran to
-                // completion. Anything else (compile error, runtime error,
-                // timeout) is a failure whatever landed on the streams.
-                $statusId = (int) ($result->status->id ?? 0);
-                $ranCleanly = $statusId === self::JUDGE0_STATUS_ACCEPTED;
-
-                // stdout must be read on its own: Judge0 returns "" rather than
-                // null for a program with no output, so ?? never falls through
-                // and a warning on stderr used to be compared as the answer.
-                $stdout = trim((string) ($result->stdout ?? ''));
-                $stderr = trim((string) ($result->stderr ?? ''));
-                $compile = trim((string) ($result->compile_output ?? ''));
-
-                $actual = $ranCleanly ? $stdout : ($stderr ?: $compile ?: $stdout);
-
-                $passed = $ranCleanly && $this->compareOutputs($expected, $actual);
-
-                if (! $passed) {
-                    $allPassed = false;
-                }
-
-                $testResults[] = [
-                    'input' => $input,
-                    'expected' => $expected,
-                    'actual' => $actual,
-                    'passed' => $passed,
-                ];
-            } catch (\Exception $e) {
-                Log::warning('code.execute.test_case_failed', [
-                    'action' => 'executeWithTestCases',
-                    'error' => $e->getMessage(),
-                ]);
-
-                $allPassed = false;
-                $testResults[] = [
-                    'input' => $input,
-                    'expected' => $expected,
-                    'actual' => 'Execution error',
-                    'passed' => false,
-                ];
-            }
-        }
-
-        // Build output summary
         $passed = count(array_filter($testResults, fn ($r) => $r['passed']));
         $total = count($testResults);
 
@@ -225,70 +82,16 @@ class CodeExecutionController extends Controller
             }
         }
 
+        return $output;
+    }
+
+    private function unavailable(string $message)
+    {
         return response()->json([
-            'success' => true,
-            'output' => $output,
-            'test_results' => $testResults,
-        ]);
-    }
-
-    /**
-     * Get language ID from language name
-     */
-    private function getLanguageId(string $language): ?int
-    {
-        $languageMap = [
-            'python' => 71,      // Python 3
-            'python3' => 71,
-            'javascript' => 63,  // JavaScript (Node.js)
-            'java' => 62,        // Java
-            'cpp' => 54,         // C++
-            'c' => 50,           // C
-        ];
-
-        return $languageMap[$language] ?? null;
-    }
-
-    /**
-     * Get headers for Judge0 API
-     */
-    private function getHeaders(): array
-    {
-        return [
-            'x-rapidapi-key' => $this->judge0ApiKey,
-            'x-rapidapi-host' => $this->judge0ApiHost,
-            'Content-Type' => 'application/json',
-        ];
-    }
-
-    /**
-     * Compare expected vs actual output
-     */
-    private function compareOutputs(string $expected, string $actual): bool
-    {
-        if (empty($expected) && empty($actual)) {
-            return true;
-        }
-
-        // Normalize whitespace
-        $expected = preg_replace('/\s+/', ' ', trim($expected));
-        $actual = preg_replace('/\s+/', ' ', trim($actual));
-
-        // Direct comparison
-        if ($expected === $actual) {
-            return true;
-        }
-
-        // Try numeric comparison (for floating point)
-        if (is_numeric($expected) && is_numeric($actual)) {
-            return abs(floatval($expected) - floatval($actual)) < 0.0001;
-        }
-
-        // Case-insensitive comparison
-        if (strtolower($expected) === strtolower($actual)) {
-            return true;
-        }
-
-        return false;
+            'success' => false,
+            'message' => $message,
+            'output' => '',
+            'test_results' => [],
+        ], 500);
     }
 }
