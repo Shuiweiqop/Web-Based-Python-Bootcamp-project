@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, CheckCircle, GripVertical, RotateCcw, Shuffle, XCircle } from 'lucide-react';
+import { ArrowDown, ArrowUp, GripVertical, RotateCcw, Shuffle } from 'lucide-react';
 
 const shuffleItems = (items) => {
   const shuffled = [...items];
@@ -12,17 +12,17 @@ const shuffleItems = (items) => {
   return shuffled;
 };
 
-export default function SortingExercise({ exercise, onScoreUpdate, onComplete, isTimeUp = false }) {
+// Sorting. The page never has the correct order — the server strips it,
+// shuffles the items and gives them ids that say nothing about position — so
+// this component only collects the order the student settles on and hands it
+// to onComplete; the server grades it and the results screen shows each place.
+export default function SortingExercise({ exercise, onComplete, isTimeUp = false }) {
   const content = exercise.content || {};
-  const sourceItems = useMemo(
-    () => [...(content.items || [])].sort((a, b) => Number(a.correctOrder) - Number(b.correctOrder)),
-    [content.items]
-  );
+  const sourceItems = useMemo(() => content.items || [], [content.items]);
   const initialItems = useMemo(() => shuffleItems(sourceItems), [sourceItems]);
 
   const [items, setItems] = useState(initialItems);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [score, setScore] = useState(0);
   const [draggedIndex, setDraggedIndex] = useState(null);
 
   const moveItem = (index, direction) => {
@@ -45,27 +45,12 @@ export default function SortingExercise({ exercise, onScoreUpdate, onComplete, i
     setItems(nextItems);
   };
 
-  const calculateScore = (orderedItems = items) => {
-    if (!sourceItems.length) return 0;
-
-    const correctCount = orderedItems.filter((item, index) => {
-      return String(item.id) === String(sourceItems[index]?.id);
-    }).length;
-
-    return Math.round((correctCount / sourceItems.length) * (exercise.max_score || 100));
-  };
-
   const handleSubmit = () => {
     if (isSubmitted) return;
-
-    const finalScore = calculateScore();
-    setScore(finalScore);
     setIsSubmitted(true);
-    onScoreUpdate?.(finalScore);
 
-    setTimeout(() => {
-      onComplete?.(finalScore);
-    }, 1200);
+    // The score is worked out on the server; 0 is only a placeholder.
+    onComplete?.(0, { totalItems: items.length }, { order: items.map((item) => item.id) });
   };
 
   const resetOrder = () => {
@@ -103,14 +88,6 @@ export default function SortingExercise({ exercise, onScoreUpdate, onComplete, i
               </p>
             </div>
 
-            {isSubmitted && (
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Score</div>
-                <div className="text-3xl font-bold text-indigo-600">
-                  {score}/{exercise.max_score || 100}
-                </div>
-              </div>
-            )}
           </div>
 
           {!isSubmitted && (
@@ -133,9 +110,6 @@ export default function SortingExercise({ exercise, onScoreUpdate, onComplete, i
 
         <div className="space-y-3">
           {items.map((item, index) => {
-            const isCorrect = isSubmitted && String(item.id) === String(sourceItems[index]?.id);
-            const isWrong = isSubmitted && !isCorrect;
-
             return (
               <div
                 key={item.id}
@@ -150,13 +124,9 @@ export default function SortingExercise({ exercise, onScoreUpdate, onComplete, i
                 }}
                 onDragEnd={() => setDraggedIndex(null)}
                 className={`flex items-center gap-4 rounded-xl border-2 bg-white p-4 shadow-sm transition ${
-                  isCorrect
-                    ? 'border-green-300 bg-green-50'
-                    : isWrong
-                      ? 'border-red-300 bg-red-50'
-                      : draggedIndex === index
-                        ? 'border-indigo-400 bg-indigo-50 opacity-70'
-                        : 'border-indigo-100 hover:border-indigo-300'
+                  draggedIndex === index
+                    ? 'border-indigo-400 bg-indigo-50 opacity-70'
+                    : 'border-indigo-100 hover:border-indigo-300'
                 }`}
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white font-bold">
@@ -167,27 +137,14 @@ export default function SortingExercise({ exercise, onScoreUpdate, onComplete, i
 
                 <div className="flex-1">
                   <div className="font-semibold text-gray-900">{item.text || 'Untitled item'}</div>
-                  {isWrong && (
-                    <div className="text-xs text-red-600 mt-1">
-                      Correct position: {sourceItems.findIndex((sourceItem) => String(sourceItem.id) === String(item.id)) + 1}
-                    </div>
-                  )}
-                  {isSubmitted && isCorrect && (
-                    <div className="text-xs text-green-600 mt-1">Correct position</div>
-                  )}
                 </div>
 
-                {isSubmitted ? (
-                  isCorrect ? (
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                  ) : (
-                    <XCircle className="w-6 h-6 text-red-600" />
-                  )
-                ) : (
+                {!isSubmitted && (
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => moveItem(index, 'up')}
+                      aria-label={`Move ${item.text || 'item'} up`}
                       disabled={index === 0 || isTimeUp}
                       className="p-2 rounded-lg bg-gray-100 hover:bg-indigo-100 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
@@ -196,6 +153,7 @@ export default function SortingExercise({ exercise, onScoreUpdate, onComplete, i
                     <button
                       type="button"
                       onClick={() => moveItem(index, 'down')}
+                      aria-label={`Move ${item.text || 'item'} down`}
                       disabled={index === items.length - 1 || isTimeUp}
                       className="p-2 rounded-lg bg-gray-100 hover:bg-indigo-100 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                     >

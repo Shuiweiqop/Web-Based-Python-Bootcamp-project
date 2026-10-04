@@ -15,6 +15,7 @@ class ExerciseGraders
     private const GRADERS = [
         'quiz' => QuizGrader::class,
         'fill_blank' => FillBlankGrader::class,
+        'sorting' => SortingGrader::class,
     ];
 
     public function for(?string $exerciseType): ?ExerciseGrader
