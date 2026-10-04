@@ -105,9 +105,12 @@ test.beforeAll(() => {
     "]);",
     "App\\Models\\InteractiveExercise::updateOrCreate(['lesson_id' => $lesson->lesson_id, 'title' => 'Student Learning Smoke Exercise'], [",
     "'description' => 'Complete the quick practice.',",
-    "'instructions' => 'Submit a passing practice score.',",
+    "'instructions' => 'Match each value to its type.',",
     "'exercise_type' => 'drag_drop',",
-    "'content' => ['prompt' => 'Match Python values'],",
+    "'content' => ['instructions' => 'Match Python values', 'items' => [",
+    "['id' => 1, 'text' => '42', 'correct_zone' => 'zone_int'],",
+    "['id' => 2, 'text' => '\"hi\"', 'correct_zone' => 'zone_str'],",
+    "], 'drop_zones' => [['id' => 'zone_int', 'name' => 'int'], ['id' => 'zone_str', 'name' => 'str']]],",
     "'solution' => ['completed' => true],",
     "'max_score' => 100,",
     "'hints' => [],",
@@ -177,12 +180,21 @@ test('student can register, complete content, pass exercise and pass the lesson 
   result = await postFromPage(page, `/lessons/${lesson}/mark-content-complete`);
   expect(result.ok, result.text).toBeTruthy();
 
+  // Drag-and-drop is graded on the server from the placements, under the
+  // item ids the page is given, so read those first.
+  const items = await page.evaluate(async (url) => {
+    const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+    return (await response.json()).exercise.content.items;
+  }, `/lessons/${lesson}/exercises/api/${exercise}`);
+  const zoneFor = { '42': 'zone_int', '"hi"': 'zone_str' };
+  const placements = Object.fromEntries(items.map((item) => [item.id, zoneFor[item.text]]));
+
   result = await postFromPage(page, `/lessons/${lesson}/exercises/api/${exercise}/submit`, {
-    answer: { completed: true, score: 100 },
+    answer: { completed: false, score: 0, placements },
     time_spent: 45,
   });
   expect(result.ok, result.text).toBeTruthy();
-  expect(JSON.parse(result.text)).toMatchObject({ success: true });
+  expect(JSON.parse(result.text)).toMatchObject({ success: true, submission: { score: 100, completed: true } });
 
   result = await postFromPage(page, `/student/lessons/${lesson}/tests/${testId}/start`);
   expect(result.ok, result.text).toBeTruthy();

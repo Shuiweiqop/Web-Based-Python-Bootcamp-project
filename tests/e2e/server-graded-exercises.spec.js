@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { expectNoBrowserFailures, installBrowserFailureGuards } from './support/browser-failure-guards.js';
 
-// Quiz, fill-in-the-blank and sorting are graded on the server: the page gets
+// Quiz, fill-in-the-blank, sorting and drag-and-drop are graded on the server: the page gets
 // the exercise without its answer key, submits what the student did, and
 // shows the score and review the server sends back. These play each one
 // through the real UI.
@@ -94,7 +94,7 @@ test.beforeAll(() => {
     "'estimated_duration' => 20,",
     "'status' => 'active',",
     "'completion_reward_points' => 30,",
-    "'required_exercises' => 3,",
+    "'required_exercises' => 4,",
     "'required_tests' => 0,",
     "]);",
     "$quiz = App\\Models\\InteractiveExercise::create(['lesson_id' => $lesson->lesson_id, 'title' => 'Graded Quiz', 'exercise_type' => 'quiz', 'max_score' => 100, 'is_active' => true, 'content' => ['questions' => [",
@@ -111,7 +111,12 @@ test.beforeAll(() => {
     "['id' => 'item-1700000000003', 'text' => 'Read the error', 'correctOrder' => 3],",
     "['id' => 'item-1700000000004', 'text' => 'Fix the bug', 'correctOrder' => 4],",
     "]]]);",
-    "echo json_encode(['lesson' => $lesson->lesson_id, 'quiz' => $quiz->exercise_id, 'blank' => $blank->exercise_id, 'sort' => $sort->exercise_id]);",
+    "$drag = App\\Models\\InteractiveExercise::create(['lesson_id' => $lesson->lesson_id, 'title' => 'Graded Drag Drop', 'exercise_type' => 'drag_drop', 'max_score' => 100, 'is_active' => true, 'content' => [",
+    "'instructions' => 'Match each type to a value',",
+    "'items' => [['id' => 1, 'text' => 'int', 'correct_zone' => 'zone_1'], ['id' => 2, 'text' => 'float', 'correct_zone' => 'zone_2'], ['id' => 3, 'text' => 'str', 'correct_zone' => 'zone_3']],",
+    "'drop_zones' => [['id' => 'zone_1', 'name' => '42', 'max_items' => 1], ['id' => 'zone_2', 'name' => '3.14', 'max_items' => 1], ['id' => 'zone_3', 'name' => 'hello', 'max_items' => 1]],",
+    "]]);",
+    "echo json_encode(['lesson' => $lesson->lesson_id, 'quiz' => $quiz->exercise_id, 'blank' => $blank->exercise_id, 'sort' => $sort->exercise_id, 'drag' => $drag->exercise_id]);",
   ], { capture: true }).toString();
 
   ids = JSON.parse(output.slice(output.indexOf('{')));
@@ -213,4 +218,32 @@ test('sorting: the order cannot be read from the page, and putting it right scor
   await expectFinalScore(page, 100);
   await expect(page.getByText('Answer Review')).toBeVisible();
   await expect(page.getByText('Position 4')).toBeVisible();
+});
+
+test('drag and drop: no hints while placing, and the review shows where each item belonged', async ({ page }) => {
+  await page.goto(`/lessons/${ids.lesson}/exercises/${ids.drag}`);
+
+  const props = await pageProps(page);
+  for (const item of props.exercise.content.items) {
+    expect(item).not.toHaveProperty('correct_zone');
+    expect(['1', '2', '3']).not.toContain(String(item.id));
+  }
+
+  await page.getByRole('button', { name: /start game/i }).click();
+
+  const place = async (item, zone) => {
+    await page.getByLabel(`Item ${item}`).click();
+    await page.getByLabel(`Zone ${zone}`).click();
+  };
+
+  // int and float swapped, str right: one of three.
+  await place('int', '3.14');
+  await expect(page.getByText(/correct|not quite|fits better/i)).toHaveCount(0);
+  await place('float', '42');
+  await place('str', 'hello');
+  await page.getByRole('button', { name: 'Submit Answer' }).click();
+
+  await expectFinalScore(page, 33);
+  await expect(page.getByText('Answer Review')).toBeVisible();
+  await expect(page.getByText('Correct answer:').first()).toBeVisible();
 });

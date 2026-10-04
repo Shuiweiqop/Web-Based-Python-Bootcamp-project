@@ -40,7 +40,9 @@ class DailyChallengeControllerDispatchTest extends TestCase
             'lesson_id' => $lesson->lesson_id,
             'title' => 'Warm Up',
             'description' => 'Simple exercise',
-            'exercise_type' => 'drag_drop',
+            // A type that still reports its own score: this tests what
+            // happens after a completed submission, not how it is graded.
+            'exercise_type' => 'maze_game',
             'content' => ['prompt' => 'Sort values'],
             'max_score' => 100,
             'is_active' => true,

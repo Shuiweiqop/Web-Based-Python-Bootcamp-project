@@ -30,6 +30,9 @@ class SubmitExerciseRequest extends FormRequest
             // Sorting submissions: the items' ids, top to bottom.
             'answer.order' => 'sometimes|array|max:200',
             'answer.order.*' => 'nullable|string|max:100',
+            // Drag-and-drop submissions: {item id: zone id} for each placed item.
+            'answer.placements' => 'sometimes|array|max:200',
+            'answer.placements.*' => 'nullable|string|max:100',
             'time_spent' => 'nullable|numeric|min:0',
         ];
     }
