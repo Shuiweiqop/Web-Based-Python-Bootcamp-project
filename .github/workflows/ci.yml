@@ -11,7 +11,7 @@ on:
 jobs:
   test:
     name: Test and build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -20,14 +20,14 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: "8.2"
           extensions: dom, fileinfo, gd, mbstring, openssl, pdo_sqlite, sqlite3, xml, zip
           coverage: none
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
           cache: npm
 
       - name: Cache Composer dependencies
